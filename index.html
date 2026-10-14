@@ -599,7 +599,7 @@ function attendeMe(r){if(!S.me||r.stato==="chiusa")return false;
   return false}
 const reqDiBlocco=id=>S.richieste.filter(r=>r.bloccoId===id);
 const teamsOf=pid=>S.team.filter(t=>(t.membri||[]).includes(pid));
-/* le attivita' degli altri restano trasparenti per chi non pianifica: in evidenza solo le proprie (e quelle del proprio team se le pianifica) */
+/* trasparenti le attivita' degli altri: il progettista vede accese le proprie, il capo team quelle dei membri dei suoi team */
 const fadeAttivo=()=>!!S.me&&!!myPersona()&&!S.me.admin&&!canPlan()&&!can("ore_tutte");
 const fadeAltri=b=>fadeAttivo()&&S.soloMie&&myPersona()!==b.personaId&&!canPlanOn(b.personaId)?" altri":"";
 const canOreOn=b=>!!b&&(canPlanOn(b.personaId)||can("ore_tutte")||(can("ore_proprie")&&myPersona()===b.personaId));
@@ -1437,7 +1437,7 @@ function renderSet(){
     <div class="muted" style="font-size:12.5px;display:flex;flex-direction:column;gap:3px;max-width:90ch">
       <span><b>Le spunte</b> si applicano a un utente quando gli assegni il ruolo. Per aggiornare chi ha già quel ruolo usa <b>Applica</b>: sostituisce le sue spunte con quelle della riga.</span>
       <span><b>Altri reparti</b>: senza questa spunta l'utente vede solo persone, attività e ore del proprio reparto (timeline, riepilogo, vista per commessa) e il server non gli invia i dati degli altri. Amministratori, PM e direzione senza reparto vedono sempre tutto. Come le altre spunte, si può anche cambiare per il singolo utente nella scheda Utenti.</span>
-      <span><b>In evidenza</b>: chi non pianifica (progettisti) vede le proprie attività piene e quelle degli altri trasparenti; con il pulsante “Le mie in evidenza” nella timeline può riaccenderle tutte.</span>
+      <span><b>In evidenza</b>: il progettista vede piene le proprie attività, il capo team quelle di tutti i membri del suo team; il resto è trasparente. Responsabili, PM e amministratori vedono tutto acceso. Con il pulsante “Le mie in evidenza” nella timeline si riaccende tutto.</span>
       <span><b>Ruoli</b>: aggiungi con il campo sotto la tabella, elimini con ✕, rinomini cliccando sul nome (in “Tutti i reparti”). Se elimini un ruolo, chi lo aveva resta senza ruolo ma mantiene le sue spunte.</span>
       <span>Il responsabile di un reparto si sceglie nella tabella Reparti di "Commesse e persone".</span></div>
    </div>
