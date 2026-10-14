@@ -639,7 +639,7 @@ const S={persone:[],commesse:[],blocchi:[],team:[],teamF:"",view0:mondayOf(today
   reparti:[],richieste:[],utentiMini:[],ruoli:{},reqFilt:"todo",scope:null,vista:null,commF:null};
 try{const z=Number(localStorage.getItem("cut-zoom"));if([22,34,52].includes(z))S.dw=z}catch(e){}
 try{S.teamF=localStorage.getItem("cut-team")||""}catch(e){}
-S.soloMie=true;try{S.soloMie=localStorage.getItem("cut-mie")!=="0"}catch(e){}
+S.soloMie=true; // "Le mie in evidenza": scelta di ogni utente, di base accesa (vedi initScope)
 try{const t=localStorage.getItem("cut-tab");if(["plan","ore","req","rep","mgmt","reg","perm","set"].includes(t))S.tab=t}catch(e){}
 
 /* ---------- permessi ---------- */
@@ -674,6 +674,7 @@ const scopeNome=()=>{const r=S.reparti.find(x=>x.id===scopeRep());return r?r.nom
 const canEditRep=rid=>can("gestione")||myReparti().some(r=>r.id===rid);
 const canUtenti=()=>!!S.me&&(S.isOwner||myReparti().length>0);
 function initScope(){
+  if(S.me&&S.mieUser!==S.me.id){S.mieUser=S.me.id;S.soloMie=true;try{S.soloMie=localStorage.getItem("cut-mie-"+S.me.id)!=="0"}catch(e){}}
   const key="cut-scope-"+(S.me?S.me.id:"");let v=null;try{v=localStorage.getItem(key)}catch(e){}
   const solo=S.me&&S.me.vede==="proprio"&&myRepId();
   const valid=x=>solo?x==="r:"+myRepId():(x==="tutti"||(x&&x.startsWith("r:")&&S.reparti.some(r=>"r:"+r.id===x)));
@@ -698,7 +699,10 @@ const teamsOf=pid=>S.team.filter(t=>(t.membri||[]).includes(pid));
 /* trasparenti le attivita' degli altri: il progettista vede accese le proprie, il capo team quelle dei membri dei suoi team */
 const capoSenzaTeam=()=>!!S.me&&!S.me.admin&&!canPlan()&&!!myPersona()&&(can("pianifica_team")||S.me.ruolo==="capo_team")&&!S.team.some(t=>t.capo===myPersona()||(t.membri||[]).includes(myPersona()));
 const fadeAttivo=()=>!!S.me&&!!myPersona()&&!S.me.admin&&!canPlan()&&!can("ore_tutte")&&!capoSenzaTeam();
-const fadeAltri=b=>fadeAttivo()&&S.soloMie&&myPersona()!==b.personaId&&!canPlanOn(b.personaId)?" altri":"";
+// in evidenza: le proprie attività e, per il capo team, quelle dei membri dei team che guida (se non ne guida nessuno: dei team di cui fa parte)
+function evidPersone(){const p=myPersona(),set=new Set([p]);if(!p||!can("pianifica_team"))return set;
+  const guida=S.team.filter(t=>t.capo===p),src=guida.length?guida:S.team.filter(t=>(t.membri||[]).includes(p));for(const t of src)(t.membri||[]).forEach(x=>set.add(x));return set}
+const fadeAltri=b=>fadeAttivo()&&S.soloMie&&!evidPersone().has(b.personaId)?" altri":"";
 const canOreOn=b=>!!b&&(canPlanOn(b.personaId)||can("ore_tutte")||(can("ore_proprie")&&myPersona()===b.personaId));
 function roleLabel(){
   if(!S.me)return"";
@@ -934,7 +938,7 @@ function renderPlan(){
       const lab=esc(b.attivita||"(senza titolo)");
       blks+=`<div class="blk ${b.stato==="svolto"?"svolto":"pianificato"}${dim}${fadeAltri(b)}${canPlanOn(b.personaId)?"":" lock"}${blq.length?" bloc":""}" tabindex="0" data-id="${esc(b.id)}" style="left:${(s-v0)*dw+1}px;width:${(e-s+1)*dw-3}px;top:${4+map.get(b.id)*LH}px;--h:${hue}" title="${esc(c?c.codice+" · "+c.nome:"Commessa eliminata")} — ${lab} · ${fmtD(bStart(b))}–${fmtD(bEnd(b))} · ${fmtH(bOre(b))} h${b.stato==="svolto"?" · svolta":""}${esc(extTitle(b))}${late?" · ⚠ OLTRE LA CONSEGNA del "+fmtD(kN):""}${blq.length?" · BLOCCATA da "+fmtGG(gBlq)+" ("+blq.length+" richiest"+(blq.length>1?"e":"a")+")":""}">${(()=>{const av=avPct(b);if(!av||b.stato==="svolto")return"";const full=(bEnd(b)-bStart(b)+1)*dw,off=(s-bStart(b))*dw,w=full*av/100-off;return w>0?`<i class="pg" style="width:${Math.min(w,(e-s+1)*dw)}px"></i>`:""})()}${extHtml(b,s,e,dw)}${bStart(b)>=v0?'<i class="h l" data-h="l"></i>':""}<span class="lead">${b.stato==="svolto"?'<span class="ck">✓</span>':""}${blq.length?`<span class="bk">⛔ ${fmtGG(gBlq)}</span>`:""}<span class="code">${esc(c?c.codice:"—")}</span><span class="t">${lab}</span></span>${late?'<span class="lt" title="Finisce dopo la consegna">⚠</span>':""}${avPct(b)&&b.stato!=="svolto"?`<span class="pc">${avPct(b)}%</span>`:""}<span class="o">${fmtH(bOre(b))}h</span>${bEnd(b)<=v1?'<i class="h r" data-h="r"></i>':""}</div>`;
     }
-    html+=`<div class="row" data-p="${esc(p.id)}"><div class="name"><b>${esc(pn(p))}</b><span>${esc(p.ruolo||"")}${p.ruolo?" · ":""}${fmtH(cap)} h/g${!rSel&&p.repartoId&&S.reparti.length>1?" · "+esc((S.reparti.find(r=>r.id===p.repartoId)||{}).nome||""):""}</span>${teamsOf(p.id).length?`<span class="tchips">${teamsOf(p.id).map(t=>`<i style="--h:${t.colore}">${esc(t.nome)}</i>`).join("")}</span>`:""}<span class="sat ${pct>100?"over":""}">${fmtH(tot)} h · ${pct}% capacità</span></div><div class="track" style="width:${W}px;height:${h}px">${tdl}${blks}<div class="load${fadeAttivo()&&S.soloMie&&myPersona()!==p.id&&!canPlanOn(p.id)?" altri":""}">${load}</div></div></div>`;
+    html+=`<div class="row" data-p="${esc(p.id)}"><div class="name"><b>${esc(pn(p))}</b><span>${esc(p.ruolo||"")}${p.ruolo?" · ":""}${fmtH(cap)} h/g${!rSel&&p.repartoId&&S.reparti.length>1?" · "+esc((S.reparti.find(r=>r.id===p.repartoId)||{}).nome||""):""}</span>${teamsOf(p.id).length?`<span class="tchips">${teamsOf(p.id).map(t=>`<i style="--h:${t.colore}">${esc(t.nome)}</i>`).join("")}</span>`:""}<span class="sat ${pct>100?"over":""}">${fmtH(tot)} h · ${pct}% capacità</span></div><div class="track" style="width:${W}px;height:${h}px">${tdl}${blks}<div class="load${fadeAttivo()&&S.soloMie&&!evidPersone().has(p.id)?" altri":""}">${load}</div></div></div>`;
   }
   html+="</div>";
   tl.innerHTML=html;
@@ -1035,7 +1039,7 @@ $("#next").onclick=()=>{S.view0+=7;render()};
 $("#today").onclick=()=>{S.view0=mondayOf(todayN)-7;firstPlan=true;render()};
 $("#zoom").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.dw=Number(b.dataset.z);try{localStorage.setItem("cut-zoom",S.dw)}catch(_){}firstPlan=true;render()};
 $("#filter").onchange=e=>{S.filtro=e.target.value;render()};
-$("#mie").onclick=()=>{S.soloMie=!S.soloMie;try{localStorage.setItem("cut-mie",S.soloMie?"1":"0")}catch(e){}render()};
+$("#mie").onclick=()=>{S.soloMie=!S.soloMie;try{localStorage.setItem("cut-mie-"+(S.me?S.me.id:""),S.soloMie?"1":"0")}catch(e){}render()};
 $("#teamf").onchange=e=>{S.teamF=e.target.value;render()};
 $("#commf").onchange=e=>{S.commF=e.target.value;render()};
 $("#vista").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.vista=b.dataset.v;try{localStorage.setItem("cut-vista-"+S.me.id,S.vista)}catch(_){}render()};
@@ -1879,7 +1883,7 @@ function renderSet(){
     <div class="muted" style="font-size:12.5px;display:flex;flex-direction:column;gap:3px;max-width:90ch">
       <span><b>Le spunte</b> si applicano a un utente quando gli assegni il ruolo. Se qualcuno con quel ruolo ha spunte diverse compare <b>Applica a N</b>: un clic, poi <b>Conferma</b>, e le sue spunte diventano quelle della riga. <b>✓ allineati</b> vuol dire che sono già tutti uguali.</span>
       <span><b>Altri reparti</b>: senza questa spunta l'utente vede solo persone, attività e ore del proprio reparto (timeline, riepilogo, vista per commessa) e il server non gli invia i dati degli altri. Amministratori, PM e direzione senza reparto vedono sempre tutto. Come le altre spunte, si può anche cambiare per il singolo utente nella scheda Utenti.</span>
-      <span><b>In evidenza</b>: il progettista vede piene le proprie attività, il capo team quelle di tutti i membri del suo team; il resto è trasparente. Responsabili, PM e amministratori vedono tutto acceso. Con il pulsante “Le mie in evidenza” nella timeline si riaccende tutto.</span>
+      <span><b>In evidenza</b>: il progettista vede piene le proprie attività, il capo team quelle dei membri dei team che guida; il resto è trasparente. Responsabili, PM e amministratori vedono tutto acceso. Con il pulsante “Le mie in evidenza” nella timeline si riaccende tutto.</span>
       <span><b>Ruoli</b>: aggiungi con il campo sotto la tabella, elimini con ✕, rinomini cliccando sul nome (in “Tutti i reparti”). Se elimini un ruolo, chi lo aveva resta senza ruolo ma mantiene le sue spunte.</span>
       <span>Il responsabile di un reparto si sceglie nella tabella Reparti di "Commesse e persone".</span></div>
    </div>
