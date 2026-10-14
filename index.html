@@ -35,7 +35,7 @@ img{max-width:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.4;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 32px}
 button,input,select,textarea{font:inherit;color:inherit}
-.wrap{max-width:1500px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.wrap{max-width:1880px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
@@ -381,7 +381,7 @@ b.ment{color:var(--accent)}
       <button role="tab" id="tab-perm" aria-selected="false" data-tab="perm" hidden>Utenti</button>
       <button role="tab" id="tab-set" aria-selected="false" data-tab="set" hidden>Impostazioni</button>
     </nav>
-    <div class="whobox" id="who" hidden><select class="inp" id="scope" aria-label="Reparto" hidden></select><button class="btn ghost" id="print" title="Stampa la pagina o salvala in PDF">Stampa / PDF</button><span class="bellw"><button class="btn ghost" id="bell" aria-label="Notifiche" title="Notifiche">🔔<span class="cnt" id="bell-cnt" hidden></span></button><div class="bellp" id="bellp" hidden></div></span><span id="who-name"></span><button class="btn ghost" id="chpw">Cambia password</button><button class="btn" id="logout">Esci</button></div>
+    <div class="whobox" id="who" hidden><select class="inp" id="scope" aria-label="Reparto" hidden></select><button class="btn ghost" id="print" title="Stampa la scheda aperta. Per avere il PDF, nella finestra di stampa scegli “Salva come PDF” come stampante.">🖨 Stampa</button><span class="bellw"><button class="btn ghost" id="bell" aria-label="Notifiche" title="Notifiche">🔔<span class="cnt" id="bell-cnt" hidden></span></button><div class="bellp" id="bellp" hidden></div></span><span id="who-name"></span><button class="btn ghost" id="chpw">Cambia password</button><button class="btn" id="logout">Esci</button></div>
   </header>
 
   <div id="banner" hidden></div>
@@ -700,7 +700,10 @@ function diffB(a,o){
 }
 function log(){} // il registro lo scrive il server
 function fmtTs(iso){const d=new Date(iso);if(isNaN(d))return"";return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+String(d.getFullYear()).slice(2)+" "+pad(d.getHours())+":"+pad(d.getMinutes())}
-const daysInView=()=>S.dw<=22?84:S.dw>=52?28:42;
+// giorni mostrati: almeno 12/6/4 settimane, e comunque abbastanza da riempire lo schermo
+const daysInView=()=>{const base=S.dw<=22?84:S.dw>=52?28:42;const tl=document.getElementById("tl");const nw=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nameW"))||184;
+  const w=tl&&tl.clientWidth?tl.clientWidth-nw:0;return Math.max(base,Math.ceil(w/S.dw/7)*7)};
+window.addEventListener("resize",()=>{if(S.tab==="plan")render()});
 
 const commById=id=>S.commesse.find(c=>c.id===id);
 const persById=id=>S.persone.find(p=>p.id===id);
