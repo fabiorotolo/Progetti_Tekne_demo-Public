@@ -354,8 +354,12 @@ b.ment{color:var(--accent)}
 .hol-col{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--today) 7%,var(--weekend));pointer-events:none;z-index:0}
 tr.chiusa td{color:var(--muted)}tr.chiusa td input{color:var(--muted)}
 svg.dip{position:absolute;left:0;top:0;pointer-events:none;z-index:1;overflow:visible} /* sotto le barre: non copre le scritte */
-svg.dip path{fill:none;stroke:color-mix(in srgb,var(--fg) 32%,transparent);stroke-width:1.3;stroke-dasharray:4 3}
-svg.dip marker path,svg.dip circle{fill:color-mix(in srgb,var(--fg) 40%,transparent);stroke:none;stroke-dasharray:none}
+svg.dip path.ln{fill:none;stroke:color-mix(in srgb,var(--fg) 32%,transparent);stroke-width:1.3;stroke-dasharray:4 3}
+svg.dip path.hit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke;cursor:help}
+svg.dip marker path,svg.dip circle{fill:color-mix(in srgb,var(--fg) 40%,transparent);stroke:none}
+svg.diph{position:absolute;left:0;top:0;pointer-events:none;z-index:4;overflow:visible} /* linea evidenziata, sopra le attività */
+svg.diph g path{fill:none;stroke:var(--accent);stroke-width:2.2}
+svg.diph marker path,svg.diph circle{fill:var(--accent);stroke:none}
 .row.flash .name,.row.flash .track{animation:flash 1.6s ease}
 @keyframes flash{0%,60%{background-color:color-mix(in srgb,var(--accent) 22%,var(--panel))}}
 .qw{position:relative;display:inline-flex}
@@ -946,10 +950,21 @@ function drawDip(){
     const ra=a[0].getBoundingClientRect(),rz=z[0].getBoundingClientRect();
     const x1=ra.right-ib.left,y1=ra.top+ra.height/2-ib.top,x2=rz.left-ib.left,y2=rz.top+rz.height/2-ib.top;
     const mx=Math.max(x1+8,Math.min(x2-8,x1+14));
-    paths+=`<path d="M${x1} ${y1} H${mx} V${y2} H${x2-1}" /><circle cx="${x1}" cy="${y1}" r="2.2"/>`}
+    const dd=`M${x1} ${y1} H${mx} V${y2} H${x2-1}`;
+    paths+=`<g data-a="${esc(b.dopo)}" data-z="${esc(b.id)}" data-d="${dd}" data-x="${x1}" data-y="${y1}"><path class="ln" d="${dd}" marker-end="url(#dipa)"/><circle cx="${x1}" cy="${y1}" r="2.2"/><path class="hit" d="${dd}"/></g>`}
   if(!paths)return;
-  inner.insertAdjacentHTML("beforeend",`<svg class="dip" width="${inner.scrollWidth}" height="${inner.scrollHeight}" aria-hidden="true"><defs><marker id="dipa" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z"/></marker></defs><g>${paths.replace(/<path /g,'<path marker-end="url(#dipa)" ')}</g></svg>`);
+  const W=inner.scrollWidth,H=inner.scrollHeight;
+  inner.insertAdjacentHTML("beforeend",`<svg class="dip" width="${W}" height="${H}" aria-hidden="true"><defs><marker id="dipa" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z"/></marker></defs>${paths}</svg><svg class="diph" width="${W}" height="${H}" aria-hidden="true"><defs><marker id="diph" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z"/></marker></defs><g></g></svg>`);
 }
+// passando col mouse su una linea (o su un'attività collegata) la linea diventa continua e va in primo piano
+function dipHi(gs){const h=$("#tl svg.diph g");if(!h)return;
+  h.innerHTML=gs.map(g=>`<path d="${g.dataset.d}" marker-end="url(#diph)"/><circle cx="${g.dataset.x}" cy="${g.dataset.y}" r="3"/>`).join("")}
+$("#tl").addEventListener("mouseover",e=>{if(drag)return;
+  const g=e.target.closest&&e.target.closest("svg.dip g[data-d]");if(g){dipHi([g]);const p=S.blocchi.find(x=>x.id===g.dataset.a),z=S.blocchi.find(x=>x.id===g.dataset.z);
+    g.querySelector(".hit").setAttribute("title","");$("#tl").title=p&&z?`«${z.attivita||""}» inizia dopo «${p.attivita||""}» (${codC(p.commessaId)}, ${nomeP(p.personaId)}, fino al ${fmtD(bEnd(p))})`:"";return}
+  const b=e.target.closest&&e.target.closest(".blk");$("#tl").title="";
+  if(b){const id=b.dataset.id;dipHi([...document.querySelectorAll("#tl svg.dip g[data-d]")].filter(x=>x.dataset.a===id||x.dataset.z===id))}else dipHi([])});
+$("#tl").addEventListener("mouseleave",()=>{dipHi([]);$("#tl").title=""});
 
 /* ---------- drag & interactions ---------- */
 let drag=null;
