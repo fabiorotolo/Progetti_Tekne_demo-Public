@@ -600,7 +600,8 @@ function attendeMe(r){if(!S.me||r.stato==="chiusa")return false;
 const reqDiBlocco=id=>S.richieste.filter(r=>r.bloccoId===id);
 const teamsOf=pid=>S.team.filter(t=>(t.membri||[]).includes(pid));
 /* trasparenti le attivita' degli altri: il progettista vede accese le proprie, il capo team quelle dei membri dei suoi team */
-const fadeAttivo=()=>!!S.me&&!!myPersona()&&!S.me.admin&&!canPlan()&&!can("ore_tutte");
+const capoSenzaTeam=()=>!!S.me&&!!myPersona()&&(can("pianifica_team")||S.me.ruolo==="capo_team")&&!S.team.some(t=>t.capo===myPersona()||(t.membri||[]).includes(myPersona()));
+const fadeAttivo=()=>!!S.me&&!!myPersona()&&!S.me.admin&&!canPlan()&&!can("ore_tutte")&&!capoSenzaTeam();
 const fadeAltri=b=>fadeAttivo()&&S.soloMie&&myPersona()!==b.personaId&&!canPlanOn(b.personaId)?" altri":"";
 const canOreOn=b=>!!b&&(canPlanOn(b.personaId)||can("ore_tutte")||(can("ore_proprie")&&myPersona()===b.personaId));
 function roleLabel(){
@@ -758,6 +759,7 @@ function renderPlan(){
   const tl=$("#tl");
   tl.classList.toggle("ro",!canPlanAny());
   $("#hint").textContent=canPlanAny()?"Trascina per spostare (anche su un altro progettista) · tira i bordi per allungare · clic per modificare o dividere · doppio clic su uno spazio vuoto per creare · clic sul numero rosso per ridurre una giornata in sovraccarico":(can("ore_proprie")||can("ore_tutte"))?"Clic su una tua attività per segnarla svolta e inserire le ore effettive":"Vista in sola lettura · clic su un'attività per i dettagli";
+  if(capoSenzaTeam())$("#hint").textContent="Non fai ancora parte di nessun team: vedi tutto acceso. Un amministratore ti assegna il team in “Commesse e persone” → Team.";
   const allLoaded=S.loaded.persone&&S.loaded.commesse&&S.loaded.blocchi;
   if(!S.persone.length){
     tl.innerHTML=`<div class="empty"><strong>${allLoaded?"Nessun progettista":"Caricamento…"}</strong><span>${allLoaded?"Aggiungi i progettisti e le commesse in “Commesse e persone”, poi pianifica qui le attività.":"Sto leggendo commesse, progettisti e attività."}</span>${allLoaded&&canMgmt()?'<button class="btn primary" data-go="mgmt">Vai a Commesse e persone</button>':""}</div>`;
