@@ -818,7 +818,9 @@ function initScope(){
   const valid=x=>solo?x==="r:"+myRepId():(x==="tutti"||(x&&x.startsWith("r:")&&S.reparti.some(r=>"r:"+r.id===x)));
   // il capo di un team misto lavora su più reparti: di base vede "Tutti i reparti"
   const capoMisto=S.team.some(t=>!t.repartoId&&((!!myPersona()&&t.capo===myPersona())||t.capoU===S.me.id));
-  if(!valid(S.scope))S.scope=valid(v)?v:(capoMisto&&valid("tutti")?"tutti":myRepId()?"r:"+myRepId():"tutti");
+  // il responsabile di reparto parte sempre dal reparto che guida
+  const mioR=myReparti()[0];
+  if(!valid(S.scope))S.scope=valid(v)?v:(mioR&&valid("r:"+mioR.id)?"r:"+mioR.id:capoMisto&&valid("tutti")?"tutti":myRepId()?"r:"+myRepId():"tutti");
   if(!S.vista){let vv=null;try{vv=localStorage.getItem("cut-vista-"+S.me.id)}catch(e){}S.vista=vv==="commesse"||vv==="persone"?vv:(can("pm")&&!myPersona()?"commesse":"persone")}
   if(!S.commF)S.commF=S.commesse.some(c=>isPmOf(c.id))?"mie":"tutte";
   const sc=$("#scope");
@@ -840,11 +842,13 @@ const teamsOf=pid=>S.team.filter(t=>(t.membri||[]).includes(pid));
 const capoSenzaTeam=()=>!!S.me&&!S.me.admin&&!canPlan()&&!!myPersona()&&(can("pianifica_team")||S.me.ruolo==="capo_team")&&!S.team.some(t=>t.capo===myPersona()||(t.membri||[]).includes(myPersona()));
 // capo team "esterno": guida dei team senza essere progettista
 const guidaU=()=>!!S.me&&S.team.filter(t=>t.capoU===S.me.id);
-const fadeAttivo=()=>!!S.me&&(!!myPersona()||guidaU().length>0)&&!S.me.admin&&!canPlan()&&!can("ore_tutte")&&!capoSenzaTeam();
+const fadeAttivo=()=>!!S.me&&!S.me.admin&&!canPlan()&&(myReparti().length>0||(!!myPersona()||guidaU().length>0)&&!can("ore_tutte")&&!capoSenzaTeam());
 // in evidenza: le proprie attività e, per il capo team, quelle dei membri dei team che guida (se non ne guida nessuno: dei team di cui fa parte)
-function evidPersone(){const p=myPersona(),set=new Set([p]);const gu=guidaU()||[];for(const t of gu)(t.membri||[]).forEach(x=>set.add(x));if(!p||!can("pianifica_team"))return set;
+function evidPersone(){const p=myPersona(),set=new Set([p]);const gu=guidaU()||[];for(const t of gu)(t.membri||[]).forEach(x=>set.add(x));
+  // il responsabile di reparto ha sempre in evidenza tutte le persone del suo reparto
+  const mr=myReparti().map(r=>r.id);if(mr.length)for(const x of S.persone)if(mr.includes(x.repartoId))set.add(x.id);if(!p||!can("pianifica_team"))return set;
   const guida=S.team.filter(t=>t.capo===p).concat(gu),src=guida.length?guida:S.team.filter(t=>(t.membri||[]).includes(p));for(const t of src)(t.membri||[]).forEach(x=>set.add(x));return set}
-const fadeDisp=()=>!!S.me&&(!!myPersona()||guidaU().length>0); // il pulsante c'è per chiunque sia in timeline
+const fadeDisp=()=>!!S.me&&(!!myPersona()||guidaU().length>0||myReparti().length>0); // il pulsante c'è per chiunque sia in timeline
 const fadeAltri=b=>fadeDisp()&&S.soloMie&&!evidPersone().has(b.personaId)?" altri":"";
 const canOreOn=b=>!!b&&(canPlanOn(b.personaId)||can("ore_tutte")||(can("ore_proprie")&&myPersona()===b.personaId));
 function roleLabel(){
@@ -1029,7 +1033,7 @@ function renderPlan(){
   $("#range").textContent=fmtD(v0)+" – "+fmtD(v1)+" "+dobj(v1).getUTCFullYear();
   document.querySelectorAll("#zoom button").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.z)===dw?"true":"false"));
   $("#new-blk").hidden=!canPlanAny();
-  $("#mie").hidden=!fadeDisp();$("#mie").setAttribute("aria-pressed",S.soloMie?"true":"false");
+  $("#mie").hidden=!fadeDisp();$("#mie").textContent=myReparti().length?"Il mio reparto in evidenza":"Le mie in evidenza";$("#mie").setAttribute("aria-pressed",S.soloMie?"true":"false");
   const tl=$("#tl");
   tl.classList.toggle("ro",!canPlanAny());
   $("#hint").textContent=canPlanAny()?"Trascina per spostare (anche su un altro progettista) · tira i bordi per allungare · clic per modificare o dividere · doppio clic su uno spazio vuoto per creare (su sabato, domenica o festivo: straordinario) · clic sul numero rosso per ridurre una giornata in sovraccarico":(can("ore_proprie")||can("ore_tutte"))?"Clic su una tua attività per segnarla svolta e inserire le ore effettive":"Vista in sola lettura · clic su un'attività per i dettagli";
