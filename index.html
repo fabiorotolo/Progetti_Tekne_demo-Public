@@ -219,8 +219,9 @@ dialog::backdrop{background:rgba(10,20,30,.45)}
 #v-perm td.who .inp,#v-perm td input[data-uf="cognome"]{width:120px}
 #v-perm td input[data-uf="tk"]{width:86px!important}
 #v-perm td input.num{width:52px!important}
-#v-perm .btn.ico{padding:4px 8px;font-size:14px;line-height:1}
-#v-perm .btn.ico.armed{font-size:12px}
+th.rot{height:104px;vertical-align:bottom;white-space:nowrap;padding:0 4px 6px!important;width:30px;min-width:30px;max-width:30px!important;text-align:left;overflow:visible;position:relative}
+th.rot span{display:inline-block;white-space:nowrap;transform:rotate(-60deg);transform-origin:0 100%;margin-left:12px;font-size:11px;line-height:1}
+th.rot.sortable::after{position:absolute;left:6px;bottom:-2px;margin:0}
 .perm .who small{display:block;color:var(--muted);font-size:11.5px}
 .results{display:flex;flex-wrap:wrap;gap:6px}
 .log{display:flex;flex-direction:column}
@@ -1853,7 +1854,7 @@ function renderPerm(){
   el.innerHTML=`<div class="panel perm"><h2>Utenti<small>${adm?"amministratore: tutti i reparti":"responsabile: solo il tuo reparto"}</small></h2>
    <div class="toolbar"><select class="inp" id="u-scope" aria-label="Quali utenti">${repOpts.map(r=>`<option value="r:${esc(r.id)}"${uScope==="r:"+r.id?" selected":""}>Reparto ${esc(r.nome)}</option>`).join("")}${adm?`<option value="pm"${uScope==="pm"?" selected":""}>PM e direzione</option><option value="tutti"${uScope==="tutti"?" selected":""}>Tutti</option>`:""}</select><input class="inp" id="u-q" placeholder="Cerca per nome, TK o ruolo…" value="${esc(S.uFilt||"")}" aria-label="Cerca utenti" style="max-width:280px"><span class="hint">${rows.length} utenti${uq?" trovati in tutti i reparti":""}</span></div>
    ${S.tempPw?`<div class="banner" style="border-color:var(--accent)"><span>Password temporanea per <b>${esc(S.tempPw.nome)}</b> (${esc(S.tempPw.tk)}): <code style="font-family:var(--f-mono);font-size:15px;font-weight:600;user-select:all">${esc(S.tempPw.pw)}</code><br><span class="muted">Comunicala alla persona: al primo accesso dovrà sceglierne una sua.</span></span><span style="display:flex;gap:8px"><button class="btn" id="tp-copy">Copia</button><button class="btn ghost" id="tp-close">Chiudi</button></span></div>`:""}
-   <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Cognome</th><th>TK</th><th>Ruolo</th><th>Reparto</th><th class="n" title="Ore di lavoro al giorno: la capacità in timeline">Ore/g</th>${pList.map(([k,l,s])=>`<th class="c" title="${esc(l)}">${esc(s)}</th>`).join("")}${adm?'<th class="c" title="Tutti i permessi e la gestione di utenti e reparti">Admin</th>':""}<th class="c">Attivo</th><th></th></tr></thead><tbody>
+   <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Cognome</th><th>TK</th><th>Ruolo</th><th>Reparto</th><th class="n" title="Ore di lavoro al giorno: la capacità in timeline">Ore/g</th>${pList.map(([k,l,s])=>`<th class="c rot" title="${esc(l)}"><span>${esc(s)}</span></th>`).join("")}${adm?'<th class="c rot" title="Tutti i permessi e la gestione di utenti e reparti"><span>Admin</span></th>':""}<th class="c rot"><span>Attivo</span></th><th></th></tr></thead><tbody>
    ${rows.map(u=>{const p=u.perms||{};const me=S.me&&u.id===S.me.id;const lock=u.admin&&!adm;return`<tr>
      <td class="who"><input class="inp" id="ut-${esc(u.id)}-nome" data-uf="nome" data-uid="${esc(u.id)}" value="${esc(u.nome)}" aria-label="Nome"${lock?" disabled":""}><small>${esc(lastAcc(u))}</small></td>
      <td><input class="inp" id="ut-${esc(u.id)}-cogn" data-uf="cognome" data-uid="${esc(u.id)}" value="${esc(u.cognome||"")}" placeholder="—" aria-label="Cognome"${lock?" disabled":""}></td>
@@ -1865,7 +1866,7 @@ function renderPerm(){
      ${pList.map(([k,l])=>`<td class="c"><input type="checkbox" id="ut-${esc(u.id)}-${k}" data-upk="${k}" data-uid="${esc(u.id)}"${p[k]||u.admin?" checked":""}${u.admin?" disabled":""} aria-label="${esc(l)}"></td>`).join("")}
      ${adm?`<td class="c"><input type="checkbox" id="ut-${esc(u.id)}-adm" data-uadm="${esc(u.id)}"${u.admin?" checked":""}${me?" disabled":""} aria-label="Amministratore"></td>`:""}
      <td class="c"><input type="checkbox" id="ut-${esc(u.id)}-att" data-uatt="${esc(u.id)}"${u.attivo!==false?" checked":""}${me||lock?" disabled":""} aria-label="Attivo"></td>
-     <td style="white-space:nowrap">${S.noPw||lock?"":`<button class="btn ghost ico" data-ureset="${esc(u.id)}" title="Reimposta password: genera una password temporanea" aria-label="Reimposta la password di ${esc(u.nome)}">🔑</button>`}${me||lock?"":` <button class="btn ghost danger ico" data-udel="${esc(u.id)}" title="Elimina l'utente" aria-label="Elimina ${esc(u.nome)}">✕</button>`}</td></tr>`}).join("")||`<tr><td colspan="12" class="muted">Nessun utente.</td></tr>`}
+     <td style="white-space:nowrap">${S.noPw||lock?"":`<button class="btn" data-ureset="${esc(u.id)}" title="Reimposta password: genera una password temporanea" aria-label="Reimposta la password di ${esc(u.nome)}">Password</button>`}${me||lock?"":` <button class="btn danger" data-udel="${esc(u.id)}" title="Elimina l'utente" aria-label="Elimina ${esc(u.nome)}">Elimina</button>`}</td></tr>`}).join("")||`<tr><td colspan="12" class="muted">Nessun utente.</td></tr>`}
    </tbody></table></div>
    ${uScope==="tutti"?`<div class="hint">Per aggiungere un utente scegli prima un reparto (o "PM e direzione").</div>`:`<form class="addrow" id="add-u">
      <input class="inp" id="nu-nome" placeholder="Nome" aria-label="Nome">
@@ -1915,7 +1916,7 @@ function renderSet(){
    <div class="panel perm"><h2>Ruoli e permessi<small>le spunte che ricevono gli utenti quando scegli il loro ruolo</small></h2>
     <div class="toolbar"><span class="seg" id="set-rep"><button data-r="" aria-pressed="${!rep}">Tutti i reparti</button>${S.reparti.map(r=>`<button data-r="${esc(r.id)}" aria-pressed="${rep===r.id}">${esc(r.nome)}</button>`).join("")}</span>
       <span class="hint">${rep?"Valori specifici del reparto "+esc(repNome)+": dove non personalizzi, valgono quelli di “Tutti i reparti”.":"Valori validi per tutti i reparti, salvo personalizzazioni di reparto."}</span></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Ruolo</th>${D.perms.map(p=>`<th class="c" title="${esc((PERMS.find(x=>x[0]===p.k)||[])[1]||"")}">${esc(p.lab)}</th>`).join("")}<th class="n">Utenti</th><th></th></tr></thead><tbody>
+    <div class="tbl-wrap"><table><thead><tr><th>Ruolo</th>${D.perms.map(p=>`<th class="c rot" title="${esc((PERMS.find(x=>x[0]===p.k)||[])[1]||"")}"><span>${esc(p.lab)}</span></th>`).join("")}<th class="n">Utenti</th><th></th></tr></thead><tbody>
     ${Object.entries(D.ruoli).map(([k,r])=>{const e=eff[k];return`<tr><td>${rep?`<b>${esc(r.lab)}</b>`:`<input class="inp role-name" id="set-${k}-lab" data-sn="${k}" value="${esc(r.lab)}" maxlength="60" aria-label="Nome del ruolo" title="Clicca per rinominare">`}${e.personalizzato?' <span class="pill" title="Modificato rispetto ai valori '+(rep?"generali":"di base")+'">'+(rep?"del reparto":"modificato")+"</span>":""}</td>
       ${D.perms.map(p=>`<td class="c"><input type="checkbox" id="set-${k}-${p.k}" data-sr="${k}" data-sp="${p.k}"${e.perms.includes(p.k)?" checked":""} aria-label="${esc(r.lab)}: ${esc(p.lab)}"></td>`).join("")}
       
