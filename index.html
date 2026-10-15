@@ -211,7 +211,16 @@ dialog::backdrop{background:rgba(10,20,30,.45)}
 
 .perm th.c,.perm td.c{text-align:center}
 .perm input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
-.perm td select.inp{min-width:140px}
+.perm td select.inp{min-width:0;width:auto;max-width:150px}
+/* scheda Utenti compatta: tutto in una schermata senza scorrere di lato */
+#v-perm th{white-space:normal;font-size:10.5px;line-height:1.25;vertical-align:bottom;padding-left:4px;padding-right:4px}
+#v-perm th.c{max-width:68px;padding-left:6px;padding-right:6px}
+#v-perm td{padding-left:4px;padding-right:4px}
+#v-perm td.who .inp,#v-perm td input[data-uf="cognome"]{width:120px}
+#v-perm td input[data-uf="tk"]{width:86px!important}
+#v-perm td input.num{width:52px!important}
+#v-perm .btn.ico{padding:4px 8px;font-size:14px;line-height:1}
+#v-perm .btn.ico.armed{font-size:12px}
 .perm .who small{display:block;color:var(--muted);font-size:11.5px}
 .results{display:flex;flex-wrap:wrap;gap:6px}
 .log{display:flex;flex-direction:column}
@@ -373,7 +382,7 @@ svg.diph marker path,svg.diph circle{fill:var(--accent);stroke:none}
 @media (max-width:900px){#q{width:150px}}
 #v-set #fa-t,#v-set #fa-d,#v-set #fa-a{flex:0 0 auto;width:auto}#v-set #fa-n{flex:1 1 200px}
 .blk .dep{display:inline-flex;align-items:center;gap:1px;flex:none;color:var(--accent);font-size:10px;font-weight:700;background:color-mix(in srgb,var(--panel) 70%,transparent);border-radius:4px;padding:0 3px;line-height:16px;cursor:help}
-th.sortable{cursor:pointer;user-select:none;white-space:nowrap}th.sortable:hover{color:var(--fg)}
+th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--fg)}
 th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortable[aria-sort="descending"]::after{content:" ▼";font-size:9px}
 /* stampa / PDF */
 @media print{
@@ -1848,7 +1857,7 @@ function renderPerm(){
    ${rows.map(u=>{const p=u.perms||{};const me=S.me&&u.id===S.me.id;const lock=u.admin&&!adm;return`<tr>
      <td class="who"><input class="inp" id="ut-${esc(u.id)}-nome" data-uf="nome" data-uid="${esc(u.id)}" value="${esc(u.nome)}" aria-label="Nome"${lock?" disabled":""}><small>${esc(lastAcc(u))}</small></td>
      <td><input class="inp" id="ut-${esc(u.id)}-cogn" data-uf="cognome" data-uid="${esc(u.id)}" value="${esc(u.cognome||"")}" placeholder="—" aria-label="Cognome"${lock?" disabled":""}></td>
-     <td style="width:110px"><input class="inp" style="width:100px" id="ut-${esc(u.id)}-tk" data-uf="tk" data-uid="${esc(u.id)}" value="${esc(u.tk)}" aria-label="TK"${lock?" disabled":""}></td>
+     <td><input class="inp" id="ut-${esc(u.id)}-tk" data-uf="tk" data-uid="${esc(u.id)}" value="${esc(u.tk)}" aria-label="TK"${lock?" disabled":""}></td>
      <td>${u.admin?'<span class="pill">Amministratore</span>':`<select class="inp" id="ut-${esc(u.id)}-ruolo" data-uruolo="${esc(u.id)}" aria-label="Ruolo"><option value="">Personalizzato</option>${ruoliOk.map(([k,l])=>`<option value="${k}"${u.ruolo===k?" selected":""}>${esc(l)}</option>`).join("")}${u.ruolo&&!ruoliOk.some(([k])=>k===u.ruolo)?`<option selected disabled>${esc(S.ruoli[u.ruolo]||u.ruolo)}</option>`:""}</select>`}</td>
      <td>${(()=>{const pp=u.personaId&&persById(u.personaId);const rn=(S.reparti.find(r=>r.id===u.repartoId)||{}).nome||"—";
        return pp&&adm&&!lock?`<select class="inp" data-urep="${esc(pp.id)}" id="ut-${esc(u.id)}-rep" aria-label="Reparto">${S.reparti.map(r=>`<option value="${esc(r.id)}"${r.id===pp.repartoId?" selected":""}>${esc(r.nome)}</option>`).join("")}</select>`:(pp?`<span class="muted">${esc(rn)}</span>`:`<span class="muted" title="PM e direzione seguono gli avanzamenti di tutti i reparti">tutti i reparti</span>`)})()}</td>
@@ -1856,7 +1865,7 @@ function renderPerm(){
      ${pList.map(([k,l])=>`<td class="c"><input type="checkbox" id="ut-${esc(u.id)}-${k}" data-upk="${k}" data-uid="${esc(u.id)}"${p[k]||u.admin?" checked":""}${u.admin?" disabled":""} aria-label="${esc(l)}"></td>`).join("")}
      ${adm?`<td class="c"><input type="checkbox" id="ut-${esc(u.id)}-adm" data-uadm="${esc(u.id)}"${u.admin?" checked":""}${me?" disabled":""} aria-label="Amministratore"></td>`:""}
      <td class="c"><input type="checkbox" id="ut-${esc(u.id)}-att" data-uatt="${esc(u.id)}"${u.attivo!==false?" checked":""}${me||lock?" disabled":""} aria-label="Attivo"></td>
-     <td style="white-space:nowrap">${S.noPw||lock?"":`<button class="btn" data-ureset="${esc(u.id)}">Reimposta password</button>`}${me||lock?"":` <button class="btn danger" data-udel="${esc(u.id)}">Elimina</button>`}</td></tr>`}).join("")||`<tr><td colspan="12" class="muted">Nessun utente.</td></tr>`}
+     <td style="white-space:nowrap">${S.noPw||lock?"":`<button class="btn ghost ico" data-ureset="${esc(u.id)}" title="Reimposta password: genera una password temporanea" aria-label="Reimposta la password di ${esc(u.nome)}">🔑</button>`}${me||lock?"":` <button class="btn ghost danger ico" data-udel="${esc(u.id)}" title="Elimina l'utente" aria-label="Elimina ${esc(u.nome)}">✕</button>`}</td></tr>`}).join("")||`<tr><td colspan="12" class="muted">Nessun utente.</td></tr>`}
    </tbody></table></div>
    ${uScope==="tutti"?`<div class="hint">Per aggiungere un utente scegli prima un reparto (o "PM e direzione").</div>`:`<form class="addrow" id="add-u">
      <input class="inp" id="nu-nome" placeholder="Nome" aria-label="Nome">
