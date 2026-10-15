@@ -2644,6 +2644,7 @@ const LEGGIMI=[["Come usare questo file"],[""],
   ["2. Per aggiungere: scrivi una riga nuova lasciando vuoto l'ID."],
   ["3. Per eliminare (dove c'è la colonna Elimina): scrivi X nella colonna Elimina. Le righe che cancelli dal file NON vengono eliminate."],
   ["4. Requisiti: la colonna N. decide la struttura (1, 1.1, 1.1.2…) e l'ordine delle righe. Per spostare una voce sotto un'altra cambia il suo N. e metti le righe nell'ordine giusto."],
+  ["4b. Requisiti su un'altra commessa (anche senza requisiti): copia il foglio «Requisiti CODICE» e rinominalo con il codice della commessa di destinazione (es. «Requisiti 24-005»). Le righe vengono create come nuove."],
   ["5. Stato dei requisiti: Da fare, Fatto, Bloccato (con il motivo). Date nel formato gg/mm/aaaa."],
   ["6. Salva e reimporta da Progetti Tekne (pulsante Excel → Importa): prima vedi l'elenco delle modifiche, poi confermi. Valgono gli stessi permessi dell'applicazione."],
   ["7. Puoi lasciare solo i fogli che ti servono: quelli che mancano non vengono toccati."]];
@@ -2737,7 +2738,8 @@ function xPiano(fogli){
     const prevCur={};const walk=par=>{let pv="";for(const r of kids(par)){prevCur[r.id]=pv;pv=r.id;walk(r.id)}};walk(null);
     const chiave={},ultimo={};let erroreStruttura=false;
     for(const o of rr){const id=xTxt(xc(o,"id (non modificare)","id")),r=id&&byId[id];const testo=xTxt(xc(o,"requisito"));const n=xTxt(xc(o,"n.","n"));
-      if(id&&!r){err(fn,o._riga,testo,"ID non trovato: il requisito è stato eliminato? Per aggiungerne uno lascia vuoto l'ID.");continue}
+      // ID di un'altra commessa (foglio copiato e rinominato) o di un requisito eliminato: diventa un requisito nuovo
+      const copia=!!id&&!r;
       if(r&&xSi(xc(o,"elimina"))){add(fn,{M:"DELETE",p:"/api/requisiti/"+r.id},o._riga,"elimina",testo||r.testo,all.some(x=>x.parentId===r.id)?"con i suoi sotto-requisiti":"");continue}
       if(!testo){if(!r)continue;err(fn,o._riga,"","Il testo del requisito non può essere vuoto.");continue}
       if(n&&!/^\d+(\.\d+)*$/.test(n)){err(fn,o._riga,testo,"N. non valido: usa 1, 1.2, 1.2.3…");continue}
@@ -2753,7 +2755,7 @@ function xPiano(fogli){
       const statoOp=k=>({M:"PATCH",p:"/api/requisiti/"+k,body:st==="fatto"?{stato:"fatto",nota:"Segnato fatto da Excel"}:st==="bloccato"?{stato:"bloccato",motivo:mot}:{stato:"aperto",nota:"Riaperto da Excel"}});
       if(!r){const k=ref();chiave[n||("__"+k)]="@"+k;ultimo[pk]="@"+k;
         const ps=[{M:"POST",p:"/api/requisiti",body:{commessaId:cid,testo,parentId:par,dopo,assegnati:ass,scadenza:sc},ref:k}];if(st!=="aperto")ps.push(statoOp("@"+k));
-        add(fn,ps,o._riga,"nuovo",(n?n+" ":"")+testo,[ass.length?"a "+ass.map(x=>pn(persById(x))).join(", "):"",sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
+        add(fn,ps,o._riga,"nuovo",(n?n+" ":"")+testo,[copia?((S.requisiti||[]).some(x=>x.id===id)?"copiato da "+codC((S.requisiti||[]).find(x=>x.id===id).commessaId):"ID sconosciuto: aggiunto come nuovo"):"",ass.length?"a "+ass.map(x=>pn(persById(x))).join(", "):"",sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
       if(n)chiave[n]=r.id;ultimo[pk]=r.id;
       const ch={},dif=[],ps=[];
       if(testo!==r.testo){ch.testo=testo;dif.push("testo")}
