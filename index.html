@@ -373,6 +373,8 @@ svg.diph marker path,svg.diph circle{fill:var(--accent);stroke:none}
 @media (max-width:900px){#q{width:150px}}
 #v-set #fa-t,#v-set #fa-d,#v-set #fa-a{flex:0 0 auto;width:auto}#v-set #fa-n{flex:1 1 200px}
 .blk .dep{display:inline-flex;align-items:center;gap:1px;flex:none;color:var(--accent);font-size:10px;font-weight:700;background:color-mix(in srgb,var(--panel) 70%,transparent);border-radius:4px;padding:0 3px;line-height:16px;cursor:help}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}th.sortable:hover{color:var(--fg)}
+th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortable[aria-sort="descending"]::after{content:" ▼";font-size:9px}
 /* stampa / PDF */
 @media print{
   @page{size:A4 landscape;margin:10mm}
@@ -827,6 +829,7 @@ function renderNow(){
   const ex=[...S.persone,...S.commesse,...S.blocchi].some(x=>x.esempio);
   $("#banner").hidden=!(ex&&canMgmt()&&canPlan());
   if(S.tab==="plan")renderPlan();else if(S.tab==="ore")renderOre();else if(S.tab==="req")renderReq();else if(S.tab==="rep")renderRep();else if(S.tab==="mgmt")renderMgmt();else if(S.tab==="reg")renderReg();else if(S.tab==="set")renderSet();else renderPerm();
+  applySorts();
 }
 
 function renderFilter(){
@@ -1566,6 +1569,26 @@ function esportaExcel(){
     {name:"Calendario",rows:fest,widths:[12,34]}]);
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`Progetti_Tekne_${dstr(todayN)}.xlsx`;document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast("File Excel scaricato: lo trovi nella cartella Download.")}
+
+/* ---------- ordinamento delle tabelle: clic sull'intestazione (crescente, decrescente, normale) ---------- */
+S.sorts={};try{S.sorts=JSON.parse(localStorage.getItem("cut-sorts")||"{}")||{}}catch(e){}
+function cellVal(td){if(!td)return"";if(td.dataset.sv!=null)return td.dataset.sv;
+  const i=td.querySelector('input:not([type="checkbox"]):not([type="range"]),select');if(i)return i.tagName==="SELECT"?((i.options[i.selectedIndex]||{}).text||""):i.value;
+  const c=td.querySelector('input[type="checkbox"]');if(c)return c.checked?"1":"0";return td.textContent.trim()}
+function numOf(v){const t=String(v).trim().replace(/\s*(h|%|g|h\/g)$/,"").replace(/\./g,"").replace(",",".");if(!/^[-+]?\d+(\.\d+)?$/.test(t))return null;return Number(t)}
+function cmpVal(a,b){const vuoto=x=>x===""||x==="—"||x==="·";if(vuoto(a)&&vuoto(b))return 0;if(vuoto(a))return 1;if(vuoto(b))return -1;
+  const na=numOf(a),nb=numOf(b);if(na!=null&&nb!=null)return na-nb;return a.localeCompare(b,"it",{numeric:true,sensitivity:"base"})}
+function applySorts(){
+  const sec=document.querySelector("#v-"+S.tab);if(!sec)return;
+  sec.querySelectorAll("table").forEach((tb,ti)=>{const key=S.tab+":"+ti;const head=tb.tHead&&tb.tHead.rows[0];const body=tb.tBodies[0];if(!head||!body)return;
+    const st=S.sorts[key];
+    [...head.cells].forEach((th,ci)=>{if(!th.textContent.trim()||th.dataset.nosort!=null)return;th.classList.add("sortable");th.setAttribute("aria-sort",st&&st.c===ci?(st.d>0?"ascending":"descending"):"none");
+      th.onclick=()=>{const cur=S.sorts[key];S.sorts[key]=!cur||cur.c!==ci?{c:ci,d:1}:cur.d>0?{c:ci,d:-1}:undefined;if(!S.sorts[key])delete S.sorts[key];try{localStorage.setItem("cut-sorts",JSON.stringify(S.sorts))}catch(e){}render()}});
+    if(!st)return;
+    const rows=[...body.rows],fissi=rows.filter(r=>r.classList.contains("tot")||r.cells.length===1),mobili=rows.filter(r=>!fissi.includes(r));
+    mobili.sort((a,b)=>st.d*cmpVal(cellVal(a.cells[st.c]),cellVal(b.cells[st.c])));
+    for(const r of [...mobili,...fissi])body.appendChild(r)});
+}
 
 /* ---------- cartella della commessa ---------- */
 function openFold(cid){const c=commById(cid);if(!c||!c.cartella)return;const p=c.cartella.trim();
