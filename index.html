@@ -317,9 +317,10 @@ a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:cente
 .og{position:relative;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:22px;background:color-mix(in srgb,var(--c) 9%,var(--panel));border:0}
 .og-h{align-self:center;background:var(--c);color:#fff;font-weight:700;border-radius:999px;padding:6px 20px;font-size:14px;text-align:center}
 .og-l1{display:flex;flex-direction:column;gap:8px;align-items:center}.og-l2{display:flex;flex-wrap:wrap;gap:14px 30px;justify-content:center;margin-top:24px}
-.og-l1+.og-k{margin-top:30px}.og-l2+.og-k{margin-top:46px}
+.og-l1+.og-k{margin-top:30px}.og-h+.og-k{margin-top:30px}.og-l2+.og-k{margin-top:46px}
 .og-k{list-style:none;margin:0 0 0 30px;padding:6px 0 0;position:relative;display:flex;flex-direction:column;gap:8px}
 .og-k li{position:relative}
+.og-k .on.capo .oc{background:var(--c);color:#fff;border-color:var(--c)}.og-k .on.capo b{font-weight:800}
 .on{display:flex;align-items:center;gap:9px;--c:#7A8B91}
 .on .ot{display:flex;flex-direction:column;line-height:1.25;min-width:0}.on b{font-size:13.5px}.on i{font-style:normal;font-size:11.5px;color:var(--muted)}
 .oc{flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--c);background:var(--panel);border:4px solid var(--c);box-shadow:0 0 0 2px var(--panel),0 0 0 4px color-mix(in srgb,#7A8B91 60%,transparent);font-size:13px}
@@ -1957,14 +1958,19 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
       ${!l1.length&&!l2.length&&!l3.length?`<span class="muted" style="font-size:12.5px;text-align:center">nessuno</span>`:""}</section>`;
     const capiPm=um.filter(u=>u.capoPm),pms=um.filter(u=>u.pm&&!u.capoPm);
     const rami=[];
-    if(capiPm.length||pms.length)rami.push(ramo("PM","#C2563A",capiPm.map(u=>nodo(u.nome,"Capo PM","#C2563A","big col")),[],pms.map(u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A"))));
+    // un solo capo PM in cima; se sono piu' di uno stanno in testa alla cascata (evidenziati), cosi' le linee non li attraversano
+    const pmN=u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A");
+    if(capiPm.length||pms.length)rami.push(capiPm.length===1?ramo("PM","#C2563A",[nodo(capiPm[0].nome,"Capo PM","#C2563A","big col")],[],pms.map(pmN))
+      :ramo("PM","#C2563A",[],[],[...capiPm.map(u=>nodo(u.nome,"Capo PM","#C2563A","capo")),...pms.map(pmN)]));
     for(const r of reps){const col=colRep(r.id);const respU=r.responsabile&&S.utentiMini.find(u=>u.id===r.responsabile);
       const persone=S.persone.filter(p=>p.repartoId===r.id&&!(respU&&respU.personaId===p.id)).sort((a,b)=>pn(a).localeCompare(pn(b)));
       const uDi=p=>S.utentiMini.find(x=>x.personaId===p.id);
       const ruoloP=p=>{const u=uDi(p);return u&&u.ruolo?u.ruolo:(p.ruolo||"progettista")};
       // capi: chi guida un team del reparto o ha la spunta Pianifica team
       const capo=p=>S.team.some(t=>t.capo===p.id)||!!(uDi(p)&&uDi(p).capoTeam);
-      rami.push(ramo("Reparto "+r.nome,col,respU?[nodo(respU.nome,"Responsabile di reparto",col,"big col")]:[],persone.filter(capo).map(p=>nodo(pn(p),ruoloP(p),col,"col")),persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))))}
+      // fino a 2 capi affiancati sotto il responsabile; se sono di piu' vanno in testa alla cascata (evidenziati)
+      const capi=persone.filter(capo),poche=capi.length<=2&&!!respU;
+      rami.push(ramo("Reparto "+r.nome,col,respU?[nodo(respU.nome,"Responsabile di reparto",col,"big col")]:[],poche?capi.map(p=>nodo(pn(p),ruoloP(p),col,"col")):[],[...(poche?[]:capi.map(p=>nodo(pn(p),ruoloP(p),col,"capo"))),...persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))]))}
     const altri=um.filter(u=>!u.personaId&&!u.pm&&!u.capoPm&&u.ruolo&&!reps.some(r=>r.responsabile===u.id));
     if(altri.length)rami.push(ramo("Direzione e sviluppo","#5B6E76",[],[],altri.map(u=>nodo(u.nome,u.ruolo,"#5B6E76"))));
     corpo=`<svg class="org-svg" aria-hidden="true"></svg><div class="org-top"><div class="org-root">TEKNE</div></div><div class="og-row" style="--n:${rami.length}">${rami.join("")}</div>`;
@@ -2018,7 +2024,8 @@ function orgLinee(){const org=$("#rd .org"),svg=org&&org.querySelector(".org-svg
         const yj=st-20;b2.forEach(b=>{const d=sx>b.cx?1:-1;
           g+=linea(Math.abs(b.cx-sx)<2*rr?`M${b.cx},${b.b+2}V${yj}H${sx}V${st}`:`M${b.cx},${b.b+2}V${yj-rr}Q${b.cx},${yj} ${b.cx+d*rr},${yj}H${sx-d*rr}Q${sx},${yj} ${sx},${yj+rr}V${st}`,c)});
         g+=dot(sx,yj+rr+2,c,false)}
-      else if(a)g+=linea(gomito(a.cx,a.b+2,st-14,sx,st,12),c)}
+      else if(a)g+=linea(gomito(a.cx,a.b+2,st-14,sx,st,12),c);
+      else{const h=R(col.querySelector(".og-h"));g+=linea(gomito(h.cx,h.b+2,Math.max(h.b+14,st-14),sx,st,12),c)}}
   });
   svg.innerHTML=g}
 window.addEventListener("resize",()=>{if(rdlg.open&&ORGV==="gerarchia"&&$("#rd .org-svg"))orgLinee()});
