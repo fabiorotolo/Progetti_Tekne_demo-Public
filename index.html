@@ -675,17 +675,19 @@ const canEditRep=rid=>can("gestione")||myReparti().some(r=>r.id===rid);
 const canUtenti=()=>!!S.me&&(S.isOwner||myReparti().length>0);
 function initScope(){
   if(S.me&&S.mieUser!==S.me.id){S.mieUser=S.me.id;S.soloMie=true;try{S.soloMie=localStorage.getItem("cut-mie-"+S.me.id)!=="0"}catch(e){}}
-  const key="cut-scope-"+(S.me?S.me.id:"");let v=null;try{v=localStorage.getItem(key)}catch(e){}
+  const key="cut-scope2-"+(S.me?S.me.id:"");let v=null;try{v=localStorage.getItem(key)}catch(e){}
   const solo=S.me&&S.me.vede==="proprio"&&myRepId();
   const valid=x=>solo?x==="r:"+myRepId():(x==="tutti"||(x&&x.startsWith("r:")&&S.reparti.some(r=>"r:"+r.id===x)));
-  if(!valid(S.scope))S.scope=valid(v)?v:(myRepId()?"r:"+myRepId():"tutti");
+  // il capo di un team misto lavora su più reparti: di base vede "Tutti i reparti"
+  const capoMisto=!!myPersona()&&S.team.some(t=>!t.repartoId&&t.capo===myPersona());
+  if(!valid(S.scope))S.scope=valid(v)?v:(capoMisto&&valid("tutti")?"tutti":myRepId()?"r:"+myRepId():"tutti");
   if(!S.vista){let vv=null;try{vv=localStorage.getItem("cut-vista-"+S.me.id)}catch(e){}S.vista=vv==="commesse"||vv==="persone"?vv:(can("pm")&&!myPersona()?"commesse":"persone")}
   if(!S.commF)S.commF=S.commesse.some(c=>isPmOf(c.id))?"mie":"tutte";
   const sc=$("#scope");
   sc.innerHTML=S.reparti.filter(r=>!solo||r.id===myRepId()).map(r=>`<option value="r:${esc(r.id)}">Reparto ${esc(r.nome)}</option>`).join("")+(solo?"":'<option value="tutti">Tutti i reparti</option>');
   sc.value=S.scope;sc.hidden=!S.reparti.length;sc.disabled=!!solo;sc.title=solo?"Vedi solo il tuo reparto":"";
 }
-function setScope(v){S.scope=v;try{localStorage.setItem("cut-scope-"+S.me.id,v)}catch(e){}S.teamF="";render()}
+function setScope(v){S.scope=v;try{localStorage.setItem("cut-scope2-"+S.me.id,v)}catch(e){}S.teamF="";render()}
 const gestisceR=r=>!!S.me&&(S.me.admin||can("capo_pm")||isPmOf(r.commessaId));
 const bloccaOra=r=>!!r.bloccante&&r.stato!=="chiusa";
 const giorniBlocco=r=>((r.bloccoMs||0)+(r.bloccoDal?Math.max(0,Date.now()-Date.parse(r.bloccoDal)):0))/DAY;
