@@ -308,7 +308,7 @@ body.locked .wrap{visibility:hidden}
 .rqchip.late,.rqchip.blk{color:var(--over);border-color:color-mix(in srgb,var(--over) 50%,var(--line))}.rqchip b{background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:10px}
 .rt-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rt-sum{display:flex;gap:8px;align-items:center;font-size:14px}
 .rt-list,.rt-mine{display:flex;flex-direction:column;max-height:58vh;overflow:auto;border-top:1px solid var(--line-soft)}
-.rt-row{position:relative;display:grid;grid-template-columns:18px 20px minmax(180px,1fr) 64px minmax(110px,230px) 128px;gap:6px;align-items:center;padding:3px 4px 3px calc(4px + var(--lv)*24px);border-bottom:1px solid var(--line-soft);font-size:14px;min-height:36px}
+.rt-row{position:relative;display:grid;grid-template-columns:30px 20px minmax(180px,1fr) 64px minmax(110px,230px) 128px;gap:6px;align-items:center;padding:3px 4px 3px calc(4px + var(--lv)*24px);border-bottom:1px solid var(--line-soft);font-size:14px;min-height:36px}
 .rt-mine .rt-row{grid-template-columns:0 20px 1fr auto 70px}
 .rt-meta{display:flex;gap:6px;align-items:center;justify-content:flex-end}.rt-new .rt-t{grid-column:3/-1}
 .rt-row:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
@@ -319,6 +319,16 @@ span.rt-t{padding:4px 6px}
 .rt-row.mio:not(.st-fatto){box-shadow:inset 3px 0 0 var(--accent)}
 .rt-row.flash{animation:rtflash 2.2s ease}@keyframes rtflash{0%,40%{background:color-mix(in srgb,var(--warn) 35%,transparent)}100%{background:transparent}}
 .rt-box{width:16px;height:16px;margin:0;cursor:pointer}
+.rt-car{display:flex;align-items:center;gap:0}
+.rt-drag{cursor:grab;color:var(--muted);opacity:.35;font-size:13px;line-height:1;padding:2px 1px;user-select:none;touch-action:none}.rt-row:hover .rt-drag{opacity:1}
+.rt-row.dragging{opacity:.35}
+.rt-ghost{position:fixed;z-index:9999;pointer-events:none;background:var(--panel);border:1px solid var(--accent);border-radius:6px;padding:4px 10px;font-size:13px;box-shadow:var(--shadow);max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt-row.drop-prima{box-shadow:inset 0 3px 0 -1px var(--accent)}
+.rt-row.drop-dopo{box-shadow:inset 0 -3px 0 -1px var(--accent)}
+.rt-row.drop-prima::before,.rt-row.drop-dopo::before{content:"";position:absolute;left:calc(40px + var(--dlv,0)*24px);width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.rt-row.drop-prima::before{top:-4px}.rt-row.drop-dopo::before{bottom:-4px}
+.rt-row.drop-dentro{background:color-mix(in srgb,var(--accent) 14%,transparent);outline:2px dashed var(--accent);outline-offset:-2px}
+.rt-row.drop-no{background:color-mix(in srgb,var(--over) 8%,transparent);cursor:not-allowed}
 .rt-tog{border:0;background:none;cursor:pointer;color:var(--muted);padding:0;font-size:12px;width:18px}
 .rt-prog{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
 .rt-ass{display:flex;gap:4px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
@@ -329,8 +339,8 @@ span.rt-t{padding:4px 6px}
 .rt-mini{border:1px solid transparent;background:none;border-radius:4px;padding:2px 6px;font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap}
 .rt-mini:hover:not(:disabled){border-color:var(--line);color:var(--fg);background:var(--panel)}.rt-mini:disabled{opacity:.35;cursor:default}
 .rt-mini.danger:hover{color:var(--over)}.rt-mini.armed{color:#fff;background:var(--over)}
-.rt-note{padding:0 4px 4px calc(46px + var(--lv)*24px);font-size:12.5px;color:var(--over)}
-.rt-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 8px 8px calc(46px + var(--lv)*24px);background:color-mix(in srgb,var(--accent) 4%,transparent);border-bottom:1px solid var(--line-soft)}
+.rt-note{padding:0 4px 4px calc(58px + var(--lv)*24px);font-size:12.5px;color:var(--over)}
+.rt-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 8px 8px calc(58px + var(--lv)*24px);background:color-mix(in srgb,var(--accent) 4%,transparent);border-bottom:1px solid var(--line-soft)}
 .rt-sub>.inp{flex:1;min-width:220px}
 .rt-pick{align-items:flex-start;gap:18px}.rt-pick>div{display:flex;flex-direction:column;gap:2px;font-size:13px}.rt-pick b{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px}
 .rt-pick-ok{margin-left:auto;align-self:flex-end}
@@ -1365,13 +1375,13 @@ function rtRender(){
     const r=x.r,mio=reqMio(r),okSt=ed||mio,fatti=x.d.filter(y=>y.stato==="fatto").length;
     const cls=`rt-row st-${r.stato}${reqLate(r)?" late":""}${mio?" mio":""}${RT.focus===r.id?" flash":""}`;
     let h=`<div class="${cls}" data-rid="${esc(r.id)}" style="--lv:${x.l}">
-      <span class="rt-car">${x.nk?`<button type="button" class="rt-tog" data-rtog="${esc(r.id)}" aria-label="${RT.chiusi.has(r.id)?"Apri":"Chiudi"}">${RT.chiusi.has(r.id)?"▸":"▾"}</button>`:""}</span>
+      <span class="rt-car">${ed?`<span class="rt-drag" data-rdrag="${esc(r.id)}" title="Trascina per spostare: sopra/sotto una riga = stesso livello, al centro = dentro" aria-hidden="true">⠿</span>`:""}${x.nk?`<button type="button" class="rt-tog" data-rtog="${esc(r.id)}" aria-label="${RT.chiusi.has(r.id)?"Apri":"Chiudi"}">${RT.chiusi.has(r.id)?"▸":"▾"}</button>`:""}</span>
       <input type="checkbox" class="rt-box" data-rdone="${esc(r.id)}"${r.stato==="fatto"?" checked":""}${okSt?"":" disabled"} title="${okSt?"Segna come fatto":"Solo gli assegnati e il PM possono chiuderlo"}" aria-label="Fatto">
       ${ed?`<input class="inp rt-t" data-rtxt="${esc(r.id)}" value="${esc(r.testo)}" maxlength="500" aria-label="Requisito">`:`<span class="rt-t">${esc(r.testo)}</span>`}
       <span class="rt-meta">${x.nk?`<span class="rt-prog" title="Sotto-requisiti fatti">${fatti}/${x.d.length}</span>`:""}${r.stato==="bloccato"?`<span class="pill blocco" title="${esc(r.motivo||"")}">Bloccato</span>`:""}${(r.storia||[]).length?`<button type="button" class="rt-mini" data-rhist="${esc(r.id)}" title="Cronistoria: ${(r.storia||[]).length} eventi"${RT.hist===r.id?' aria-pressed="true"':""}>🕘 ${(r.storia||[]).length}</button>`:""}</span>
       <span class="rt-ass">${(r.assegnati||[]).map(chip).join("")}${ed?`<button type="button" class="rt-mini" data-rass="${esc(r.id)}" title="Assegna a progettisti">${(r.assegnati||[]).length?"✎":"+ Assegna"}</button>`:""}</span>
       ${ed?`<input type="date" class="inp rt-d${reqLate(r)?" late":""}" data-rdate="${esc(r.id)}" value="${esc(r.scadenza||"")}" title="Scadenza" aria-label="Scadenza">`:r.scadenza?`<span class="rt-d${reqLate(r)?" late":""}">${fmtD(dnum(r.scadenza))}</span>`:`<span class="rt-d"></span>`}
-      <span class="rt-act">${ed?`<button type="button" class="rt-mini" data-radd="${esc(r.id)}" title="Aggiungi un sotto-requisito"${x.l>=4?" disabled":""}>+ sotto</button><button type="button" class="rt-mini" data-rin="${esc(r.id)}" title="Sposta dentro la voce sopra (Tab)">⇥</button><button type="button" class="rt-mini" data-rout="${esc(r.id)}" title="Sposta fuori di un livello (Maiusc+Tab)"${x.l?"":" disabled"}>⇤</button><button type="button" class="rt-mini" data-rup="${esc(r.id)}" title="Su">↑</button><button type="button" class="rt-mini" data-rdn="${esc(r.id)}" title="Giù">↓</button>`:""}${okSt&&r.stato!=="fatto"?`<button type="button" class="rt-mini" data-rblk="${esc(r.id)}" title="${r.stato==="bloccato"?"Sblocca":"Segna come bloccato (con il motivo)"}">${r.stato==="bloccato"?"Sblocca":"Blocca"}</button>`:""}${ed?`<button type="button" class="rt-mini danger" data-rdel="${esc(r.id)}" title="Elimina${x.nk?" con i sotto-requisiti":""}">✕</button>`:""}</span>
+      <span class="rt-act">${ed?`<button type="button" class="rt-mini" data-radd="${esc(r.id)}" title="Aggiungi un sotto-requisito"${x.l>=4?" disabled":""}>+ sotto</button>`:""}${okSt&&r.stato!=="fatto"?`<button type="button" class="rt-mini" data-rblk="${esc(r.id)}" title="${r.stato==="bloccato"?"Sblocca":"Segna come bloccato (con il motivo)"}">${r.stato==="bloccato"?"Sblocca":"Blocca"}</button>`:""}${ed?`<button type="button" class="rt-mini danger" data-rdel="${esc(r.id)}" title="Elimina${x.nk?" con i sotto-requisiti":""}">✕</button>`:""}</span>
     </div>`;
     if(r.stato==="bloccato"&&r.motivo)h+=`<div class="rt-note" style="--lv:${x.l}">⛔ ${esc(r.motivo)}</div>`;
     if(r.stato==="fatto"&&r.chiusoIl)h+=`<div class="rt-note ok" style="--lv:${x.l}">✓ Fatto il ${fmtD(dnum(String(r.chiusoIl).slice(0,10)))}${r.chiusoDa?" da "+esc(userName(r.chiusoDa)):""}${r.notaFatto?` — <span class="rt-nf">${esc(r.notaFatto)}</span>`:""}</div>`;
@@ -1392,7 +1402,7 @@ function rtRender(){
     <div class="rt-list">${rows.map(row).join("")||(st.n?`<p class="muted" style="margin:6px 0">Nessun requisito con questo filtro.</p>`:"")}</div>
     ${ed?`<div class="rt-add"><input class="inp" id="rt-root" placeholder="+ Aggiungi un requisito (Invio)" maxlength="500"><button type="button" class="btn primary" id="rt-root-ok">Aggiungi</button>
       ${altre.length?`<span class="grow"></span><select class="inp" id="rt-copy-da" style="width:auto"><option value="">Copia la lista da…</option>${altre.map(x=>`<option value="${esc(x.id)}">${esc(x.codice)} · ${esc(x.nome)} (${reqOf(x.id).length})</option>`).join("")}</select><button type="button" class="btn" id="rt-copy">Copia</button>`:""}</div>`:""}
-    <p class="muted" style="margin:0;font-size:12.5px">${ed?"Invio = nuova voce sotto · Tab = dentro la voce sopra · Maiusc+Tab = fuori di un livello. Chi viene assegnato riceve la notifica; quando lo chiude o lo blocca, la notifica arriva al PM.":"Spunta i requisiti assegnati a te quando sono fatti: il PM riceve la notifica."}</p>`;
+    <p class="muted" style="margin:0;font-size:12.5px">${ed?"Trascina ⠿ per spostare: sopra o sotto una riga = stesso livello, al centro della riga = dentro come sotto-requisito. Invio = nuova voce · Tab / Maiusc+Tab = dentro / fuori di un livello · Alt+↑↓ = sposta. Chi viene assegnato riceve la notifica; quando lo chiude o lo blocca, la notifica arriva al PM.":"Spunta i requisiti assegnati a te quando sono fatti: il PM riceve la notifica."}</p>`;
   const R$=sel=>$("#rd").querySelectorAll(sel);
   const f=$("#rt-f");if(f)f.onclick=e=>{const b=e.target.closest("button");if(!b)return;RT.filt=b.dataset.k;rtRender()};
   R$("[data-rtog]").forEach(b=>b.onclick=()=>{const id=b.dataset.rtog;RT.chiusi.has(id)?RT.chiusi.delete(id):RT.chiusi.add(id);rtRender()});
@@ -1404,7 +1414,39 @@ function rtRender(){
   R$("[data-rtxt]").forEach(i=>{const r=byId[i.dataset.rtxt];
     i.onchange=()=>{const t=i.value.trim();if(!t){i.value=r.testo;toast("Il requisito non può essere vuoto: per toglierlo usa ✕.");return}if(t!==r.testo)rtApi("PATCH","/api/requisiti/"+r.id,{testo:t})};
     i.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();i.onchange=null;const t=i.value.trim();const go=()=>{RT.nuovo={parentId:r.parentId||null,dopo:r.id};rtRender();const n=$("#rt-nuovo");if(n)n.focus()};if(t&&t!==r.testo)rtApi("PATCH","/api/requisiti/"+r.id,{testo:t}).then(go);else go()}
-      else if(e.key==="Tab"){e.preventDefault();e.shiftKey?outdent(r):indent(r)}}});
+      else if(e.key==="Tab"){e.preventDefault();e.shiftKey?outdent(r):indent(r)}
+      else if(e.altKey&&(e.key==="ArrowUp"||e.key==="ArrowDown")){e.preventDefault();rtApi("PATCH","/api/requisiti/"+r.id,{sposta:e.key==="ArrowUp"?-1:1})}}});
+  // trascina la riga: sopra o sotto un'altra = stesso livello di quella, al centro = dentro (sotto-requisito)
+  R$("[data-rdrag]").forEach(h=>h.onpointerdown=ev=>{if(ev.button!==0)return;ev.preventDefault();
+    const id=h.dataset.rdrag,src=h.closest(".rt-row"),list=$("#rd .rt-list");const sub=new Set([id,...desc(id).map(y=>y.id)]);
+    const altezza=k=>{const f=kids(k);return f.length?1+Math.max(...f.map(y=>altezza(y.id))):0};const hh=altezza(id);
+    let tgt=null,zona=null,ok=false,ghost=null,moved=false,timer=null;
+    const pulisci=()=>{$("#rd").querySelectorAll(".drop-prima,.drop-dopo,.drop-dentro,.drop-no").forEach(x=>x.classList.remove("drop-prima","drop-dopo","drop-dentro","drop-no"))};
+    const move=e=>{
+      if(!moved){if(Math.abs(e.clientY-ev.clientY)<4&&Math.abs(e.clientX-ev.clientX)<4)return;moved=true;src.classList.add("dragging");
+        ghost=document.createElement("div");ghost.className="rt-ghost";ghost.textContent=byId[id].testo;document.body.appendChild(ghost)}
+      ghost.style.left=(e.clientX+14)+"px";ghost.style.top=(e.clientY+6)+"px";
+      // scorrimento automatico vicino ai bordi della lista
+      const lr=list.getBoundingClientRect();clearInterval(timer);
+      if(e.clientY<lr.top+30)timer=setInterval(()=>list.scrollTop-=12,30);else if(e.clientY>lr.bottom-30)timer=setInterval(()=>list.scrollTop+=12,30);
+      pulisci();const el=document.elementFromPoint(e.clientX,e.clientY);const row=el&&el.closest&&el.closest("#rd .rt-row[data-rid]");tgt=null;
+      if(!row){ok=false;return}
+      const t=byId[row.dataset.rid];const rc=row.getBoundingClientRect(),y=(e.clientY-rc.top)/rc.height;
+      zona=y<.28?"prima":y>.72?"dopo":"dentro";tgt=t;
+      const lvT=lv(t.id),nuovoLv=zona==="dentro"?lvT+1:lvT;
+      ok=!sub.has(t.id)&&nuovoLv+hh<=4;
+      row.classList.add(ok?"drop-"+zona:"drop-no");
+      if(ok&&zona==="dentro")row.style.setProperty("--dlv",lvT+1);else row.style.setProperty("--dlv",lvT)};
+    const up=()=>{document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",up);clearInterval(timer);
+      pulisci();src.classList.remove("dragging");if(ghost)ghost.remove();
+      if(!moved||!tgt||!ok)return;
+      let body;
+      if(zona==="dentro"){body={parentId:tgt.id,dopo:null};RT.chiusi.delete(tgt.id)}
+      else if(zona==="dopo")body={parentId:tgt.parentId||null,dopo:tgt.id};
+      else{const fr=kids(tgt.parentId||null).filter(y=>y.id!==id);const i=fr.findIndex(y=>y.id===tgt.id);body={parentId:tgt.parentId||null,dopo:i>0?fr[i-1].id:""}}
+      if(body.parentId===(byId[id].parentId||null)&&body.dopo===id)return;
+      rtApi("PATCH","/api/requisiti/"+id,body)};
+    document.addEventListener("pointermove",move);document.addEventListener("pointerup",up)});
   const nu=$("#rt-nuovo");if(nu){nu.onkeydown=e=>{
       if(e.key==="Escape"){e.preventDefault();e.stopPropagation();RT.nuovo=null;rtRender();return}
       if(e.key==="Tab"&&!e.shiftKey){e.preventDefault();const N=RT.nuovo;if(N.dopo&&byId[N.dopo]){const prev=byId[N.dopo];const ks=kids(prev.id);RT.nuovo={parentId:prev.id,dopo:ks.length?ks[ks.length-1].id:null,inFondo:true};RT.chiusi.delete(prev.id);const v=nu.value;rtRender();const n2=$("#rt-nuovo");if(n2){n2.value=v;n2.focus()}}return}
@@ -1413,10 +1455,6 @@ function rtRender(){
         rtApi("POST","/api/requisiti",{commessaId:cid,parentId:N.parentId,dopo:N.inFondo?null:N.dopo,testo:t}).then(j=>{if(!j||!RT)return;RT.nuovo={parentId:N.parentId,dopo:j.id};rtRender();const n2=$("#rt-nuovo");if(n2)n2.focus()})}};
     nu.onblur=()=>setTimeout(()=>{if(RT&&RT.nuovo&&document.activeElement!==$("#rt-nuovo")&&!$("#rt-nuovo").value.trim()){RT.nuovo=null;rtRender()}},150)}
   R$("[data-radd]").forEach(b=>b.onclick=()=>{const r=byId[b.dataset.radd];const ks=kids(r.id);RT.chiusi.delete(r.id);RT.nuovo={parentId:r.id,dopo:ks.length?ks[ks.length-1].id:null,inFondo:true};rtRender();const n=$("#rt-nuovo");if(n)n.focus()});
-  R$("[data-rin]").forEach(b=>b.onclick=()=>indent(byId[b.dataset.rin]));
-  R$("[data-rout]").forEach(b=>b.onclick=()=>outdent(byId[b.dataset.rout]));
-  R$("[data-rup]").forEach(b=>b.onclick=()=>rtApi("PATCH","/api/requisiti/"+b.dataset.rup,{sposta:-1}));
-  R$("[data-rdn]").forEach(b=>b.onclick=()=>rtApi("PATCH","/api/requisiti/"+b.dataset.rdn,{sposta:1}));
   R$("[data-rdate]").forEach(i=>i.onchange=()=>rtApi("PATCH","/api/requisiti/"+i.dataset.rdate,{scadenza:i.value||null}));
   R$("[data-rdel]").forEach(b=>b.onclick=()=>arm(b,"Elimina?",()=>rtApi("DELETE","/api/requisiti/"+b.dataset.rdel)));
   R$("[data-rblk]").forEach(b=>b.onclick=()=>{const r=byId[b.dataset.rblk];if(r.stato==="bloccato"){rtApi("PATCH","/api/requisiti/"+r.id,{stato:"aperto"});return}RT.blk=r.id;RT.ass=null;rtRender();const m=$("#rt-mot");if(m)m.focus()});
