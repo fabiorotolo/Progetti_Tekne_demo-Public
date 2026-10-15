@@ -310,14 +310,15 @@ a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:cente
 .org{display:flex;flex-direction:column;gap:18px;overflow-x:auto;padding-bottom:6px}
 .org-top{display:flex;justify-content:center}
 .org-root{font-family:var(--f-disp);font-size:24px;font-weight:700;letter-spacing:.12em;padding:10px 46px;border-radius:999px;border:5px solid #2A87B8;box-shadow:0 0 0 4px var(--panel),0 0 0 6px #7A8B91;color:var(--fg)}
-.og-row{display:grid;grid-template-columns:repeat(var(--n),minmax(230px,1fr));gap:16px;position:relative;padding-top:26px}
-.og-row::before{content:"";position:absolute;top:0;left:calc(100%/(2*var(--n)));right:calc(100%/(2*var(--n)));height:12px;border:3px solid #7A8B91;border-bottom:0;border-radius:12px 12px 0 0}
-.og{position:relative;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:18px;background:color-mix(in srgb,var(--c) 8%,var(--panel));border:2px solid color-mix(in srgb,var(--c) 45%,transparent)}
-.og::before{content:"";position:absolute;top:-17px;left:50%;width:10px;height:10px;margin-left:-6px;border-radius:50%;border:3px solid #7A8B91;background:var(--panel)}
+.org{position:relative}.org-svg{position:absolute;left:0;top:0;pointer-events:none;z-index:2;overflow:visible}.org>*:not(.org-svg){position:relative;z-index:1}
+.og-row{display:grid;grid-template-columns:repeat(var(--n),minmax(230px,1fr));gap:22px;position:relative;padding-top:58px}
+.og{position:relative;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:22px;background:color-mix(in srgb,var(--c) 9%,var(--panel));border:0}
 .og-h{align-self:center;background:var(--c);color:#fff;font-weight:700;border-radius:999px;padding:6px 20px;font-size:14px;text-align:center}
-.og-capi{display:flex;flex-direction:column;gap:8px;align-items:center}
+.og-l1{display:flex;flex-direction:column;gap:8px;align-items:center}.og-l2{display:flex;flex-wrap:wrap;gap:14px 30px;justify-content:center;margin-top:24px}
+.og-l1+.og-k,.og-l2+.og-k{margin-top:30px}
 .og-k{list-style:none;margin:0 0 0 30px;padding:6px 0 0;position:relative;display:flex;flex-direction:column;gap:8px}
-.og-k::before{content:"";position:absolute;left:-14px;top:-6px;bottom:20px;border-left:3px solid var(--c)}
+.og-k::before{content:"";position:absolute;left:-14px;top:-2px;bottom:20px;border-left:3px solid var(--c)}
+.og-k li:last-child::after{content:"";position:absolute;left:-17px;top:20px;bottom:-4px;width:6px;background:color-mix(in srgb,var(--c) 9%,var(--panel))}
 .og-k li{position:relative}.og-k li::before{content:"";position:absolute;left:-14px;top:20px;width:14px;border-top:3px solid var(--c)}
 .on{display:flex;align-items:center;gap:9px;--c:#7A8B91}
 .on .ot{display:flex;flex-direction:column;line-height:1.25;min-width:0}.on b{font-size:13.5px}.on i{font-style:normal;font-size:11.5px;color:var(--muted)}
@@ -1657,19 +1658,25 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
   let corpo="";
   if(ORGV==="gerarchia"){
     // un ramo: capo in alto, sotto a cascata tutte le persone
-    const ramo=(titolo,col,capi,figli)=>`<section class="og" style="--c:${col}"><div class="og-h">${esc(titolo)}</div>
-      <div class="og-capi">${capi.length?capi.join(""):`<span class="muted" style="font-size:12.5px">nessun responsabile</span>`}</div>
-      ${figli.length?`<ul class="og-k">${figli.map(f=>`<li>${f}</li>`).join("")}</ul>`:""}</section>`;
+    // un ramo: in cima il responsabile (l1), poi i capi affiancati (l2: la linea si sdoppia), poi tutti gli altri a cascata (l3: la linea si ricongiunge)
+    const ramo=(titolo,col,l1,l2,l3)=>`<section class="og" style="--c:${col}" data-col="${col}"><div class="og-h">${esc(titolo)}</div>
+      ${l1.length?`<div class="og-l1">${l1.join("")}</div>`:""}
+      ${l2.length?`<div class="og-l2">${l2.join("")}</div>`:""}
+      ${l3.length?`<ul class="og-k">${l3.map(f=>`<li>${f}</li>`).join("")}</ul>`:""}
+      ${!l1.length&&!l2.length&&!l3.length?`<span class="muted" style="font-size:12.5px;text-align:center">nessuno</span>`:""}</section>`;
     const capiPm=um.filter(u=>u.capoPm),pms=um.filter(u=>u.pm&&!u.capoPm);
     const rami=[];
-    if(capiPm.length||pms.length)rami.push(ramo("PM","#C2563A",capiPm.map(u=>nodo(u.nome,"Capo PM","#C2563A","big")),pms.map(u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A"))));
+    if(capiPm.length||pms.length)rami.push(ramo("PM","#C2563A",capiPm.map(u=>nodo(u.nome,"Capo PM","#C2563A","big col")),[],pms.map(u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A"))));
     for(const r of reps){const col=colRep(r.id);const respU=r.responsabile&&S.utentiMini.find(u=>u.id===r.responsabile);
       const persone=S.persone.filter(p=>p.repartoId===r.id&&!(respU&&respU.personaId===p.id)).sort((a,b)=>pn(a).localeCompare(pn(b)));
-      const ruoloP=p=>{const u=S.utentiMini.find(x=>x.personaId===p.id);return u&&u.ruolo?u.ruolo:(p.ruolo||"progettista")};
-      rami.push(ramo("Reparto "+r.nome,col,respU?[nodo(respU.nome,"Responsabile di reparto",col,"big")]:[],persone.map(p=>nodo(pn(p),ruoloP(p),col))))}
+      const uDi=p=>S.utentiMini.find(x=>x.personaId===p.id);
+      const ruoloP=p=>{const u=uDi(p);return u&&u.ruolo?u.ruolo:(p.ruolo||"progettista")};
+      // capi: chi guida un team del reparto o ha la spunta Pianifica team
+      const capo=p=>S.team.some(t=>t.capo===p.id)||!!(uDi(p)&&uDi(p).capoTeam);
+      rami.push(ramo("Reparto "+r.nome,col,respU?[nodo(respU.nome,"Responsabile di reparto",col,"big col")]:[],persone.filter(capo).map(p=>nodo(pn(p),ruoloP(p),col,"col")),persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))))}
     const altri=um.filter(u=>!u.personaId&&!u.pm&&!u.capoPm&&u.ruolo&&!reps.some(r=>r.responsabile===u.id));
-    if(altri.length)rami.push(ramo("Direzione e sviluppo","#5B6E76",[],altri.map(u=>nodo(u.nome,u.ruolo,"#5B6E76"))));
-    corpo=`<div class="org-top"><div class="org-root">TEKNE</div></div><div class="og-row" style="--n:${rami.length}">${rami.join("")}</div>`;
+    if(altri.length)rami.push(ramo("Direzione e sviluppo","#5B6E76",[],[],altri.map(u=>nodo(u.nome,u.ruolo,"#5B6E76"))));
+    corpo=`<svg class="org-svg" aria-hidden="true"></svg><div class="org-top"><div class="org-root">TEKNE</div></div><div class="og-row" style="--n:${rami.length}">${rami.join("")}</div>`;
   }else{
     // ogni team e' un cerchio: capo al centro, membri tutt'attorno
     const cerchio=t=>{const col=t.repartoId?colRep(t.repartoId):"#5B6E76";const capoN=t.capoU?userName(t.capoU):t.capo?nomeP(t.capo):null;
@@ -1687,7 +1694,34 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
   }
   $("#rd").innerHTML=`<div class="org-bar"><h3 style="margin:0">Organigramma</h3><span class="seg" id="org-v">${[["gerarchia","Gerarchia"],["team","Team"]].map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${ORGV===k}">${l}</button>`).join("")}</span></div><div class="org">${corpo}</div>`;
   $("#org-v").onclick=e=>{const b=e.target.closest("button");if(b)openOrg(b.dataset.k)};
-  showRdlg()}
+  showRdlg();if(ORGV==="gerarchia")requestAnimationFrame(()=>requestAnimationFrame(orgLinee))}
+/* linee dell'organigramma (SVG sopra la pagina): dalla radice a ogni riquadro, dal responsabile ai capi, dai capi agli altri */
+function orgLinee(){const org=$("#rd .org"),svg=org&&org.querySelector(".org-svg");if(!svg)return;
+  const O=org.getBoundingClientRect(),W=org.scrollWidth,H=org.scrollHeight;svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const R=el=>{const r=el.getBoundingClientRect();return{l:r.left-O.left+org.scrollLeft,t:r.top-O.top+org.scrollTop,w:r.width,h:r.height,cx:r.left-O.left+org.scrollLeft+r.width/2,b:r.top-O.top+org.scrollTop+r.height}};
+  // percorso a gomito con angoli arrotondati: giu' da (x0,y0) fino a yH, orizzontale fino a x1, giu' fino a y1
+  const gomito=(x0,y0,yH,x1,y1,r=14)=>{if(Math.abs(x1-x0)<1)return`M${x0},${y0}V${y1}`;const d=x1>x0?1:-1,rr=Math.min(r,Math.abs(x1-x0)/2,Math.abs(yH-y0),Math.abs(y1-yH));
+    return`M${x0},${y0}V${yH-rr}Q${x0},${yH} ${x0+d*rr},${yH}H${x1-d*rr}Q${x1},${yH} ${x1},${yH+rr}V${y1}`};
+  // come sopra ma risale (dal basso del capo al punto di ricongiunzione)
+  const linea=(d,c,w=3)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const dot=(x,y,c,f)=>`<circle cx="${x}" cy="${y}" r="5" fill="${f?c:"var(--panel)"}" stroke="${c}" stroke-width="3"/>`;
+  let g="";const root=R(org.querySelector(".org-root"));const cols=[...org.querySelectorAll(".og")];const n=cols.length;
+  cols.forEach((col,i)=>{const c=col.dataset.col,k=R(col);const off=(i-(n-1)/2)*16,x0=root.cx+off,y0=root.b+2;
+    const dist=Math.abs(i-(n-1)/2),yH=root.b+16+((n-1)/2-dist)*9+10;
+    g+=linea(gomito(x0,y0+6,yH,k.cx,k.t-14),c)+dot(x0,y0+6,c,true);
+    // "cappello" sopra il riquadro, come nell'infografica
+    g+=linea(`M${k.l+4},${k.t+22}Q${k.l+4},${k.t-8} ${k.l+34},${k.t-8}H${k.l+k.w-34}Q${k.l+k.w-4},${k.t-8} ${k.l+k.w-4},${k.t+22}`,c,3);
+    const l1=col.querySelector(".og-l1 .on"),l2n=[...col.querySelectorAll(".og-l2 .on")],ul=col.querySelector(".og-k");
+    const spine=ul?R(ul):null,sx=spine?spine.l-14:null,st=spine?spine.t-2:null;
+    if(l1){const a=R(l1);a.cx=R(l1.querySelector(".oc")).cx;
+      if(l2n.length){// la linea parte sotto il nome del responsabile, arriva sopra il cerchio di ogni capo, riparte sotto il suo nome
+        const b2=l2n.map(nd=>{const o=R(nd.querySelector(".oc")),t=R(nd);return{cx:o.cx,t:o.t,b:t.b}});const ys=Math.min(...b2.map(b=>b.t))-12;b2.forEach(b=>{g+=linea(gomito(a.cx,a.b+2,ys,b.cx,b.t-2,12),c)});
+        if(spine){const yj=Math.max(...b2.map(b=>b.b))+40;b2.forEach(b=>{g+=linea(`M${b.cx},${b.b+2}V${yj-12}`+(Math.abs(b.cx-sx)<1?`V${st}`:`Q${b.cx},${yj} ${b.cx+(sx>b.cx?12:-12)},${yj}H${sx+(sx>b.cx?-12:12)}Q${sx},${yj} ${sx},${yj+12}V${st}`),c)});g+=dot(sx,yj+12,c,false)}}
+      else if(spine)g+=linea(gomito(a.cx,a.b+2,st-14,sx,st,12),c)}
+    else if(l2.length&&spine){/* capi senza responsabile */}
+  });
+  svg.innerHTML=g}
+window.addEventListener("resize",()=>{if(rdlg.open&&ORGV==="gerarchia"&&$("#rd .org-svg"))orgLinee()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-org]");if(b){e.preventDefault();openOrg()}});
 const STORIA_LAB={fatto:"Fatto",riaperto:"Riaperto",bloccato:"Bloccato",sbloccato:"Sbloccato",allegato:"Documenti"};
 /* finestra di conferma: fatto (data, chi, nota) o riapertura (nota); tutto resta nella cronistoria */
