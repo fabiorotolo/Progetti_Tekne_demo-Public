@@ -53,6 +53,8 @@ nav.tabs button:focus-visible,.btn:focus-visible,.blk:focus-visible{outline:2px 
 
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .toolbar .grow{flex:1 1 auto}
+.per-da{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--muted)}.per-da label{display:inline-flex;gap:5px;align-items:center}.per-da .inp{width:auto;padding:4px 6px}.per-da.on .inp{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+#per-p,#per-n{padding:6px 9px}
 .range{font-family:var(--f-mono);font-size:12.5px;font-variant-numeric:tabular-nums;padding:0 6px;white-space:nowrap}
 .btn{border:1px solid var(--line);background:var(--panel);padding:6px 11px;border-radius:6px;cursor:pointer;font-weight:500;line-height:1.2;white-space:nowrap}
 .btn:hover{border-color:var(--muted)}
@@ -1694,8 +1696,10 @@ window.addEventListener("afterprint",()=>document.documentElement.style.removePr
 /* ---------- report ---------- */
 function periodRange(){
   if(S.period==="vista")return[S.view0,S.view0+daysInView()-1];
-  if(S.period==="mese"){const d=dobj(todayN);const a=Math.round(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1)/DAY);const z=Math.round(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)/DAY);return[a,z]}
-  if(S.period==="sett")return[mondayOf(todayN),mondayOf(todayN)+6];
+  const off=S.perOff||0;
+  if(S.period==="mese"){const d=dobj(todayN);const a=Math.round(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+off,1)/DAY);const z=Math.round(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+off+1,0)/DAY);return[a,z]}
+  if(S.period==="sett")return[mondayOf(todayN)+7*off,mondayOf(todayN)+7*off+6];
+  if(S.period==="libero"&&S.perDa!=null&&S.perA!=null)return[Math.min(S.perDa,S.perA),Math.max(S.perDa,S.perA)];
   const all=S.blocchi;if(!all.length)return[todayN,todayN];
   return[Math.min(...all.map(bStart)),Math.max(...all.map(bEnd))];
 }
@@ -1742,7 +1746,10 @@ function reqPanel(){
 function renderRep(){
   const el=$("#v-rep");
   const [r0,r1]=periodRange();
-  const lbl={sett:"Settimana corrente",mese:"Mese corrente",vista:"Periodo visibile nella timeline",tutto:"Tutte le attività"}[S.period]+" · "+scopeNome();
+  const MESI=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+  const off=S.perOff||0,yy=n=>dobj(n).getUTCFullYear();
+  const lbl=(S.period==="sett"?(off?`Settimana ${fmtD(r0)} – ${fmtD(r1)} ${yy(r1)}`:"Settimana corrente"):S.period==="mese"?(off?`${MESI[dobj(r0).getUTCMonth()]} ${yy(r0)}`:"Mese corrente"):S.period==="libero"?`Dal ${fmtD(r0)} ${yy(r0)} al ${fmtD(r1)} ${yy(r1)}`:{vista:"Periodo visibile nella timeline",tutto:"Tutte le attività"}[S.period])+" · "+scopeNome();
+  const nav=S.period==="sett"||S.period==="mese"||S.period==="libero";
   let totPl=0,totSv=0;
   const bS=S.blocchi.filter(b=>inScope(persById(b.personaId)));
   const perC=S.commesse.filter(c=>S.repChiuse||!c.chiusa).map(c=>{let pl=0,sv=0,plAll=0,svAll=0;for(const b of bS)if(b.commessaId===c.id){pl+=clipOre(b,r0,r1,"pl");sv+=clipOre(b,r0,r1,"sv");plAll+=bOre(b);svAll+=bSvolte(b)}totPl+=pl;totSv+=sv;return{c,pl,sv,plAll,svAll}});
@@ -1758,7 +1765,10 @@ function renderRep(){
   const usedC=S.commesse.filter(c=>perP.some(x=>x.byC[c.id]>0));
   const prog=(c)=>{const bud=Number(c.c.oreBudget)||0;if(!bud)return'<span class="muted">—</span>';const p1=Math.min(c.plAll/bud,1)*100,p2=Math.min(c.svAll/bud,1)*100;return`<div class="prog" title="Svolte ${fmtH(c.svAll)} h · pianificate ${fmtH(c.plAll)} h · budget ${fmtH(bud)} h"><i class="${c.plAll>bud?"ov":"pl"}" style="width:${p1}%"></i><i class="sv" style="width:${p2}%"></i></div>`};
   el.innerHTML=`
-  <div class="toolbar" style="margin-bottom:12px"><span class="seg" id="per">${[["sett","Settimana"],["mese","Mese"],["vista","Periodo visibile"],["tutto","Tutto"]].map(([k,l])=>`<button data-k="${k}" aria-pressed="${S.period===k}">${l}</button>`).join("")}</span><span class="range">${fmtD(r0)} ${dobj(r0).getUTCFullYear()} – ${fmtD(r1)} ${dobj(r1).getUTCFullYear()}</span>
+  <div class="toolbar" style="margin-bottom:12px"><span class="seg" id="per">${[["sett","Settimana"],["mese","Mese"],["vista","Periodo visibile"],["tutto","Tutto"]].map(([k,l])=>`<button data-k="${k}" aria-pressed="${S.period===k}">${l}</button>`).join("")}</span>
+    <button class="btn" id="per-p" title="Periodo precedente" aria-label="Periodo precedente"${nav?"":" disabled"}>◀</button><button class="btn" id="per-n" title="Periodo successivo" aria-label="Periodo successivo"${nav?"":" disabled"}>▶</button>
+    <span class="per-da${S.period==="libero"?" on":""}"><label>Da <input class="inp" type="date" id="per-da" value="${dstr(r0)}"></label><label>a <input class="inp" type="date" id="per-a" value="${dstr(r1)}"></label></span>
+    <span class="range">${S.period==="mese"?MESI[dobj(r0).getUTCMonth()]+" "+yy(r0):`${fmtD(r0)} ${yy(r0)} – ${fmtD(r1)} ${yy(r1)}`} · ${workDays(r0,r1)} gg lav.</span>
     ${S.commesse.some(c=>c.chiusa)?`<label class="chk"><input type="checkbox" id="rep-ch"${S.repChiuse?" checked":""}> <span>anche le commesse chiuse</span></label>`:""}
     <span class="grow"></span><button class="btn" id="xls" title="Scarica un file Excel con commesse, attività, ore, assenze e richieste">⬇ Esporta Excel</button></div>
   <div style="display:flex;flex-direction:column;gap:14px">
@@ -1788,7 +1798,11 @@ function renderRep(){
     ${usedC.length?"":`<tr><td class="muted">Nessuna attività nel periodo.</td></tr>`}
     </tbody></table></div></div>
   </div>`;
-  el.querySelector("#per").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.period=b.dataset.k;render()};
+  el.querySelector("#per").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.period=b.dataset.k;S.perOff=0;render()};
+  const sposta=dir=>{if(S.period==="libero"){const len=r1-r0+1;S.perDa=r0+dir*len;S.perA=r1+dir*len}else S.perOff=(S.perOff||0)+dir;render()};
+  el.querySelector("#per-p").onclick=()=>sposta(-1);el.querySelector("#per-n").onclick=()=>sposta(1);
+  const libero=()=>{const a=dnum(el.querySelector("#per-da").value),z=dnum(el.querySelector("#per-a").value);if(isNaN(a)||isNaN(z))return;S.period="libero";S.perDa=a;S.perA=z;render()};
+  el.querySelector("#per-da").onchange=libero;el.querySelector("#per-a").onchange=libero;
   const rc=$("#rep-ch");if(rc)rc.onchange=()=>{S.repChiuse=rc.checked;render()};
   $("#xls").onclick=()=>{try{esportaExcel()}catch(e){console.error(e);toast("Esportazione non riuscita.")}};
 }
