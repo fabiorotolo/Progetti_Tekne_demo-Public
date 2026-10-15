@@ -446,9 +446,9 @@ span.rt-t{padding:4px 6px}
 .kmark small{font-family:var(--f-mono);font-size:9.5px}
 .kmark.late{color:var(--over);font-weight:700}
 /* eventi della commessa (arrivo veicolo...): rombo vuoto col nome, si clicca o si trascina */
-.kmark.ev{cursor:ew-resize;color:hsl(var(--h) 60% 34%);font-weight:600;z-index:3;touch-action:none;user-select:none}
+.kmark.ev{justify-content:flex-start;width:auto;overflow:hidden;cursor:ew-resize;color:hsl(var(--h) 60% 34%);font-weight:600;z-index:3;touch-action:none;user-select:none}
 .kmark.ev b{font-size:11px;line-height:1}
-.kmark.ev small{font-family:var(--f-ui,inherit);font-size:10px;background:color-mix(in srgb,var(--panel) 85%,transparent);border-radius:3px;padding:0 2px}
+.kmark.ev small{overflow:hidden;text-overflow:ellipsis;min-width:0;font-family:var(--f-ui,inherit);font-size:10px;background:color-mix(in srgb,var(--panel) 85%,transparent);border-radius:3px;padding:0 2px}
 .kmark.ev sup{font-size:9px;color:var(--over);font-weight:700;margin-left:1px}
 .kmark.ev.mv{outline:1px dashed currentColor;outline-offset:1px;border-radius:3px}
 .kmark.ev.lk-t{outline:2px solid var(--accent);border-radius:3px}
@@ -1081,9 +1081,12 @@ function renderPlan(){
   for(let i=0;i<N;i++){const n=v0+i;const cls=[isOff(n)?"we":"",festivo(n)&&!isWE(n)?"hol":"",dow(n)===1?"mon":"",n===todayN?"td":""].join(" ");days+=`<span class="${cls}" style="width:${dw}px"${festivo(n)?` title="${esc(festivo(n))}"`:""}>${dobj(n).getUTCDate()}${dw>=30?`<small>${WD[dow(n)]}</small>`:""}</span>`}
   const kList=aperte().filter(c=>{const k=consegnaN(c);return k!=null&&k>=v0&&k<=v1});
   const evList=(S.eventi||[]).filter(e=>{const c=commById(e.commessaId);const d=dnum(e.data);return c&&!c.chiusa&&d>=v0&&d<=v1});
-  const evHtml=evList.map(e=>{const c=commById(e.commessaId),d=dnum(e.data),r=evRinvio(e),nome=e.nome.length>18?e.nome.slice(0,17)+"…":e.nome;
-    return`<span class="kmark ev" data-ev="${esc(e.id)}" style="left:${(d-v0)*dw}px;width:${dw}px;--h:${c.colore}" title="${esc(e.nome)} · ${esc(c.codice)} · previsto il ${fmtD(d)}${r?` · rinviato ${r.n} volt${r.n>1?"e":"a"} (${sg(r.gg)} g)`:""}${canEvC(e.commessaId)?" — clic per aprire, trascina per spostare la data":""}"><b>◆</b><small>${esc(nome)}</small>${r?`<sup>↻${r.n}</sup>`:""}</span>`}).join("");
-  const kRow=kList.length||evList.length?`<div class="consrow">${evHtml}${kList.map(c=>{const k=consegnaN(c),rit=ritardoComm(c);return`<span class="kmark${rit?" late":""}" style="left:${(k-v0)*dw}px;width:${dw}px;--h:${c.colore}" title="Consegna ${esc(c.codice)} · ${esc(c.nome)}: ${fmtD(k)}${rit?" · in ritardo di "+rit+" g lavorativi":""}">◆<small>${esc(c.codice)}</small></span>`}).join("")}</div>`:"";
+  // eventi su una riga loro (sotto le consegne): rombo sul giorno, nome a destra fino al prossimo evento
+  evList.sort((a,b)=>dnum(a.data)-dnum(b.data));
+  const evHtml=evList.map((e,i)=>{const c=commById(e.commessaId),d=dnum(e.data),r=evRinvio(e),nome=e.nome;
+    const nx=i<evList.length-1?dnum(evList[i+1].data):v1+8,maxW=Math.max(dw,(nx-d)*dw-4);
+    return`<span class="kmark ev" data-ev="${esc(e.id)}" style="left:${(d-v0)*dw+dw/2-6}px;max-width:${maxW}px;--h:${c.colore}" title="${esc(e.nome)} · ${esc(c.codice)} · previsto il ${fmtD(d)}${r?` · rinviato ${r.n} volt${r.n>1?"e":"a"} (${sg(r.gg)} g)`:""}${canEvC(e.commessaId)?" — clic per aprire, trascina per spostare la data":""}"><b>◆</b><small>${esc(nome)}</small>${r?`<sup>↻${r.n}</sup>`:""}</span>`}).join("");
+  const kRow=(kList.length?`<div class="consrow">${kList.map(c=>{const k=consegnaN(c),rit=ritardoComm(c);return`<span class="kmark${rit?" late":""}" style="left:${(k-v0)*dw}px;width:${dw}px;--h:${c.colore}" title="Consegna ${esc(c.codice)} · ${esc(c.nome)}: ${fmtD(k)}${rit?" · in ritardo di "+rit+" g lavorativi":""}">◆<small>${esc(c.codice)}</small></span>`}).join("")}</div>`:"")+(evList.length?`<div class="consrow evrow">${evHtml}</div>`:"");
   let html=`<div class="tl-inner" style="width:calc(var(--nameW) + ${W}px);--dw:${dw}px"><div class="tl-head"><div class="corner">${S.vista==="commesse"?"Commessa":"Progettista"}</div><div class="days" style="width:${W}px"><div class="months">${months}</div><div class="dayrow">${days}</div>${kRow}</div></div>`;
   let holCols="";for(let i=0;i<N;i++){const n=v0+i;if(festivo(n)&&!isWE(n))holCols+=`<i class="hol-col" style="left:${i*dw}px;width:${dw}px" title="${esc(festivo(n))}"></i>`}
   const tdl=holCols+(todayN>=v0&&todayN<=v1?`<i class="today-line" style="left:${(todayN-v0)*dw+dw/2-1}px"></i>`:"");
