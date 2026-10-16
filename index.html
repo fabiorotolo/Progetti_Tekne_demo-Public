@@ -374,7 +374,7 @@ button.al-chip:hover{border-color:var(--accent);color:var(--accent)}.al-chip.off
 .rt-row .rt-t:hover,.rt-row .rt-t:focus{border-color:var(--line);background:var(--panel)}
 span.rt-t{padding:4px 6px}
 .rt-row.st-fatto .rt-t{text-decoration:line-through;color:var(--muted)}
-.rt-row.mio:not(.st-fatto){box-shadow:inset 3px 0 0 var(--accent)}
+.rt-row.rt-mio:not(.st-fatto){box-shadow:inset 3px 0 0 var(--accent)}
 .rt-row.flash{animation:rtflash 2.2s ease}@keyframes rtflash{0%,40%{background:color-mix(in srgb,var(--warn) 35%,transparent)}100%{background:transparent}}
 .rt-box{width:16px;height:16px;margin:0;cursor:pointer}
 .rt-car{display:flex;align-items:center;gap:0}
@@ -1681,7 +1681,7 @@ function rtRender(){
   const row=x=>{
     if(x.nuovo)return`<div class="rt-row rt-new" style="--lv:${x.l}"><span class="rt-car"></span><span class="rt-box"></span><input class="inp rt-t" id="rt-nuovo" placeholder="Scrivi il requisito e premi Invio (Tab = dentro la voce sopra, Esc = annulla)" maxlength="500"></div>`;
     const r=x.r,mio=reqMio(r),okSt=ed||mio,fatti=x.d.filter(y=>y.stato==="fatto").length;
-    const cls=`rt-row st-${r.stato}${reqLate(r)?" late":""}${mio?" mio":""}${RT.focus===r.id?" flash":""}`;
+    const cls=`rt-row st-${r.stato}${reqLate(r)?" late":""}${mio?" rt-mio":""}${RT.focus===r.id?" flash":""}`;
     let h=`<div class="${cls}" data-rid="${esc(r.id)}" style="--lv:${x.l}">
       <span class="rt-car">${ed?`<span class="rt-drag" data-rdrag="${esc(r.id)}" title="Trascina per spostare: sopra/sotto una riga = stesso livello, al centro = dentro" aria-hidden="true">⠿</span>`:""}${x.nk?`<button type="button" class="rt-tog" data-rtog="${esc(r.id)}" aria-label="${RT.chiusi.has(r.id)?"Apri":"Chiudi"}">${RT.chiusi.has(r.id)?"▸":"▾"}</button>`:""}</span>
       <input type="checkbox" class="rt-box" data-rdone="${esc(r.id)}"${r.stato==="fatto"?" checked":""}${okSt?"":" disabled"} title="${okSt?"Segna come fatto":"Solo gli assegnati e il PM possono chiuderlo"}" aria-label="Fatto">
