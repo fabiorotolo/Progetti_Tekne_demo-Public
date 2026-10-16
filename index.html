@@ -486,6 +486,7 @@ svg.dip path.hit{cursor:pointer}
 .mio-t em{font-style:normal;color:var(--over);font-weight:600}
 .mio .code{white-space:nowrap;font-family:var(--f-mono);font-weight:600;font-size:11px;color:hsl(var(--h,210) 55% 38%)}
 .mio-av{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--line-soft);vertical-align:middle;overflow:hidden}.mio-av i{display:block;height:100%;background:var(--ok)}
+.xl-dest{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:8px;background:var(--bg-soft,transparent)}.xl-dest select{max-width:100%;min-width:0}
 .xl-g{display:flex;flex-direction:column;gap:6px}.xl-req{border-top:1px solid var(--line-soft);padding-top:8px;margin-top:4px}.xl-req>div{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 12px;margin-top:4px}
 .pill.xl-nuovo{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.pill.xl-modifica{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
 .pill.xl-elimina,.pill.xl-errore{background:color-mix(in srgb,var(--over) 15%,transparent);color:var(--over)}tr.xl-bad td{color:var(--over)}
@@ -2714,13 +2715,13 @@ const LEGGIMI=[["Come usare questo file"],[""],
   ["2. Per aggiungere: scrivi una riga nuova lasciando vuoto l'ID."],
   ["3. Per eliminare (dove c'è la colonna Elimina): scrivi X nella colonna Elimina. Le righe che cancelli dal file NON vengono eliminate."],
   ["4. Requisiti: la colonna N. decide la struttura (1, 1.1, 1.1.2…) e l'ordine delle righe. Per spostare una voce sotto un'altra cambia il suo N. e metti le righe nell'ordine giusto."],
-  ["4b. Requisiti su un'altra commessa (anche senza requisiti): copia il foglio «Requisiti CODICE» e rinominalo con il codice della commessa di destinazione (es. «Requisiti 24-005»). Le righe vengono create come nuove."],
+  ["4b. Requisiti su un'altra commessa (anche senza requisiti): importa il file e, nella finestra di importazione, scegli in quale commessa metterli (oppure rinomina il foglio con il codice di destinazione, es. «Requisiti 24-005»). Le righe vengono create come nuove."],
   ["5. Stato dei requisiti: Da fare, Fatto, Bloccato (con il motivo). Date nel formato gg/mm/aaaa."],
   ["6. Salva e reimporta da Progetti Tekne (pulsante Excel → Importa): prima vedi l'elenco delle modifiche, poi confermi. Valgono gli stessi permessi dell'applicazione."],
   ["7. Puoi lasciare solo i fogli che ti servono: quelli che mancano non vengono toccati."]];
 
 /* --- dal foglio alle operazioni --- */
-function xPiano(fogli){
+function xPiano(fogli,mappa){mappa=mappa||{};
   const R_=xRisolutori(),ops=[],righe=[];let nref=0;const ref=()=>"r"+(++nref);
   const add=(foglio,o,riga,cosa,testo,dett)=>{righe.push({foglio,riga,cosa,testo,dett});if(o)for(const x of[].concat(o)){x.foglio=foglio;x.riga=riga;ops.push(x)}};
   const err=(foglio,riga,testo,msg)=>righe.push({foglio,riga,cosa:"errore",testo,dett:msg});
@@ -2800,9 +2801,9 @@ function xPiano(fogli){
       if(dif.length)add(f,{M:"PATCH",p:"/api/eventi/"+e.id,body:ch},o._riga,"modifica",codC(e.commessaId)+" · "+e.nome,dif.join(" · "))}}
   // REQUISITI (un foglio per commessa)
   for(const fn of Object.keys(fogli).filter(k=>xNorm(k).startsWith(xNorm(XREQ)))){
-    const cod=fn.slice(XREQ.length).trim(),cid=R_.commessa(cod);
-    if(!cid||String(cid).startsWith("@")){err(fn,1,cod,"Commessa «"+cod+"» non trovata (il nome del foglio deve essere «Requisiti CODICE»).");continue}
-    if(!canReqC(cid)){err(fn,1,cod,"Non puoi modificare i requisiti di questa commessa.");continue}
+    const cod=fn.slice(XREQ.length).trim(),cid0=R_.commessa(cod),cid=fn in mappa?mappa[fn]:cid0;
+    if(!cid||String(cid).startsWith("@")){err(fn,1,cod,"Scegli qui sopra in quale commessa importare questo foglio.");continue}
+    if(!canReqC(cid)){err(fn,1,codC(cid),"Non puoi modificare i requisiti della commessa "+codC(cid)+": scegli qui sopra una commessa tua.");continue}
     const all=reqOf(cid),byId=Object.fromEntries(all.map(r=>[r.id,r]));const{righe:rr}=xRighe(fogli[fn]);
     const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
     const prevCur={};const walk=par=>{let pv="";for(const r of kids(par)){prevCur[r.id]=pv;pv=r.id;walk(r.id)}};walk(null);
@@ -2820,7 +2821,7 @@ function xPiano(fogli){
       const asn=lista(xc(o,"assegnato a (separati da virgola)","assegnato a")),ass=[],ign=[];for(const x of asn){const pid=R_.persona(x);if(pid)ass.push(pid);else ign.push(x)}
       if(ign.length){err(fn,o._riga,testo,"Progettisti non trovati: "+ign.join(", "));continue}
       const sc=xData(xc(o,"scadenza"));if(sc===undefined){err(fn,o._riga,testo,"Scadenza non valida.");continue}
-      const stT=xNorm(xc(o,"stato")),st=/^fatt/.test(stT)?"fatto":/^blocc/.test(stT)?"bloccato":"aperto",mot=xTxt(xc(o,"motivo del blocco","motivo"));
+      const stT=xNorm(xc(o,"stato")),st=/^fatt/.test(stT)?"fatto":/^blocc/.test(stT)?"bloccato":"aperto",mot=xTxt(xc(o,"motivo del blocco","motivo","nota / motivo"));
       if(st==="bloccato"&&!mot){err(fn,o._riga,testo,"Bloccato: scrivi il motivo.");continue}
       const statoOp=k=>({M:"PATCH",p:"/api/requisiti/"+k,body:st==="fatto"?{stato:"fatto",nota:"Segnato fatto da Excel"}:st==="bloccato"?{stato:"bloccato",motivo:mot}:{stato:"aperto",nota:"Riaperto da Excel"}});
       if(!r){const k=ref();chiave[n||("__"+k)]="@"+k;ultimo[pk]="@"+k;
@@ -2858,7 +2859,8 @@ function xPiano(fogli){
 
 /* --- finestra Excel --- */
 function xAree(){return Object.entries(XA).filter(([,a])=>a.ok())}
-async function openExcel(opt){opt=opt||{};RT=null;rdId=null;rdlg.classList.add("wide");
+let XORIG=null,XOPT=null;
+async function openExcel(opt){opt=opt||{};XOPT=opt;XORIG=opt.req&&opt.req.length===1?opt.req[0]:null;RT=null;rdId=null;rdlg.classList.add("wide");
   const aree=xAree(),comm=S.commesse.filter(c=>canReqC(c.id)&&(!c.chiusa||opt.req&&opt.req.includes(c.id)));
   const sel=opt.req||comm.filter(c=>isPmOf(c.id)).map(c=>c.id);
   $("#rd").innerHTML=`<h3 style="padding-right:30px">⇅ Excel: esporta, modifica e reimporta</h3>
@@ -2867,7 +2869,7 @@ async function openExcel(opt){opt=opt||{};RT=null;rdId=null;rdlg.classList.add("
       ${aree.map(([k,a])=>`<label class="chk"><input type="checkbox" data-xa="${k}"${opt.req?"":" checked"}> <span>${esc(a.lab)}</span></label>`).join("")}
       ${comm.length?`<div class="xl-req"><b>Requisiti delle commesse</b> <span class="muted" style="font-size:12px">(un foglio per commessa)</span><div>${comm.map(c=>`<label class="chk"><input type="checkbox" data-xr="${esc(c.id)}"${sel.includes(c.id)?" checked":""}> <span>${esc(c.codice)} · ${esc(c.nome)}</span></label>`).join("")}</div></div>`:""}
     </div>
-    ${opt.req&&opt.req.length===1&&!reqOf(opt.req[0]).length?`<p class="ev-prev" style="margin:0">La commessa <b>${esc(codC(opt.req[0]))}</b> non ha ancora requisiti: con <b>Esporta</b> scarichi il foglio «Requisiti ${esc(codC(opt.req[0]))}» vuoto da compilare. Per partire dai requisiti di un'altra commessa spunta quella, esporta e rinomina il suo foglio con «Requisiti ${esc(codC(opt.req[0]))}». Poi <b>Importa</b>.</p>`:""}
+    ${opt.req&&opt.req.length===1&&!reqOf(opt.req[0]).length?`<p class="ev-prev" style="margin:0">La commessa <b>${esc(codC(opt.req[0]))}</b> non ha ancora requisiti: con <b>Esporta</b> scarichi il foglio «Requisiti ${esc(codC(opt.req[0]))}» vuoto da compilare. Per partire dai requisiti di un'altra commessa usa il file esportato da quella: con <b>Importa</b> vengono messi in questa commessa (puoi cambiarla nell'anteprima).</p>`:""}
     <div class="err" id="xl-err"></div>
     <div class="acts"><span><button type="button" class="btn" id="xl-imp">⬆ Importa un file modificato…</button><input type="file" id="xl-f" accept=".xlsx" hidden></span><div><button type="button" class="btn ghost" id="xl-no">Chiudi</button><button type="button" class="btn primary" id="xl-exp">⬇ Esporta</button></div></div>`;
   $("#xl-no").onclick=()=>rdlg.close();
@@ -2881,8 +2883,14 @@ async function openExcel(opt){opt=opt||{};RT=null;rdId=null;rdlg.classList.add("
     try{if(xAree().some(([k])=>k==="utenti"))await loadUtenti();if(S.me&&S.me.admin)S.setData=await api("GET","/api/impostazioni");
       const fogli=await leggiXlsx(file);await xAnteprima(file.name,fogli)}catch(e){$("#xl-err").textContent=e&&(e.msg||e.message)||"File non leggibile."}};
   showRdlg()}
-async function xAnteprima(nome,fogli){
-  const{ops,righe}=xPiano(fogli);let esiti=[];
+// commessa in cui importare ogni foglio «Requisiti …»: quella da cui hai aperto Importa, poi quella del nome del foglio (se puoi modificarla), poi la tua unica commessa
+function xMappaReq(fogli){const fr=Object.keys(fogli).filter(k=>xNorm(k).startsWith(xNorm(XREQ))),m={};const R_=xRisolutori();
+  const mie=S.commesse.filter(c=>!c.chiusa&&isPmOf(c.id)&&canReqC(c.id));
+  for(const fn of fr){const c0=R_.commessa(fn.slice(XREQ.length).trim());
+    m[fn]=XORIG&&fr.length===1&&canReqC(XORIG)?XORIG:c0&&!String(c0).startsWith("@")&&canReqC(c0)?c0:mie.length===1?mie[0].id:null}
+  return m}
+async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
+  const{ops,righe}=xPiano(fogli,mappa);let esiti=[];
   if(ops.length){try{const j=await api("POST","/api/import",{ops,prova:true,area:nome});esiti=j.esiti||[]}catch(e){righe.push({foglio:"",riga:"",cosa:"errore",testo:"",dett:e&&e.msg||"Anteprima non riuscita."})}}
   const errOp={};esiti.forEach((x,i)=>{const o=ops[i];if(!x.ok){const k=o.foglio+"|"+o.riga;errOp[k]=errOp[k]||x.errore}});
   for(const r of righe){const e=errOp[r.foglio+"|"+r.riga];if(e&&r.cosa!=="errore"){r.err=e}}
@@ -2890,13 +2898,17 @@ async function xAnteprima(nome,fogli){
   const fogliOk=Object.keys(fogli).filter(k=>xNorm(k)!=="leggimi");
   const LAB={nuovo:"Nuovo",modifica:"Modifica",elimina:"Elimina",errore:"Errore"};
   $("#rd").innerHTML=`<h3 style="padding-right:30px">⇅ Importa: ${esc(nome)}</h3>
+    ${Object.keys(mappa).map(fn=>{const R_=xRisolutori(),c0=R_.commessa(fn.slice(XREQ.length).trim()),d=mappa[fn];
+      const ops_=S.commesse.filter(c=>canReqC(c.id)&&(!c.chiusa||c.id===d||c.id===c0)).sort((a,b)=>a.codice.localeCompare(b.codice,"it",{numeric:true}));
+      return`<div class="xl-dest"><span>Foglio <b>«${esc(fn)}»</b> → importa nella commessa</span> <select data-xm="${esc(fn)}"><option value="">— scegli —</option>${ops_.map(c=>`<option value="${esc(c.id)}"${c.id===d?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${c.chiusa?" (chiusa)":""}</option>`).join("")}</select>${d&&c0&&d!==c0?` <span class="muted" style="font-size:12px">le righe di ${esc(codC(c0))} vengono aggiunte come requisiti nuovi</span>`:""}</div>`}).join("")}
     <p style="margin:0">${buone.length?`<b>${buone.length} modific${buone.length>1?"he":"a"}</b> pronte da salvare`:"Nessuna modifica rispetto ai dati attuali."}${cattive.length?` · <b style="color:var(--over)">${cattive.length} righe con problemi</b> (non vengono importate)`:""}. <span class="muted">Fogli letti: ${esc(fogliOk.join(", ")||"nessuno")}.</span></p>
     ${righe.length?`<div class="tbl-wrap" style="max-height:52vh;overflow:auto"><table><thead><tr><th>Foglio</th><th class="n">Riga</th><th>Cosa</th><th>Elemento</th><th>Dettaglio</th></tr></thead><tbody>
       ${[...cattive,...buone].map(r=>`<tr${r.cosa==="errore"||r.err?' class="xl-bad"':""}><td>${esc(r.foglio)}</td><td class="n">${esc(String(r.riga))}</td><td><span class="pill xl-${r.err?"errore":r.cosa}">${LAB[r.err?"errore":r.cosa]}</span></td><td>${esc(r.testo||"")}</td><td>${esc(r.err||r.dett||"")}</td></tr>`).join("")}
     </tbody></table></div>`:""}
     <div class="err" id="xi-err"></div>
     <div class="acts"><span><button type="button" class="btn ghost" id="xi-back">← Indietro</button></span><div><button type="button" class="btn ghost" id="xi-no">Annulla</button>${buone.length?`<button type="button" class="btn primary" id="xi-go">Importa ${buone.length} modific${buone.length>1?"he":"a"}</button>`:""}</div></div>`;
-  $("#xi-no").onclick=()=>rdlg.close();$("#xi-back").onclick=()=>openExcel();
+  $("#xi-no").onclick=()=>rdlg.close();$("#xi-back").onclick=()=>openExcel(XOPT);
+  $("#rd").querySelectorAll("[data-xm]").forEach(x=>x.onchange=()=>{const m=Object.assign({},mappa,{[x.dataset.xm]:x.value||null});xAnteprima(nome,fogli,m)});
   const go=$("#xi-go");if(go)go.onclick=async()=>{go.disabled=true;
     const tenere=new Set(buone.map(r=>r.foglio+"|"+r.riga));const sel=ops.filter(o=>tenere.has(o.foglio+"|"+o.riga));
     try{const j=await api("POST","/api/import",{ops:sel,area:nome});const ok=j.esiti.filter(x=>x.ok).length,ko=j.esiti.filter(x=>!x.ok);const pw=j.esiti.filter(x=>x.pw);
