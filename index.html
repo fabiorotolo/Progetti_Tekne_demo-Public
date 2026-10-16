@@ -526,6 +526,16 @@ tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor
 .msg-w{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
 .msg-s{border:0;background:none;cursor:pointer;font-size:17px;line-height:1;color:var(--muted);padding:0 2px}.msg-s.on{color:#d49b00}
 .bell-tutti{justify-content:center;font-weight:600;color:var(--accent)!important;text-align:center}
+#guida{width:min(680px,calc(100vw - 24px));position:relative;padding:18px 20px 14px}#guida h3{padding-right:30px}#g-q{width:100%;font-size:16px;padding:10px 12px}
+.g-ris{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:60vh;overflow:auto}
+.g-r{display:grid;grid-template-columns:32px 1fr;gap:10px;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:9px 12px;cursor:pointer;font:inherit;color:inherit}
+.g-r>span:last-child{display:flex;flex-direction:column;gap:2px;font-size:13px}.g-r b{font-size:14.5px}.g-r .code{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.g-r:hover,.g-r.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.g-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--line-soft);font-size:14px}
+.g-cat{border-top:1px solid var(--line-soft);padding:6px 0}.g-cat summary{cursor:pointer;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;font-weight:700;font-size:13.5px;padding:4px 0}
+.g-man{padding:6px 0 8px 10px;font-size:13px;display:flex;flex-direction:column;gap:3px;align-items:flex-start}.g-man b{font-size:13.5px}
+.guida-flash{outline:3px solid var(--warn)!important;outline-offset:3px;transition:outline-color .4s}
+.mio-ask{display:flex;gap:8px;align-items:center;flex:1;max-width:520px}.mio-ask input{flex:1}
 .late-txt{color:var(--over)!important;font-weight:600}
 .blk .lt{color:var(--over);font-weight:700;flex:none}
 .fold{border:0;background:transparent;cursor:pointer;padding:0 2px;font-size:12px}
@@ -620,7 +630,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
       <button role="tab" id="tab-perm" aria-selected="false" data-tab="perm" hidden>Utenti</button>
       <button role="tab" id="tab-set" aria-selected="false" data-tab="set" hidden>Impostazioni</button>
     </nav>
-    <div class="whobox" id="who" hidden><select class="inp ditta-sel" id="ditta-sel" hidden aria-label="Ditta" title="Cambia ditta: ogni ditta ha i suoi dati e i suoi utenti"></select><span class="qw"><input class="inp" id="q" type="search" placeholder="Cerca… (Ctrl+K)" autocomplete="off" aria-label="Cerca commesse, attività, persone e richieste"><div class="qres" id="qres" hidden role="listbox"></div></span><select class="inp" id="scope" aria-label="Reparto" hidden></select><button class="btn ghost" id="xl-btn" hidden title="Esporta in Excel, modifica e reimporta: requisiti, commesse, progettisti, team, utenti, eventi, impostazioni">⇅ Excel</button><button class="btn ghost" id="print" title="Stampa la scheda aperta. Per avere il PDF, nella finestra di stampa scegli “Salva come PDF” come stampante.">🖨 Stampa</button><span id="who-name"></span><span class="bellw"><button class="btn ghost" id="bell" aria-label="Notifiche" title="Notifiche">🔔<span class="cnt" id="bell-cnt" hidden></span></button><div class="bellp" id="bellp" hidden></div></span><button class="btn ghost" id="chpw">Cambia password</button><button class="btn" id="logout">Esci</button></div>
+    <div class="whobox" id="who" hidden><select class="inp ditta-sel" id="ditta-sel" hidden aria-label="Ditta" title="Cambia ditta: ogni ditta ha i suoi dati e i suoi utenti"></select><span class="qw"><input class="inp" id="q" type="search" placeholder="Cerca… (Ctrl+K)" autocomplete="off" aria-label="Cerca commesse, attività, persone e richieste"><div class="qres" id="qres" hidden role="listbox"></div></span><select class="inp" id="scope" aria-label="Reparto" hidden></select><button class="btn ghost" id="xl-btn" hidden title="Esporta in Excel, modifica e reimporta: requisiti, commesse, progettisti, team, utenti, eventi, impostazioni">⇅ Excel</button><button class="btn ghost" id="print" title="Stampa la scheda aperta. Per avere il PDF, nella finestra di stampa scegli “Salva come PDF” come stampante.">🖨 Stampa</button><button type="button" class="btn ghost" id="aiuto" title="Aiuto: scrivi cosa vuoi fare e ti porto al comando (F1)">❓ Aiuto</button><span id="who-name"></span><span class="bellw"><button class="btn ghost" id="bell" aria-label="Notifiche" title="Notifiche">🔔<span class="cnt" id="bell-cnt" hidden></span></button><div class="bellp" id="bellp" hidden></div></span><button class="btn ghost" id="chpw">Cambia password</button><button class="btn" id="logout">Esci</button></div>
   </header>
 
   <div id="banner" hidden></div>
@@ -725,6 +735,11 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
 
 <dialog id="vdlg"><div id="vd" class="vd"></div></dialog>
 <dialog id="okdlg"><button type="button" class="xcl" id="okd-x" aria-label="Chiudi">×</button><div class="rd" id="okd"></div></dialog>
+<dialog id="guida" aria-label="Aiuto"><button type="button" class="xcl" id="g-x" aria-label="Chiudi">×</button>
+  <h3 style="margin:0 0 8px">❓ Cosa vuoi fare?</h3>
+  <input class="inp" id="g-q" type="search" placeholder="Scrivi cosa vuoi fare… es. creare una commessa" autocomplete="off" aria-label="Cosa vuoi fare">
+  <div id="g-ris" class="g-ris"></div>
+  <p class="muted" style="margin:8px 0 0;font-size:12px">↑↓ per scegliere, Invio per andare. Si apre anche con F1. Funziona senza internet.</p></dialog>
 <dialog id="rdlg"><button type="button" class="xcl" id="rd-x" aria-label="Chiudi">×</button><div class="rd" id="rd"></div></dialog>
 
 
@@ -1132,6 +1147,7 @@ function renderMio(){
   if(!p&&!mieC.length&&!rich.length&&!repReq.length){el.innerHTML=`<div class="panel"><h2>Il mio lavoro</h2><p class="muted" style="margin:0">Non sei collegato a un progettista: qui compaiono le attività, i requisiti e le richieste di chi ha un progettista collegato (scheda Utenti).</p></div>`;return}
   el.innerHTML=`<div class="mio">
     <div class="mio-h"><div><h2 style="margin:0">${io||!p?"Ciao "+esc(S.me.nome.split(" ")[0]):"Il lavoro di "+esc(pn(p))}</h2><span class="muted">${esc(giorno.charAt(0).toUpperCase()+giorno.slice(1))}</span></div>
+      ${io?`<form class="mio-ask" id="mio-ask"><input class="inp" id="mio-ask-q" placeholder="❓ Cosa vuoi fare? es. chiedere al PM, inserire ferie…" aria-label="Cosa vuoi fare"><button class="btn">Vai</button></form>`:""}
       ${scegli.length>1||(scegli.length&&!(myPersona()&&persById(myPersona())))?`<label class="chk" style="gap:6px">Vedi il lavoro di <select class="inp" id="mio-p" style="width:auto">${myPersona()&&persById(myPersona())?"":`<option value=""${pid?"":" selected"}>— il mio lavoro (PM) —</option>`}${scegli.map(x=>`<option value="${esc(x.id)}"${x.id===pid?" selected":""}>${esc(pn(x))}${x.id===myPersona()?" (io)":""}</option>`).join("")}</select></label>`:""}</div>
     ${p?`<div class="mio-tiles">${tile(isOff(oggi)?"—":fmtH(oreDi(oggi))+" h",isOff(oggi)?"oggi non si lavora":"oggi su "+fmtH(capDi(oggi))+" h",oreDi(oggi)>capDi(oggi)+.01&&!isOff(oggi)?"over":"")}${tile(fmtH(oreSett)+" h","questa settimana su "+fmtH(capSett)+" h",oreSett>capSett+.01?"over":"")}${tile(reqs.length,"requisiti da fare"+(reqLate_?` · <em>${reqLate_} in ritardo</em>`:""),reqLate_?"over":"")}${io?tile(rich.length,"richieste che aspettano te",rich.length?"warn":""):""}${tile(inAtt.length,"attività in attesa",inAtt.length?"warn":"")}</div>`:""}
     <div class="mio-g">
@@ -1161,6 +1177,7 @@ function renderMio(){
       return`<tr><td><span class="code" style="--h:${c.colore}">${esc(c.codice)}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} requisiti aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div>`:""}
     </div></div>`;
   const sp=$("#mio-p");if(sp)sp.onchange=()=>{S.mioP=sp.value||null;render()};
+  const ma=$("#mio-ask");if(ma)ma.onsubmit=e=>{e.preventDefault();const q=$("#mio-ask-q");apriGuida(q.value);q.value=""};
   const mm=$("#mio-msg");if(mm)mm.onclick=()=>{S.tab="msg";S.msgF="nuovi";S.msgC="";saveTab();render()};
   el.querySelectorAll("[data-mn]").forEach(r=>r.onclick=e=>{if(e.target.closest("[data-ms]"))return;const x=(S.notifiche||[]).find(y=>y.id===r.dataset.mn);if(x)apriNotifica(x)});
   el.querySelectorAll("[data-ms]").forEach(b=>b.onclick=async e=>{e.stopPropagation();const x=(S.notifiche||[]).find(y=>y.id===b.dataset.ms);if(!x)return;const on=!x.stella;x.stella=on||undefined;render();try{await api("POST","/api/notifiche/stella",{id:x.id,on});S.notifRev=null}catch(err){handleErr(err)}});
@@ -3258,6 +3275,89 @@ function renderMsg(){
   el.querySelectorAll("[data-ms]").forEach(b=>b.onclick=async e=>{e.stopPropagation();const x=all.find(y=>y.id===b.dataset.ms);if(!x)return;const a=argomenti(all).find(z=>z.tutte.includes(x));const on=!(a&&a.stella);
     for(const y of(a?a.tutte:[x]))y.stella=on||undefined;render();try{for(const y of(a?a.tutte:[x]))await api("POST","/api/notifiche/stella",{id:y.id,on})}catch(err){handleErr(err)}});
 }
+
+/* ---------- Guida: "Cosa vuoi fare?" (manuale + porta al comando giusto) ----------
+   Funziona senza internet: capisce la frase cercando parole e sinonimi (anche commesse e persone nominate). */
+const G_NORM=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9-]+/g," ").trim();
+const G_STOP=new Set("il lo la i gli le un una uno di da a in con su per tra fra e o ed come voglio vorrei devo posso puoi fare faccio mi ci si che del dello della dei degli delle al allo alla ai agli alle nel nello nella nei nelle sul sulla sui sulle mio mia miei mie tuo tua cosa dove quando non anche poi solo come ho hai ha sono e' qui li la questo questa quello quella un po".split(" "));
+const G_RAD=w=>{const r=w.length>3?w.replace(/[aeiou]+$/,""):w;return(r.length>=2?r:w).slice(0,6)}; // "sposto"/"sposta" -> "spost"
+const gTok=s=>G_NORM(s).split(/\s+/).filter(w=>w&&!G_STOP.has(w)&&w.length>1);
+function gVai(tab,sel,poi){if(tab){S.tab=tab;saveTab();render()}
+  setTimeout(()=>{let el=null;if(sel){if(sel.startsWith("h2:")){const t=sel.slice(3).toLowerCase();el=[...document.querySelectorAll('section:not([hidden]) .panel')].find(p=>{const h=p.querySelector("h2");return h&&h.textContent.toLowerCase().includes(t)})}else el=document.querySelector(sel)}
+    if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("guida-flash");setTimeout(()=>el.classList.remove("guida-flash"),2600);if(/INPUT|TEXTAREA|SELECT/.test(el.tagName))setTimeout(()=>el.focus(),300)}
+    if(poi)poi()},tab?180:20)}
+const gComm=ctx=>ctx.comm||S.commesse.find(c=>!c.chiusa&&isPmOf(c.id))||aperte()[0];
+// ogni voce: titolo, dove si trova, parole che la richiamano, spiegazione (manuale), quando e' disponibile, cosa fa
+const GUIDA=[
+ {cat:"Commesse",ic:"＋",t:"Creare una nuova commessa",dove:"Commesse e persone › Commesse",k:"nuova commessa crea creare aggiungi apri aprire inserisci commessa progetto lavoro cliente ordine",h:"In fondo alla tabella Commesse scrivi codice, nome, cliente, consegna e budget ore, poi «Aggiungi commessa». Poi il capo PM assegna il PM.",ok:()=>canCommTutte(),go:()=>gVai("mgmt","#nc-cod")},
+ {cat:"Commesse",ic:"📊",t:"Vedere la scheda di una commessa",usaComm:true,dove:"Commessa",k:"scheda commessa riepilogo situazione analisi stato avanzamento ritardo problemi ore per reparto",h:"Tutto su una commessa: consegna e ritardo, ore per reparto e progettista, problemi e blocchi, richieste, requisiti, eventi, slittamenti, attività.",ok:()=>schedaVis(),go:c=>{const x=gComm(c);if(x)openScheda(x.id);else gVai("comm")}},
+ {cat:"Commesse",ic:"▤",t:"Vedere una commessa in timeline",usaComm:true,dove:"Pianificazione › Commesse",k:"timeline commessa pianificazione attivita commessa gantt barre",h:"La vista per commessa mostra le attività di ogni commessa, la consegna (linea) e gli eventi.",ok:()=>true,go:c=>{const x=gComm(c);if(x)goComm(x);else gVai("plan")}},
+ {cat:"Commesse",ic:"☑",t:"Requisiti di una commessa",usaComm:true,dove:"☑ sulla commessa",k:"requisiti requisito checklist lista punti specifiche aggiungi requisito smarcare spuntare",h:"Il PM scrive i requisiti ad albero e li dà a un reparto; il responsabile sceglie chi li fa. Chi è assegnato li spunta con data e nota.",ok:()=>true,go:c=>{const x=gComm(c);if(x)openReqTree(x.id);else gVai("mgmt")}},
+ {cat:"Commesse",ic:"◆",t:"Eventi: arrivo veicolo, approvazione cliente",usaComm:true,dove:"◆ sulla commessa",k:"evento eventi arrivo veicolo telaio autobus approvazione cliente collaudo rinvio rinviato milestone",h:"Un evento è una data che non dipende da voi. Le attività agganciate aspettano l'evento: se lo rinvii, si spostano e resta la cronistoria dei rinvii.",ok:()=>true,go:c=>{const x=gComm(c);if(x)openEventi(x.id);else gVai("plan")}},
+ {cat:"Commesse",ic:"📎",t:"Documenti della commessa",usaComm:true,dove:"📎 sulla commessa",k:"documenti documento capitolato proposta tecnica disegni revisione allegati file pdf",h:"Capitolato, proposta tecnica, disegni… con codice automatico e revisioni. Nuova revisione = gli altri PM ricevono la notifica.",ok:()=>true,go:c=>{const x=gComm(c);if(x)openDocs(x.id)}},
+ {cat:"Commesse",ic:"👤",t:"Assegnare il PM a una commessa",dove:"Commesse e persone › colonna PM",k:"assegna pm project manager responsabile commessa capo",h:"Il capo PM sceglie il PM dal menu «+ PM» nella riga della commessa. Il PM vecchio resta nello storico.",ok:()=>canAssegnaPM(),go:()=>gVai("mgmt","h2:commesse")},
+ {cat:"Pianificazione",ic:"＋",t:"Pianificare una nuova attività",dove:"Pianificazione › + Nuova attività",k:"nuova attivita pianifica pianificare assegna lavoro progettista ore giorni crea inserisci task",h:"Scegli progettista, commessa, date e ore al giorno. Oppure doppio clic su uno spazio vuoto della timeline.",ok:()=>canPlanAny(),go:()=>gVai("plan",null,()=>openEditor(null,{}))},
+ {cat:"Pianificazione",ic:"🌴",t:"Inserire ferie, permesso o malattia",dove:"Pianificazione › + Nuova attività › Assenza",k:"ferie permesso malattia assenza vacanza riposo festa giorno libero mancanza",h:"Nella nuova attività scegli il tipo di assenza al posto della commessa. Ti chiede se spostare la fine delle attività o tenerla aumentando le ore.",ok:()=>canPlanAny(),go:()=>gVai("plan",null,()=>{openEditor(null,{});setTimeout(()=>{const s=$("#f-comm");const o=s&&[...s.options].find(x=>x.value==="ass:ferie")||(s&&[...s.options].find(x=>x.value.startsWith("ass:")));if(o){s.value=o.value;s.dispatchEvent(new Event("change"))}},80)})},
+ {cat:"Pianificazione",ic:"↔",t:"Spostare o allungare un'attività",dove:"Pianificazione",k:"sposta spostare trascina allunga accorcia cambia date anticipa posticipa ritarda",h:"Trascina la barra per spostarla (a giorni lavorativi, anche su un altro progettista); tira i bordi per allungarla. Ctrl+Z annulla.",ok:()=>true,go:()=>gVai("plan",".tl")},
+ {cat:"Pianificazione",ic:"⛓",t:"Agganciare un'attività a un'altra (dipendenze)",dove:"Pianificazione · pallini ai lati",k:"aggancia collega dipendenza dopo prima precede segue nodo collegamento legame",h:"Trascina il pallino a sinistra di un'attività su un'altra (o su un evento ◆): partirà dopo. Clic sulla linea per staccarla.",ok:()=>true,go:()=>gVai("plan",".tl")},
+ {cat:"Pianificazione",ic:"⏱",t:"Straordinario (sabato, domenica, festivo)",dove:"Pianificazione",k:"straordinario sabato domenica festivo ore extra weekend",h:"Doppio clic su un sabato, domenica o festivo della riga del progettista: si aggiunge lo straordinario a un'attività.",ok:()=>true,go:()=>gVai("plan",".tl")},
+ {cat:"Pianificazione",ic:"⚠",t:"Ridurre una giornata in sovraccarico",dove:"Pianificazione · numero rosso",k:"sovraccarico troppe ore rosso ridurre carico saturazione capacita",h:"Clic sul numero rosso sotto la riga del progettista: le ore in più passano all'attività più lunga, che si allunga. Lo slittamento resta registrato.",ok:()=>true,go:()=>gVai("plan",".tl")},
+ {cat:"Pianificazione",ic:"👥",t:"Vedere il lavoro di una persona",dove:"Pianificazione › Progettisti",k:"persona progettista lavoro di carico agenda vedere chi",h:"La timeline per progettisti mostra attività e carico di ognuno. Scrivi il nome della persona per andare alla sua riga.",ok:()=>true,go:c=>{if(c.pers)goPers(c.pers);else gVai("plan")}},
+ {cat:"Richieste",ic:"💬",t:"Fare una domanda al PM",usaComm:true,dove:"Richieste › + Nuova richiesta",k:"domanda chiedere pm richiesta chiarimento dubbio quesito problema bloccato fermo aiuto",h:"Scrivi la domanda; se il lavoro è fermo spunta «Bloccante»: i giorni di blocco vengono contati. Il PM risponde nella richiesta.",ok:()=>true,go:c=>gVai("req",null,()=>openNewReq(c.comm?{commessaId:c.comm.id}:{}))},
+ {cat:"Richieste",ic:"🔧",t:"Chiedere un lavoro a un reparto",usaComm:true,dove:"Richieste › + Nuova richiesta › Lavoro da fare a un reparto",k:"lavoro reparto modifica modificare produzione staffa extra richiesta lavoro officina intervento",h:"Per esempio la produzione chiede «modificare la staffa». Il responsabile del reparto approva, sceglie progettista e date e l'attività EXTRA entra in timeline.",ok:()=>S.reparti.some(r=>r.responsabile),go:c=>gVai("req",null,()=>openNewReq(Object.assign({repartoId:(S.reparti.find(r=>r.responsabile)||{}).id},c.comm?{commessaId:c.comm.id}:{})))},
+ {cat:"Richieste",ic:"⛔",t:"Vedere le richieste bloccanti",dove:"Richieste › Bloccanti",k:"bloccanti bloccata blocchi fermo attese richieste aperte",h:"Le richieste che fermano il lavoro, con i giorni di blocco.",ok:()=>true,go:()=>{S.reqFilt="bloccanti";gVai("req")}},
+ {cat:"Messaggi",ic:"✉",t:"Leggere messaggi e notifiche",dove:"Messaggi",k:"messaggi notifiche avvisi posta menzioni letto leggere cercare messaggio campanella",h:"Tutte le notifiche in un posto, divise per commessa, con ricerca e ☆ «da parte». Clic = ti porta al punto giusto.",ok:()=>!!S.me,go:()=>gVai("msg")},
+ {cat:"Il mio lavoro",ic:"🏠",t:"Il mio lavoro di oggi",dove:"Il mio lavoro",k:"mio lavoro oggi settimana cosa devo fare agenda miei compiti",h:"Oggi, questa settimana, requisiti assegnati, richieste che aspettano te, attività in attesa e messaggi da leggere.",ok:()=>!$("#tab-mio").hidden,go:()=>gVai("mio")},
+ {cat:"Il mio lavoro",ic:"✓",t:"Segnare un requisito come fatto",dove:"Il mio lavoro › Requisiti assegnati",k:"fatto smarcare spuntare completato finito chiudere requisito",h:"«✓ Fatto» accanto al requisito: data, nota e allegati restano nella cronistoria e il PM riceve la notifica. 💬 per una nota senza chiuderlo.",ok:()=>!$("#tab-mio").hidden,go:()=>gVai("mio","h2:requisiti")},
+ {cat:"Il mio lavoro",ic:"%",t:"Segnare avanzamento o attività svolta",dove:"clic sull'attività",k:"avanzamento percentuale svolta completata finita segna ore effettive",h:"Clic sull'attività (in timeline o in Il mio lavoro): imposti la percentuale o la segni svolta.",ok:()=>true,go:()=>gVai(!$("#tab-mio").hidden?"mio":"plan")},
+ {cat:"Ore e riepiloghi",ic:"Σ",t:"Riepilogo delle ore",dove:"Riepilogo ore",k:"riepilogo ore totali mese mensile settimana settimanali periodo anno saturazione capacita report statistiche consuntivo budget quante ore",h:"Ore per commessa, progettista e team su settimana, mese o periodo libero; slittamenti e richieste.",ok:()=>can("report"),go:()=>gVai("rep")},
+ {cat:"Ore e riepiloghi",ic:"⇅",t:"Esportare o importare da Excel",dove:"⇅ Excel in alto",k:"excel esporta esportare importa importare foglio xlsx scarica",h:"Scarichi commesse, persone, requisiti… li modifichi in Excel e li reimporti: prima vedi l'elenco delle modifiche.",ok:()=>!$("#xl-btn").hidden,go:()=>openExcel()},
+ {cat:"Ore e riepiloghi",ic:"🖨",t:"Stampare la pagina",dove:"Stampa in alto",k:"stampa stampare pdf carta",h:"Stampa la scheda che stai guardando (la timeline si adatta al foglio A4 orizzontale).",ok:()=>true,go:()=>window.print()},
+ {cat:"Persone e permessi",ic:"👤",t:"Aggiungere un utente o un progettista",dove:"Utenti",k:"utente utenti nuovo progettista persona aggiungere account accesso dipendente collega",h:"In fondo alla tabella Utenti: TK, nome, ruolo e reparto. Chi è progettista compare subito in timeline. Per mettere in timeline un utente esistente: colonna Reparto › «+ progettista in…».",ok:()=>canUtenti(),go:()=>gVai("perm","#nu-tk")},
+ {cat:"Persone e permessi",ic:"🧩",t:"Team e reparti",dove:"Commesse e persone",k:"team squadra gruppo reparto reparti membri capo team responsabile",h:"Team: clicca sui nomi per aggiungerli o toglierli. Reparti e responsabili li gestisce l'amministratore.",ok:()=>!$("#tab-mgmt").hidden,go:()=>gVai("mgmt","h2:team")},
+ {cat:"Persone e permessi",ic:"🌳",t:"Organigramma",dove:"🌳 Organigramma",k:"organigramma struttura chi e chi gerarchia schema",h:"Reparti, responsabili, team e persone in un colpo d'occhio.",ok:()=>!$("#tab-mgmt").hidden,go:()=>openOrg()},
+ {cat:"Persone e permessi",ic:"🔑",t:"Ruoli e permessi",dove:"Impostazioni › Ruoli e permessi",k:"ruoli ruolo permessi permesso spunte diritti accesso abilitare",h:"Le spunte che riceve chi ha un ruolo, per tutti i reparti o per un reparto.",ok:()=>!!(S.me&&S.me.admin),go:()=>gVai("set","h2:ruoli")},
+ {cat:"Persone e permessi",ic:"🔒",t:"Cambiare la mia password",dove:"in alto, accanto al nome",k:"password cambiare cambia parola chiave accesso",h:"Serve la password attuale e una nuova di almeno 8 caratteri.",ok:()=>!S.noPw,go:()=>showAuth("change")},
+ {cat:"Impostazioni",ic:"📅",t:"Festività e chiusure aziendali",dove:"Impostazioni › Calendario",k:"festivita festivi chiusura chiusure ferie aziendali calendario agosto natale ponte",h:"Le chiusure valgono per tutti: le ore di quei giorni passano ai giorni dopo.",ok:()=>!!(S.me&&S.me.admin),go:()=>gVai("set","h2:calendario")},
+ {cat:"Impostazioni",ic:"⚙",t:"Impostazioni generali (password, foglio ore)",dove:"Impostazioni › Generali",k:"impostazioni configurazione generali password attivare foglio ore",h:"Accesso con password, foglio ore e altre opzioni del programma.",ok:()=>!!(S.me&&S.me.admin),go:()=>gVai("set","h2:generali")},
+ {cat:"Impostazioni",ic:"🏢",t:"Più ditte",dove:"Impostazioni › Ditte",k:"ditta ditte societa azienda aziende separate cambia ditta",h:"Con la spunta «Gestione più ditte» ogni ditta ha la sua cartella; in alto compare il menu per passare dall'una all'altra.",ok:()=>!!S.gestDitte||(S.ditte||[]).length>1,go:()=>{if((S.ditte||[]).length>1&&!S.gestDitte)gVai(null,"#ditta-sel");else gVai("set","h2:ditte")}},
+ {cat:"Altro",ic:"↶",t:"Annullare l'ultima operazione",dove:"Annulla (Ctrl+Z)",k:"annulla annullare indietro errore sbagliato ripristina undo",h:"Annulla le tue ultime operazioni (fino a 30). Se un collega ha toccato le stesse cose, avvisa invece di annullare.",ok:()=>true,go:()=>doUndo()},
+ {cat:"Altro",ic:"🔎",t:"Cercare una commessa, persona o attività",dove:"Cerca (Ctrl+K)",k:"cerca cercare trova trovare ricerca dove",h:"Scrivi nella casella Cerca in alto: commesse, persone, attività e richieste; Invio ti porta lì.",ok:()=>true,go:()=>gVai(null,"#q")},
+ {cat:"Altro",ic:"📜",t:"Registro delle modifiche",dove:"Registro",k:"registro storico modifiche chi ha fatto log cronologia",h:"Chi ha fatto cosa e quando, su tutto il programma.",ok:()=>can("registro"),go:()=>gVai("reg")},
+];
+// commesse e persone nominate nella frase ("requisiti 24-004", "lavoro di Marco")
+function gEntita(q){const n=G_NORM(q),out={};
+  const cod=/\b\d{2}-\d{3}\b/.exec(n);if(cod)out.comm=S.commesse.find(c=>G_NORM(c.codice)===cod[0]);
+  if(!out.comm){const ts=gTok(q).filter(w=>w.length>3&&!GUIDA_KW.has(G_RAD(w)));
+    if(ts.length)out.comm=S.commesse.find(c=>{const nw=G_NORM(c.nome+" "+(c.cliente||"")).split(" ");return ts.some(w=>nw.some(x=>x===w||(w.length>=5&&x.startsWith(w))))})}
+  const ws=gTok(q);out.pers=S.persone.find(p=>ws.includes(G_NORM(p.nome))||ws.includes(G_NORM(pn(p))));
+  return out}
+const GUIDA_KW=new Set(GUIDA.flatMap(g=>gTok(g.k+" "+g.t).map(G_RAD)));
+function gCerca(q){const ws=gTok(q).map(G_RAD);if(!ws.length)return[];const ctx=gEntita(q);
+  const ris=GUIDA.filter(g=>{try{return g.ok()}catch(e){return false}}).map(g=>{const kw=gTok(g.k+" "+g.t).map(G_RAD);let sc=0;
+    for(const w of ws){if(kw.includes(w))sc+=3;else if(w.length>=3&&kw.some(k=>k.startsWith(w)||w.startsWith(k)&&k.length>=4))sc+=1.5}
+    if(G_NORM(g.t).includes(G_NORM(q)))sc+=4;
+    if(ctx.comm&&g.usaComm)sc+=1;if(ctx.pers&&/persona/.test(g.t))sc+=3;
+    return{g,sc}}).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc);
+  return{ris:ris.slice(0,6),ctx}}
+function apriGuida(testo){
+  const d=$("#guida");if(!d)return;
+  const disegna=()=>{const q=$("#g-q").value;const box=$("#g-ris");
+    if(!q.trim()){const cats=[...new Set(GUIDA.map(g=>g.cat))];
+      box.innerHTML=`<p class="muted" style="margin:0 0 6px;font-size:13px">Scrivi cosa vuoi fare (es. «nuova commessa», «ferie di Marco», «requisiti 24-004») oppure sfoglia il manuale:</p>`+cats.map(c=>`<details class="g-cat"><summary>${esc(c)}</summary>${GUIDA.filter(g=>g.cat===c).map(g=>{let ok=true;try{ok=g.ok()}catch(e){ok=false}return`<div class="g-man"><b>${g.ic} ${esc(g.t)}</b> <span class="muted">· ${esc(g.dove)}</span><div>${esc(g.h)}</div>${ok?`<button type="button" class="btn ghost" data-gi="${GUIDA.indexOf(g)}">Portami lì →</button>`:'<span class="muted" style="font-size:12px">Non disponibile con il tuo ruolo.</span>'}</div>`}).join("")}</details>`).join("");}
+    else{const {ris,ctx}=gCerca(q);box._ctx=ctx;
+      box.innerHTML=ris.length?ris.map((x,i)=>`<button type="button" class="g-r${i===0?" sel":""}" data-gi="${GUIDA.indexOf(x.g)}"><span class="g-ic">${x.g.ic}</span><span><b>${esc(x.g.t)}${ctx.comm&&x.g.usaComm?` <span class="code">${esc(ctx.comm.codice)}</span>`:""}${ctx.pers&&/persona/.test(x.g.t)?` · ${esc(pn(ctx.pers))}`:""}</b><span class="muted">${esc(x.g.dove)}</span><span>${esc(x.g.h)}</span></span></button>`).join("")
+        :`<p class="muted" style="margin:0">Non ho capito. Prova con altre parole (es. «crea commessa», «chiedi al PM», «ore del mese») o sfoglia il manuale cancellando il testo.</p>`}
+    box.querySelectorAll("[data-gi]").forEach(b=>b.onclick=()=>esegui(GUIDA[b.dataset.gi],box._ctx||{}))};
+  const esegui=(g,ctx)=>{d.close();try{g.go(ctx||{})}catch(e){console.error(e);toast("Non riesco ad aprirlo da qui.")}};
+  const q=$("#g-q");q.value=testo||"";q.oninput=disegna;
+  q.onkeydown=e=>{const bs=[...$("#g-ris").querySelectorAll(".g-r")];const i=bs.findIndex(b=>b.classList.contains("sel"));
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(!bs.length)return;const j=(i+(e.key==="ArrowDown"?1:-1)+bs.length)%bs.length;bs.forEach((b,k)=>b.classList.toggle("sel",k===j))}
+    if(e.key==="Enter"){e.preventDefault();const b=bs[Math.max(0,i)];if(b)b.click()}};
+  disegna();if(!d.open){if(typeof d.showModal==="function")d.showModal();else d.setAttribute("open","")}setTimeout(()=>{q.focus();q.setSelectionRange(q.value.length,q.value.length)},30)}
+$("#aiuto").onclick=()=>apriGuida("");
+$("#g-x").onclick=()=>$("#guida").close();
+document.addEventListener("keydown",e=>{if(e.key==="F1"||(e.ctrlKey&&e.key==="/")){if(!S.me)return;e.preventDefault();apriGuida("")}});
 
 /* ---------- scheda commessa: tutto su una commessa in una pagina (per il PM) ---------- */
 const schedaVis=()=>!!S.me&&(S.me.admin||can("report")||can("capo_pm")||can("gestione")||S.commesse.some(c=>isPmOf(c.id))||myReparti().length>0);
