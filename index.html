@@ -494,6 +494,10 @@ svg.dip path.hit{cursor:pointer}
 .cons-line{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed hsl(var(--h,205) 50% 45%);z-index:1;pointer-events:auto}
 .cons-line b{position:absolute;top:2px;left:3px;font-size:10px;font-family:var(--f-mono);background:var(--panel);padding:0 3px;border-radius:3px;white-space:nowrap;color:var(--muted)}
 .cons-line.late{border-left-color:var(--over)}.cons-line.late b{color:var(--over)}
+.sch-h{border-left:5px solid hsl(var(--h) 55% 45%)}.sch-tit{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.sch-tit .code{font-family:var(--f-mono);font-size:15px;color:hsl(var(--h) 55% 38%);font-weight:600}
+.sch-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13.5px;color:var(--muted);align-items:center}.sch-meta b{color:var(--fg);font-weight:600}.sch-chips{display:flex;gap:6px;flex-wrap:wrap}
+.kpi small{font-size:12px;line-height:1.3}#v-comm tr[data-gb],#v-comm tr[data-rq],#v-comm tr[data-rqt],#v-comm tr[data-evo]{cursor:pointer}#v-comm tr[data-gb]:hover td,#v-comm tr[data-rq]:hover td,#v-comm tr[data-rqt]:hover td,#v-comm tr[data-evo]:hover td{background:var(--line-soft)}
+tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor:pointer;color:inherit;text-decoration:none}.sch-lnk:hover{text-decoration:underline;color:var(--accent)}
 .late-txt{color:var(--over)!important;font-weight:600}
 .blk .lt{color:var(--over);font-weight:700;flex:none}
 .fold{border:0;background:transparent;cursor:pointer;padding:0 2px;font-size:12px}
@@ -577,6 +581,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
     <nav class="tabs" role="tablist">
       <button role="tab" id="tab-mio" aria-selected="false" data-tab="mio">Il mio lavoro</button>
       <button role="tab" id="tab-plan" aria-selected="true" data-tab="plan">Pianificazione</button>
+      <button role="tab" id="tab-comm" aria-selected="false" data-tab="comm" hidden>Commessa</button>
       <button role="tab" id="tab-ore" aria-selected="false" data-tab="ore" hidden>Foglio ore</button>
       <button role="tab" id="tab-req" aria-selected="false" data-tab="req">Richieste<span class="cnt" id="req-cnt" hidden></span></button>
       <button role="tab" id="tab-rep" aria-selected="false" data-tab="rep">Riepilogo ore</button>
@@ -627,6 +632,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
 
   <section id="v-mio" hidden></section>
   <section id="v-ore" hidden></section>
+  <section id="v-comm" hidden></section>
   <section id="v-req" hidden></section>
   <section id="v-rep" hidden></section>
   <section id="v-mgmt" hidden></section>
@@ -830,7 +836,7 @@ const S={persone:[],commesse:[],blocchi:[],team:[],teamF:"",view0:mondayOf(today
 try{const z=Number(localStorage.getItem("cut-zoom"));if([22,34,52].includes(z))S.dw=z}catch(e){}
 try{S.teamF=localStorage.getItem("cut-team")||""}catch(e){}
 S.soloMie=true; // "Le mie in evidenza": scelta di ogni utente, di base accesa (vedi initScope)
-try{const t=localStorage.getItem("cut-tab");if(["mio","plan","ore","req","rep","mgmt","reg","perm","set"].includes(t))S.tab=t}catch(e){}
+try{const t=localStorage.getItem("cut-tab");if(["mio","plan","comm","ore","req","rep","mgmt","reg","perm","set"].includes(t))S.tab=t}catch(e){}
 
 /* ---------- permessi ---------- */
 const PERMS=[
@@ -1017,16 +1023,16 @@ function renderNow(){
   S.persone.sort((a,b)=>(a.ordine??999)-(b.ordine??999)||String(a.nome).localeCompare(b.nome));
   S.commesse.sort((a,b)=>String(a.codice).localeCompare(b.codice));
   S.team.sort((a,b)=>String(a.nome).localeCompare(b.nome));
-  const vis={mio:!!S.me&&(!!(myPersona()&&persById(myPersona()))||S.persone.some(p=>canPlanOn(p.id))||S.commesse.some(c=>isPmOf(c.id))),plan:true,ore:canFoglio(),req:true,rep:can("report"),mgmt:canMgmt()||canTeam()||canAssegnaPM()||can("pm")||myReparti().length>0||S.isOwner,reg:can("registro"),perm:canUtenti(),set:!!(S.me&&S.me.admin)};
+  const vis={mio:!!S.me&&(!!(myPersona()&&persById(myPersona()))||S.persone.some(p=>canPlanOn(p.id))||S.commesse.some(c=>isPmOf(c.id))),plan:true,comm:schedaVis(),ore:canFoglio(),req:true,rep:can("report"),mgmt:canMgmt()||canTeam()||canAssegnaPM()||can("pm")||myReparti().length>0||S.isOwner,reg:can("registro"),perm:canUtenti(),set:!!(S.me&&S.me.admin)};
   if(!vis[S.tab])S.tab="plan";
   document.querySelectorAll("nav.tabs button").forEach(b=>{b.hidden=!vis[b.dataset.tab];b.setAttribute("aria-selected",b.dataset.tab===S.tab?"true":"false")});
-  ["mio","plan","ore","req","rep","mgmt","reg","perm","set"].forEach(k=>$("#v-"+k).hidden=S.tab!==k);
+  ["mio","plan","comm","ore","req","rep","mgmt","reg","perm","set"].forEach(k=>$("#v-"+k).hidden=S.tab!==k);
   renderBell();$("#undo").disabled=!S.annulla;$("#undo").title=S.annulla?"Annulla: "+S.annulla+" (Ctrl+Z)":"Niente da annullare";
   const nTodo=S.richieste.filter(attendeMe).length;$("#req-cnt").textContent=nTodo;$("#req-cnt").hidden=!nTodo;
   $("#status").textContent=roleLabel();
   const ex=[...S.persone,...S.commesse,...S.blocchi].some(x=>x.esempio);
   $("#banner").hidden=!(ex&&canMgmt()&&canPlan());
-  if(S.tab==="mio")renderMio();else if(S.tab==="plan")renderPlan();else if(S.tab==="ore")renderOre();else if(S.tab==="req")renderReq();else if(S.tab==="rep")renderRep();else if(S.tab==="mgmt")renderMgmt();else if(S.tab==="reg")renderReg();else if(S.tab==="set")renderSet();else renderPerm();
+  if(S.tab==="mio")renderMio();else if(S.tab==="plan")renderPlan();else if(S.tab==="comm")renderComm();else if(S.tab==="ore")renderOre();else if(S.tab==="req")renderReq();else if(S.tab==="rep")renderRep();else if(S.tab==="mgmt")renderMgmt();else if(S.tab==="reg")renderReg();else if(S.tab==="set")renderSet();else renderPerm();
   applySorts();addXls();
 }
 
@@ -1092,7 +1098,7 @@ function renderMio(){
     ${p?`<div class="panel"><h2>Prossime due settimane</h2>${pross.length?`<table class="mio-tb"><tbody>${pross.map(b=>riga(b,`<td class="muted" style="white-space:nowrap">dal ${fmtD(bStart(b))} al ${fmtD(bEnd(b))}</td><td class="n">${fmtH(bOre(b))} h</td>`)).join("")}</tbody></table>`:`<p class="muted" style="margin:0">Nessuna nuova attività in arrivo.</p>`}</div>`:""}
     ${assP.length?`<div class="panel"><h2>Ferie e assenze</h2><table class="mio-tb"><tbody>${assP.map(b=>`<tr><td>🌴 ${esc(b.attivita||assLab(b.assenza))}</td><td class="muted">${fmtD(bStart(b))}${bEnd(b)!==bStart(b)?" – "+fmtD(bEnd(b)):""}</td><td class="n">${fmtH(b.oreGiorno)} h/g</td></tr>`).join("")}</tbody></table></div>`:""}
     ${mieC.length?`<div class="panel"><h2>Le tue commesse<small>sei il PM</small></h2><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
-      return`<tr><td><span class="code" style="--h:${c.colore}">${esc(c.codice)}</span></td><td><b>${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} requisiti aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div>`:""}
+      return`<tr><td><span class="code" style="--h:${c.colore}">${esc(c.codice)}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} requisiti aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div>`:""}
     </div></div>`;
   const sp=$("#mio-p");if(sp)sp.onchange=()=>{S.mioP=sp.value||null;render()};
   el.querySelectorAll("[data-mb]").forEach(t=>t.onclick=()=>openEditor(t.dataset.mb));
@@ -1151,7 +1157,7 @@ function rowsCommesse(v0,v1,dw,W,tdl){
     }
     const kN=consegnaN(c),rit=ritardoComm(c);
     const kLine=kN!=null&&kN>=v0&&kN<=v1?`<i class="cons-line${rit?" late":""}" style="left:${(kN-v0+1)*dw-1}px" title="Consegna ${c.codice}: ${fmtD(kN)}${rit?" · fine prevista "+fmtD(fineComm(c.id))+" (+"+rit+" g lavorativi)":""}"><b>${fmtD(kN)}</b></i>`:"";
-    html+=`<div class="row" data-c="${esc(c.id)}"><div class="name" style="--h:${c.colore}"><span class="cm">${esc(c.codice)}${c.cartella?` <button class="fold" data-fold="${esc(c.id)}" title="Cartella della commessa" aria-label="Apri la cartella della commessa">📁</button>`:""}</span>${reqChip(c.id)||docChip(c.id)||evChip(c.id)?`<span class="cm-ch">${reqChip(c.id)}${docChip(c.id)}${evChip(c.id)}</span>`:""}<b title="${esc(c.nome)}">${esc(c.nome)}</b><span>PM: ${esc(pm||"—")}</span>${kN!=null?`<span class="${rit?"late-txt":""}" title="${rit?"Fine prevista "+fmtD(fineComm(c.id))+": "+rit+" giorni lavorativi dopo la consegna":""}">Consegna ${fmtD(kN)}${rit?` ⚠ +${rit} g`:""}</span>`:""}<span class="sat">${fmtH(ore)} h${av!=null?" · "+av+"%":""}${nBl?` · <b style="color:var(--over)">⛔ ${nBl}</b>`:""}</span></div><div class="track" style="width:${W}px;height:${h}px">${tdl}${kLine}${blks}</div></div>`;
+    html+=`<div class="row" data-c="${esc(c.id)}"><div class="name" style="--h:${c.colore}"><span class="cm">${esc(c.codice)}${c.cartella?` <button class="fold" data-fold="${esc(c.id)}" title="Cartella della commessa" aria-label="Apri la cartella della commessa">📁</button>`:""}</span>${reqChip(c.id)||docChip(c.id)||evChip(c.id)?`<span class="cm-ch">${reqChip(c.id)}${docChip(c.id)}${evChip(c.id)}</span>`:""}<b title="${esc(c.nome)}${schedaVis()?" · clic: scheda della commessa":""}"${schedaVis()?` data-sch="${esc(c.id)}" class="sch-lnk"`:""}>${esc(c.nome)}</b><span>PM: ${esc(pm||"—")}</span>${kN!=null?`<span class="${rit?"late-txt":""}" title="${rit?"Fine prevista "+fmtD(fineComm(c.id))+": "+rit+" giorni lavorativi dopo la consegna":""}">Consegna ${fmtD(kN)}${rit?` ⚠ +${rit} g`:""}</span>`:""}<span class="sat">${fmtH(ore)} h${av!=null?" · "+av+"%":""}${nBl?` · <b style="color:var(--over)">⛔ ${nBl}</b>`:""}</span></div><div class="track" style="width:${W}px;height:${h}px">${tdl}${kLine}${blks}</div></div>`;
   }
   return html;
 }
@@ -3048,7 +3054,7 @@ function renderRep(){
   <div class="grid2">
     <div class="panel"><h2>Ore per commessa<small>${esc(lbl)}</small></h2>
       <div class="tbl-wrap"><table><thead><tr><th>Codice</th><th>Commessa</th><th>Consegna</th><th class="n">Pianif.</th><th class="n" title="Ore pianificate nate da richieste di lavoro extra (comprese nelle pianificate)">di cui extra</th><th class="n">Svolte</th><th>Avanzamento</th><th class="n">Budget</th><th>Ore vs budget</th></tr></thead><tbody>
-      ${perC.map(x=>{const a=avComm(x.c.id);return`<tr><td class="code"><i class="dot" style="--h:${x.c.colore}"></i>${esc(x.c.codice)}</td><td>${esc(x.c.nome)}<br><span class="muted" style="font-size:12px">${esc(x.c.cliente||"")}</span></td><td style="white-space:nowrap">${x.c.consegna?fmtD(consegnaN(x.c)):'<span class="muted">—</span>'}${ritardoComm(x.c)?`<br><b style="color:var(--over);font-size:12px">⚠ +${ritardoComm(x.c)} g (fine ${fmtD(fineComm(x.c.id))})</b>`:""}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${x.ex?`<b style="color:hsl(300 45% 40%)">${fmtH(x.ex)}</b>`:'<span class="muted">—</span>'}</td><td class="n">${fmtH(x.sv)}</td><td>${a==null?'<span class="muted">—</span>':`<div style="display:flex;gap:8px;align-items:center"><div class="prog" style="flex:1"><i class="sv" style="width:${a}%"></i></div><span class="n" style="font-family:var(--f-mono);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right">${a}%</span></div>`}</td><td class="n">${x.c.oreBudget?fmtH(x.c.oreBudget):"—"}</td><td>${prog(x)}</td></tr>`}).join("")||'<tr><td colspan="8" class="muted">Nessuna commessa.</td></tr>'}
+      ${perC.map(x=>{const a=avComm(x.c.id);return`<tr><td class="code"><i class="dot" style="--h:${x.c.colore}"></i>${schedaVis()?`<a href="#" class="sch-lnk" data-sch="${esc(x.c.id)}" title="Scheda della commessa">${esc(x.c.codice)}</a>`:esc(x.c.codice)}</td><td>${esc(x.c.nome)}<br><span class="muted" style="font-size:12px">${esc(x.c.cliente||"")}</span></td><td style="white-space:nowrap">${x.c.consegna?fmtD(consegnaN(x.c)):'<span class="muted">—</span>'}${ritardoComm(x.c)?`<br><b style="color:var(--over);font-size:12px">⚠ +${ritardoComm(x.c)} g (fine ${fmtD(fineComm(x.c.id))})</b>`:""}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${x.ex?`<b style="color:hsl(300 45% 40%)">${fmtH(x.ex)}</b>`:'<span class="muted">—</span>'}</td><td class="n">${fmtH(x.sv)}</td><td>${a==null?'<span class="muted">—</span>':`<div style="display:flex;gap:8px;align-items:center"><div class="prog" style="flex:1"><i class="sv" style="width:${a}%"></i></div><span class="n" style="font-family:var(--f-mono);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right">${a}%</span></div>`}</td><td class="n">${x.c.oreBudget?fmtH(x.c.oreBudget):"—"}</td><td>${prog(x)}</td></tr>`}).join("")||'<tr><td colspan="8" class="muted">Nessuna commessa.</td></tr>'}
       <tr class="tot"><td></td><td>Totale</td><td></td><td class="n">${fmtH(totPl)}</td><td class="n">${fmtH(perC.reduce((q,x)=>q+x.ex,0))||"—"}</td><td class="n">${fmtH(totSv)}</td><td class="muted" style="font-size:12px">media delle attività pesata sulle ore</td><td></td><td class="muted" style="font-size:12px">piena = svolte, chiara = pianificate</td></tr>
       </tbody></table></div></div>
     <div class="panel"><h2>Ore per progettista<small>${esc(lbl)}</small></h2>
@@ -3072,6 +3078,123 @@ function renderRep(){
   el.querySelector("#per-da").onchange=libero;el.querySelector("#per-a").onchange=libero;
   const rc=$("#rep-ch");if(rc)rc.onchange=()=>{S.repChiuse=rc.checked;render()};
   $("#xls").onclick=()=>{try{esportaExcel()}catch(e){console.error(e);toast("Esportazione non riuscita.")}};
+}
+
+/* ---------- scheda commessa: tutto su una commessa in una pagina (per il PM) ---------- */
+const schedaVis=()=>!!S.me&&(S.me.admin||can("report")||can("capo_pm")||can("gestione")||S.commesse.some(c=>isPmOf(c.id))||myReparti().length>0);
+function openScheda(cid){S.schedaC=cid;try{localStorage.setItem("cut-scheda",cid)}catch(_){}S.tab="comm";saveTab();render();window.scrollTo(0,0)}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-sch]");if(b){e.preventDefault();e.stopPropagation();openScheda(b.dataset.sch)}},true);
+const schBtn=cid=>schedaVis()?`<button type="button" class="rqchip sch" data-sch="${esc(cid)}" title="Scheda della commessa: ore per reparto, problemi, richieste, slittamenti">📊 Scheda</button>`:"";
+function renderComm(){
+  const el=$("#v-comm");
+  if(!S.schedaC){try{S.schedaC=localStorage.getItem("cut-scheda")}catch(_){}}
+  const mie=S.commesse.filter(c=>isPmOf(c.id));
+  const c=commById(S.schedaC)||mie.find(x=>!x.chiusa)||aperte()[0]||S.commesse[0];
+  if(!c){el.innerHTML=`<div class="empty"><strong>Nessuna commessa</strong><span>Le commesse si creano in Commesse e persone.</span></div>`;return}
+  S.schedaC=c.id;const cid=c.id;
+  const bl=S.blocchi.filter(b=>b.commessaId===cid&&!isAss(b)).sort((a,b)=>bStart(a)-bStart(b)||bEnd(a)-bEnd(b));
+  const repOf=p=>p&&S.reparti.find(r=>r.id===p.repartoId);
+  const pct=(a,b)=>b?Math.round(a/b*100):0;
+  const gg=n=>n+(n===1?" giorno":" giorni");
+  // ---- ore
+  let pl=0,sv=0,ex=0,aOggi=0;const perR=new Map(),perP=new Map();
+  for(const b of bl){const o=bOre(b),s=bSvolte(b);pl+=o;sv+=s;aOggi+=clipOre(b,-1e9,todayN,"pl");if(b.extra)ex+=o;
+    const p=persById(b.personaId),r=repOf(p),rk=r?r.id:"";
+    const R=perR.get(rk)||{r,pl:0,sv:0,ex:0,pers:new Set(),n:0};R.pl+=o;R.sv+=s;if(b.extra)R.ex+=o;R.pers.add(b.personaId);R.n++;perR.set(rk,R);
+    const P=perP.get(b.personaId)||{p,r,pl:0,sv:0,ex:0,n:0,w:0,wo:0,svolte:0};P.pl+=o;P.sv+=s;if(b.extra)P.ex+=o;P.n++;if(b.stato==="svolto")P.svolte++;P.w+=(o||1)*avPct(b);P.wo+=(o||1);perP.set(b.personaId,P)}
+  const bud=Number(c.oreBudget)||0,av=avComm(cid),atteso=pl?Math.round(aOggi/pl*100):null;
+  const kN=consegnaN(c),fine=fineComm(cid),rit=ritardoComm(c);
+  // ---- requisiti e richieste
+  const rq=reqOf(cid),rqS=reqStats(cid),rqB=rq.filter(r=>r.stato==="bloccato"),rqL=rq.filter(reqLate).filter(r=>r.stato!=="bloccato");
+  const ric=S.richieste.filter(r=>r.commessaId===cid||r.commessaExtraId===cid).sort((a,b)=>(a.stato==="chiusa")-(b.stato==="chiusa")||Date.parse(b.creata)-Date.parse(a.creata));
+  const ricBl=ric.filter(bloccaOra),ricAtt=ric.filter(r=>!r.repartoId&&(r.stato==="aperta"||r.stato==="in_carico"));
+  const lavori=ric.filter(r=>r.repartoId);
+  const oreLav=r=>S.blocchi.filter(b=>b.extra&&b.extra.richiestaId===r.id).reduce((a,b)=>a+bOre(b),0);
+  const scad=bl.filter(b=>b.stato!=="svolto"&&bEnd(b)<todayN);
+  const dopoCons=kN!=null?bl.filter(b=>b.stato!=="svolto"&&bEnd(b)>kN):[];
+  // ---- slittamenti
+  const eventi=eventiDi(cid).map(e=>{const st=e.storia||[];const d0=st.length?st[0].da:e.data;const a=dnum(d0),z=dnum(e.data);return{e,n:st.length,d0,ggl:z>a?workDays(a+1,z):z<a?-workDays(z+1,a):0}});
+  const slit=bl.filter(b=>Array.isArray(b.slittamenti)&&b.slittamenti.length).map(b=>({b,ore:b.slittamenti.reduce((a,x)=>a+(Number(x.ore)||0),0),cs:[...new Set(b.slittamenti.flatMap(x=>x.cause||[]))],g:b.fineOriginale?workDays(dnum(b.fineOriginale)+1,bEnd(b)):0}));
+  const mieCause=k=>k===cid||String(k).startsWith("ex:")&&ric.some(r=>"ex:"+r.id===k);
+  const altre=S.blocchi.filter(b=>b.commessaId!==cid&&Array.isArray(b.slittamenti)).map(b=>({b,ore:b.slittamenti.filter(x=>(x.cause||[]).some(mieCause)).reduce((a,x)=>a+(Number(x.ore)||0)/Math.max(1,(x.cause||[]).length),0)})).filter(x=>x.ore>0);
+  const causa=id=>{if(String(id).startsWith("ex:")){const q=S.richieste.find(x=>x.id===id.slice(3));return`<span class="asspill xtra-p">EXTRA ${esc(q?"«"+q.titolo+"»":"")}</span>`}if(String(id).startsWith("ass:"))return`<span class="asspill">${esc(assLab(id.slice(4)))}</span>`;if(String(id).startsWith("cal:"))return`<span class="asspill">${esc(id.slice(4))}</span>`;const x=commById(id);return x?`<i class="dot" style="--h:${x.colore}"></i>${esc(x.codice)}`:"—"};
+  const nProb=ricBl.length+rqB.length+rqL.length+scad.length+(rit?1:0);
+  const opz=[...S.commesse].sort((a,b)=>(!!a.chiusa-!!b.chiusa)||(isPmOf(b.id)-isPmOf(a.id))||String(a.codice).localeCompare(b.codice,"it",{numeric:true}));
+  const ricStato=r=>r.repartoId?(r.esito==="rifiutata"?"Rifiutata":r.stato==="chiusa"?"Chiusa":r.stato==="risposta"?"Da confermare":r.esito==="approvata"?(r.giro>1?"Modifica approvata":"Approvata, in lavorazione"):r.giro>1?"Modifica da approvare":"Da approvare"):STATO_LAB[r.stato]||r.stato;
+  const persB=b=>{const p=persById(b.personaId),r=repOf(p);return esc(pn(p)||"—")+(r?` <span class="muted" style="font-size:12px">${esc(r.nome)}</span>`:"")};
+  const barra=(a,b,tit)=>`<div class="prog" title="${esc(tit||"")}"><i class="pl" style="width:${Math.min(100,pct(a,b))}%"></i></div>`;
+  const vuoto=(n,t)=>`<tr><td colspan="${n}" class="muted">${t}</td></tr>`;
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:14px">
+  <div class="toolbar sch-tb"><label class="hint" for="sch-c">Commessa</label><select class="inp" id="sch-c" style="width:auto;max-width:100%">${opz.map(x=>`<option value="${esc(x.id)}"${x.id===cid?" selected":""}>${esc(x.codice)} · ${esc(x.nome)}${x.chiusa?" (chiusa)":""}${isPmOf(x.id)?" ★":""}</option>`).join("")}</select>
+    <span class="grow"></span><button type="button" class="btn" id="sch-tl" title="Apri la commessa nella timeline">▤ Vedi in timeline</button></div>
+  <div class="panel sch-h" style="--h:${c.colore}">
+    <div class="sch-tit"><span class="code">${esc(c.codice)}</span><h2 style="font-size:24px">${esc(c.nome)}</h2>${c.chiusa?`<span class="pill">chiusa${c.chiusaIl?" il "+fmtD(dnum(c.chiusaIl)):""}</span>`:""}${c.extra?'<span class="asspill xtra-p">commessa interna EXTRA</span>':""}</div>
+    <div class="sch-meta"><span>Cliente <b>${esc(c.cliente||"—")}</b></span><span>PM <b>${esc(pmNomi(cid)||"—")}</b></span><span>Consegna <b>${kN!=null?fmtD(kN)+" "+dobj(kN).getUTCFullYear():"—"}</b></span><span>Fine prevista <b class="${rit?"late-txt":""}">${fine!=null?fmtD(fine)+" "+dobj(fine).getUTCFullYear():"—"}${rit?` · ⚠ ${gg(rit)} lavorativi di ritardo`:kN!=null&&fine!=null?` · ${gg(workDays(fine+1,kN))} lavorativi di margine`:""}</b></span>
+      <span class="sch-chips">${c.cartella?`<button type="button" class="rqchip" data-fold="${esc(cid)}" title="Cartella della commessa">📁 Cartella</button>`:""}${reqChip(cid)}${docChip(cid)}${evChip(cid)}</span></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span>Budget</span><b>${bud?fmtH(bud)+" h":"—"}</b></div>
+    <div class="kpi"><span>Pianificate</span><b style="${bud&&pl>bud?"color:var(--over)":""}">${fmtH(pl)} h</b><small class="muted">${bud?pct(pl,bud)+"% del budget":"nessun budget"}</small></div>
+    <div class="kpi"><span>Svolte</span><b>${fmtH(sv)} h</b><small class="muted">${pl?pct(sv,pl)+"% delle pianificate":""}</small></div>
+    <div class="kpi"><span>Di cui extra</span><b style="${ex?"color:hsl(300 45% 40%)":""}">${ex?fmtH(ex)+" h":"—"}</b><small class="muted">${lavori.length?lavori.length+(lavori.length>1?" richieste":" richiesta")+" di lavoro":""}</small></div>
+    <div class="kpi"><span>Avanzamento</span><b>${av==null?"—":av+"%"}</b><small class="${av!=null&&atteso!=null&&av+5<atteso?"late-txt":"muted"}">${atteso==null?"":"a oggi previsto "+atteso+"%"}</small></div>
+    <div class="kpi"><span>Problemi aperti</span><b style="${nProb?"color:var(--over)":""}">${nProb}</b><small class="muted">${[ricBl.length?ricBl.length+(ricBl.length>1?" blocchi":" blocco"):"",rqB.length+rqL.length?(rqB.length+rqL.length)+(rqB.length+rqL.length>1?" requisiti":" requisito"):"",scad.length?scad.length+(scad.length>1?" attività scadute":" attività scaduta"):"",ricAtt.length?ricAtt.length+(ricAtt.length>1?" domande in attesa":" domanda in attesa"):""].filter(Boolean).join(" · ")}</small></div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><h2>Ore per reparto<small>${fmtH(pl)} h pianificate · ${fmtH(sv)} h svolte</small></h2>
+      <div class="tbl-wrap"><table><thead><tr><th>Reparto</th><th class="n">Persone</th><th class="n">Attività</th><th class="n">Pianif.</th><th class="n">di cui extra</th><th class="n">Svolte</th><th class="n">Quota</th><th data-nosort>Peso sulla commessa</th></tr></thead><tbody>
+      ${[...perR.values()].sort((a,b)=>b.pl-a.pl).map(x=>`<tr><td style="white-space:nowrap">${x.r?`<i class="dot" style="--h:${x.r.colore}"></i>${esc(x.r.nome)}`:'<span class="muted">Senza reparto</span>'}</td><td class="n">${x.pers.size}</td><td class="n">${x.n}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${x.ex?fmtH(x.ex):"—"}</td><td class="n">${fmtH(x.sv)}</td><td class="n">${pct(x.pl,pl)}%</td><td>${barra(x.pl,pl)}</td></tr>`).join("")||vuoto(8,"Ancora nessuna attività pianificata.")}
+      ${perR.size?`<tr class="tot"><td>Totale</td><td class="n">${perP.size}</td><td class="n">${bl.length}</td><td class="n">${fmtH(pl)}</td><td class="n">${ex?fmtH(ex):"—"}</td><td class="n">${fmtH(sv)}</td><td class="n">100%</td><td>${bud?`<span class="muted" style="font-size:12px">budget ${fmtH(bud)} h: ${pl>bud?"superato di "+fmtH(pl-bud)+" h":"restano "+fmtH(bud-pl)+" h"}</span>`:""}</td></tr>`:""}
+      </tbody></table></div></div>
+    <div class="panel"><h2>Ore per progettista<small>chi ci lavora e quanto</small></h2>
+      <div class="tbl-wrap"><table><thead><tr><th>Progettista</th><th>Reparto</th><th class="n">Attività</th><th class="n">Pianif.</th><th class="n">di cui extra</th><th class="n">Svolte</th><th class="n">Avanz.</th></tr></thead><tbody>
+      ${[...perP.values()].sort((a,b)=>b.pl-a.pl).map(x=>`<tr><td>${esc(pn(x.p)||"—")}</td><td>${esc(x.r?x.r.nome:"—")}</td><td class="n">${x.svolte}/${x.n}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${x.ex?fmtH(x.ex):"—"}</td><td class="n">${fmtH(x.sv)}</td><td class="n">${x.wo?Math.round(x.w/x.wo):0}%</td></tr>`).join("")||vuoto(7,"Nessuno.")}
+      </tbody></table></div></div>
+  </div>
+  <div class="panel"><h2>Problemi e blocchi<small>${nProb?nProb+" da guardare":"nessun problema aperto"}</small></h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Tipo</th><th>Cosa</th><th>Chi</th><th>Da quando / scadenza</th><th>Dettaglio</th></tr></thead><tbody>
+    ${rit?`<tr class="sch-bad"><td><span class="pill xl-errore">Consegna</span></td><td>Fine prevista dopo la consegna</td><td>${dopoCons.map(b=>esc(nomeP(b.personaId))).filter((x,i,a)=>a.indexOf(x)===i).join(", ")||"—"}</td><td>${fmtD(kN)} → ${fmtD(fine)}</td><td>${gg(rit)} lavorativi di ritardo · ${dopoCons.length} ${dopoCons.length===1?"attività finisce":"attività finiscono"} dopo la consegna</td></tr>`:""}
+    ${ricBl.map(r=>{const m=reqMeta(r);return`<tr class="sch-bad" data-rq="${esc(r.id)}"><td><span class="pill xl-errore">⛔ Blocco</span></td><td>${esc(r.titolo)}</td><td>${esc(userName(r.autore))}</td><td>da ${fmtGG(giorniBlocco(r))}</td><td>${m.b?"ferma «"+esc(m.b.attivita||"")+"» di "+esc(nomeP(m.b.personaId)):""} · ${esc(STATO_LAB[r.stato]||r.stato)}</td></tr>`}).join("")}
+    ${rqB.map(r=>`<tr data-rqt="${esc(r.id)}"><td><span class="pill xl-modifica">Requisito bloccato</span></td><td>${esc(r.testo)}</td><td>${esc((r.assegnati||[]).map(nomeP).join(", ")||"—")}</td><td>${r.scadenza?fmtD(dnum(r.scadenza)):"—"}</td><td>${esc(r.motivo||"")}</td></tr>`).join("")}
+    ${rqL.map(r=>`<tr data-rqt="${esc(r.id)}"><td><span class="pill xl-modifica">Requisito in ritardo</span></td><td>${esc(r.testo)}</td><td>${esc((r.assegnati||[]).map(nomeP).join(", ")||"—")}</td><td>scadeva il ${fmtD(dnum(r.scadenza))}</td><td>${gg(workDays(dnum(r.scadenza)+1,todayN))} lavorativi fa</td></tr>`).join("")}
+    ${scad.map(b=>`<tr data-gb="${esc(b.id)}"><td><span class="pill xl-modifica">Attività scaduta</span></td><td>${esc(b.attivita||"(senza titolo)")}</td><td>${esc(nomeP(b.personaId))}</td><td>finiva il ${fmtD(bEnd(b))}</td><td>non ancora segnata svolta · ${avPct(b)}%</td></tr>`).join("")}
+    ${ricAtt.filter(r=>!bloccaOra(r)).map(r=>`<tr data-rq="${esc(r.id)}"><td><span class="pill">Domanda al PM</span></td><td>${esc(r.titolo)}</td><td>${esc(userName(r.autore))}</td><td>${fmtD(dnum(String(r.creata).slice(0,10)))}</td><td>${esc(STATO_LAB[r.stato]||r.stato)}, senza risposta</td></tr>`).join("")}
+    ${nProb||ricAtt.length?"":vuoto(5,"Niente da segnalare: nessun blocco, requisito in ritardo o attività scaduta.")}
+    </tbody></table></div></div>
+  <div class="grid2">
+    <div class="panel"><h2>Richieste<small>${ric.length} in tutto · ${ric.filter(r=>r.stato!=="chiusa").length} aperte · domande al PM e lavori extra</small></h2>
+      <div class="tbl-wrap"><table><thead><tr><th>Tipo</th><th>Richiesta</th><th>Da</th><th>Aperta il</th><th>Stato</th><th class="n">Blocco</th><th class="n">Ore extra</th></tr></thead><tbody>
+      ${ric.map(r=>{const o=r.repartoId?oreLav(r):0;return`<tr data-rq="${esc(r.id)}"${r.stato==="chiusa"?' class="muted"':""}><td>${r.repartoId?'<span class="asspill xtra-p">Lavoro extra</span>':"Domanda"}</td><td>${esc(r.titolo)}${r.repartoId?`<br><span class="muted" style="font-size:12px">${esc(repRespNome(r.repartoId))}${r.giro>1?" · "+r.giro+"° giro":""}</span>`:""}</td><td>${esc(userName(r.autore))}${r.daRepartoId?`<br><span class="muted" style="font-size:12px">${esc((S.reparti.find(x=>x.id===r.daRepartoId)||{}).nome||"")}</span>`:""}</td><td style="white-space:nowrap">${fmtD(dnum(String(r.creata).slice(0,10)))}</td><td>${esc(ricStato(r))}</td><td class="n">${r.bloccante||r.bloccoMs?`<span style="${bloccaOra(r)?"color:var(--over);font-weight:600":""}">${fmtGG(giorniBlocco(r))}</span>`:"—"}</td><td class="n">${o?fmtH(o):"—"}</td></tr>`}).join("")||vuoto(7,"Nessuna richiesta su questa commessa.")}
+      </tbody></table></div></div>
+    <div class="panel"><h2>Requisiti<small>${rqS.n?`${rqS.f} fatti su ${rqS.n} · ${rqS.b} bloccati · ${rqS.late} in ritardo`:"nessun requisito"}</small></h2>
+      ${rqS.n?`<div style="display:flex;gap:10px;align-items:center"><div class="prog" style="flex:1"><i class="sv" style="width:${pct(rqS.f,rqS.n)}%"></i></div><b class="n" style="font-family:var(--f-mono)">${pct(rqS.f,rqS.n)}%</b></div>`:""}
+      <div class="tbl-wrap"><table><thead><tr><th>Assegnato a</th><th class="n">Totali</th><th class="n">Fatti</th><th class="n">Da fare</th><th class="n">Bloccati</th><th class="n">In ritardo</th></tr></thead><tbody>
+      ${(()=>{const m=new Map();for(const r of rq){const ids=(r.assegnati||[]).length?r.assegnati:[""];for(const id of ids){const e=m.get(id)||{n:0,f:0,b:0,l:0};e.n++;if(r.stato==="fatto")e.f++;if(r.stato==="bloccato")e.b++;if(reqLate(r))e.l++;m.set(id,e)}}
+        return[...m].sort((a,b)=>(b[1].n-b[1].f)-(a[1].n-a[1].f)).map(([id,e])=>`<tr><td>${id?esc(nomeP(id)):'<span class="muted">Non assegnati</span>'}</td><td class="n">${e.n}</td><td class="n">${e.f}</td><td class="n">${e.n-e.f}</td><td class="n" style="${e.b?"color:var(--over);font-weight:600":""}">${e.b||"—"}</td><td class="n" style="${e.l?"color:var(--warn);font-weight:600":""}">${e.l||"—"}</td></tr>`).join("")})()||vuoto(6,`Nessun requisito. ${canReqC(cid)?"Aggiungili con il pulsante Requisiti qui sopra.":""}`)}
+      </tbody></table></div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><h2>Eventi e rinvii<small>arrivi, approvazioni del cliente… e quanto si sono spostati</small></h2>
+      <div class="tbl-wrap"><table><thead><tr><th>Evento</th><th>Data prevista all'inizio</th><th>Data attuale</th><th class="n">Rinvii</th><th class="n">Spostamento</th></tr></thead><tbody>
+      ${eventi.map(x=>`<tr data-evo="${esc(x.e.id)}"><td>◆ ${esc(x.e.nome)}</td><td>${fmtD(dnum(x.d0))}</td><td><b>${fmtD(dnum(x.e.data))}</b></td><td class="n">${x.n||"—"}</td><td class="n" style="${x.ggl>0?"color:var(--over);font-weight:600":""}">${x.ggl?(x.ggl>0?"+":"")+x.ggl+" g lav.":"—"}</td></tr>`).join("")||vuoto(5,"Nessun evento.")}
+      </tbody></table></div></div>
+    <div class="panel"><h2>Slittamenti<small>attività allungate da ferie, urgenze, lavori extra e chiusure</small></h2>
+      <div class="tbl-wrap"><table><thead><tr><th>Attività</th><th>Progettista</th><th class="n">Ore spostate</th><th class="n">Ritardo</th><th>Causa</th></tr></thead><tbody>
+      ${slit.sort((a,b)=>b.ore-a.ore).map(x=>`<tr data-gb="${esc(x.b.id)}"><td>${esc(x.b.attivita||"(senza titolo)")}</td><td>${esc(nomeP(x.b.personaId))}</td><td class="n">${fmtH(x.ore)}</td><td class="n" style="${x.g?"color:var(--over);font-weight:600":""}">${x.g?"+"+x.g+" g":"—"}</td><td>${x.cs.map(causa).join(" ")||"—"}</td></tr>`).join("")||vuoto(5,"Nessuno slittamento.")}
+      </tbody></table></div>
+      ${altre.length?`<p class="muted" style="margin:0;font-size:13px">Questa commessa (con le sue urgenze e i lavori extra) ha tolto <b>${fmtH(altre.reduce((a,x)=>a+x.ore,0))} h</b> ad altre commesse: ${[...new Set(altre.map(x=>x.b.commessaId))].map(k=>causa(k)).join(" ")}.</p>`:""}</div>
+  </div>
+  <div class="panel"><h2>Attività<small>${bl.length} · ${bl.filter(b=>b.stato==="svolto").length} svolte · clic per aprirla in timeline</small></h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Progettista</th><th>Attività</th><th>Dal</th><th>Al</th><th class="n">Ore</th><th class="n">Svolte</th><th class="n">Avanz.</th><th>Stato</th></tr></thead><tbody>
+    ${bl.map(b=>{const blq=reqDiBlocco(b.id).filter(bloccaOra);const late=b.stato!=="svolto"&&bEnd(b)<todayN;return`<tr data-gb="${esc(b.id)}"><td>${persB(b)}</td><td>${b.extra?'<span class="xtra">EXTRA</span> ':""}${esc(b.attivita||"(senza titolo)")}${blq.length?' <b style="color:var(--over)">⛔</b>':""}</td><td style="white-space:nowrap">${fmtD(bStart(b))}</td><td style="white-space:nowrap">${fmtD(bEnd(b))}${kN!=null&&bEnd(b)>kN&&b.stato!=="svolto"?' <span class="late-txt" title="Dopo la consegna">⚠</span>':""}</td><td class="n">${fmtH(bOre(b))}</td><td class="n">${bSvolte(b)?fmtH(bSvolte(b)):"—"}</td><td class="n">${avPct(b)}%</td><td>${b.stato==="svolto"?"✓ svolta":late?'<span class="late-txt">scaduta</span>':bStart(b)>todayN?'<span class="muted">da iniziare</span>':"in corso"}</td></tr>`}).join("")||vuoto(8,"Ancora nessuna attività.")}
+    </tbody></table></div></div>
+  </div>`;
+  $("#sch-c").onchange=e=>openScheda(e.target.value);
+  $("#sch-tl").onclick=()=>goComm(c);
+  el.querySelectorAll("[data-gb]").forEach(r=>r.onclick=()=>{const b=S.blocchi.find(x=>x.id===r.dataset.gb);if(b)goBlk(b)});
+  el.querySelectorAll("[data-rq]").forEach(r=>r.onclick=()=>openReq(r.dataset.rq));
+  el.querySelectorAll("[data-rqt]").forEach(r=>r.onclick=()=>openReqTree(cid,r.dataset.rqt));
+  el.querySelectorAll("[data-evo]").forEach(r=>r.onclick=()=>openEvento(r.dataset.evo));
 }
 
 /* ---------- gestione ---------- */
@@ -3111,7 +3234,7 @@ function renderMgmt(){
     <div class="toolbar"><span class="seg" id="c-st">${[["aperte","Aperte"],["chiuse","Chiuse"],["tutte","Tutte"]].map(([k,l])=>`<button data-k="${k}" aria-pressed="${(S.cStato||"aperte")===k}">${l}</button>`).join("")}</span>
       <input class="inp" id="c-q" placeholder="Filtra per codice, nome o cliente…" value="${esc(S.cFilt||"")}" aria-label="Filtra le commesse" style="max-width:320px"></div>
     <div class="tbl-wrap"><table><thead><tr><th></th><th>Codice</th><th>Nome</th><th>Cliente</th><th>Consegna</th><th>Cartella</th><th class="n">Budget h</th><th class="n">Avanz.</th><th>Requisiti · Doc.</th><th>PM</th><th></th></tr></thead><tbody>
-    ${commVis().map(c=>{const roF=!canCommTutte(),roP=roF&&!isPmOf(c.id);return`<tr class="${c.chiusa?"chiusa":""}"><td>${roP?`<i class="dot" style="--h:${c.colore}"></i>`:`<button class="swatch" style="--h:${c.colore}" data-hue="${esc(c.id)}" title="Cambia colore" aria-label="Cambia colore"></button>`}</td><td>${inp(roF,"commesse",c.id,"codice",c.codice)}</td><td style="min-width:220px">${inp(roP,"commesse",c.id,"nome",c.nome)}</td><td>${inp(roP,"commesse",c.id,"cliente",c.cliente)}</td><td>${roF?`<span>${c.consegna?fmtD(consegnaN(c)):"—"}</span>`:inp(false,"commesse",c.id,"consegna",c.consegna||"","dt","date")}${ritardoComm(c)?`<br><b style="color:var(--over);font-size:11.5px">⚠ fine prevista ${fmtD(fineComm(c.id))}</b>`:""}</td><td><span class="foldc">${roP?"":inp(false,"commesse",c.id,"cartella",c.cartella||"","path")}${c.cartella?`<button class="btn ghost" data-fold="${esc(c.id)}" title="Apri / copia il percorso">📁</button>`:""}</span></td><td class="n">${inp(roF,"commesse",c.id,"oreBudget",c.oreBudget,"num","number")}</td><td class="n">${avComm(c.id)==null?"—":avComm(c.id)+"%"}</td><td style="white-space:nowrap">${reqChip(c.id)} ${docChip(c.id)} ${evChip(c.id)}</td><td>${pmCell(c)}</td><td style="white-space:nowrap">${roF?(c.chiusa?`<span class="pill">chiusa ${c.chiusaIl?fmtD(dnum(c.chiusaIl)):""}</span>`:""):`${c.chiusa?`<button class="btn" data-copen="${esc(c.id)}" title="Chiusa il ${c.chiusaIl?fmtD(dnum(c.chiusaIl)):""}">Riapri</button>`:`<button class="btn" data-cclose="${esc(c.id)}" title="La commessa sparisce dagli elenchi e dalla timeline per commessa; i dati restano">Chiudi</button>`} <button class="btn danger" data-del="commesse" data-id="${esc(c.id)}" data-n="${nb(c.id)}">Elimina</button>`}</td></tr>`}).join("")||`<tr><td colspan="10" class="muted">${S.cFilt?"Nessuna commessa trovata.":(S.cStato||"aperte")==="chiuse"?"Nessuna commessa chiusa.":"Ancora nessuna commessa."}</td></tr>`}
+    ${commVis().map(c=>{const roF=!canCommTutte(),roP=roF&&!isPmOf(c.id);return`<tr class="${c.chiusa?"chiusa":""}"><td>${roP?`<i class="dot" style="--h:${c.colore}"></i>`:`<button class="swatch" style="--h:${c.colore}" data-hue="${esc(c.id)}" title="Cambia colore" aria-label="Cambia colore"></button>`}</td><td>${inp(roF,"commesse",c.id,"codice",c.codice)}</td><td style="min-width:220px">${inp(roP,"commesse",c.id,"nome",c.nome)}</td><td>${inp(roP,"commesse",c.id,"cliente",c.cliente)}</td><td>${roF?`<span>${c.consegna?fmtD(consegnaN(c)):"—"}</span>`:inp(false,"commesse",c.id,"consegna",c.consegna||"","dt","date")}${ritardoComm(c)?`<br><b style="color:var(--over);font-size:11.5px">⚠ fine prevista ${fmtD(fineComm(c.id))}</b>`:""}</td><td><span class="foldc">${roP?"":inp(false,"commesse",c.id,"cartella",c.cartella||"","path")}${c.cartella?`<button class="btn ghost" data-fold="${esc(c.id)}" title="Apri / copia il percorso">📁</button>`:""}</span></td><td class="n">${inp(roF,"commesse",c.id,"oreBudget",c.oreBudget,"num","number")}</td><td class="n">${avComm(c.id)==null?"—":avComm(c.id)+"%"}</td><td style="white-space:nowrap">${schBtn(c.id)} ${reqChip(c.id)} ${docChip(c.id)} ${evChip(c.id)}</td><td>${pmCell(c)}</td><td style="white-space:nowrap">${roF?(c.chiusa?`<span class="pill">chiusa ${c.chiusaIl?fmtD(dnum(c.chiusaIl)):""}</span>`:""):`${c.chiusa?`<button class="btn" data-copen="${esc(c.id)}" title="Chiusa il ${c.chiusaIl?fmtD(dnum(c.chiusaIl)):""}">Riapri</button>`:`<button class="btn" data-cclose="${esc(c.id)}" title="La commessa sparisce dagli elenchi e dalla timeline per commessa; i dati restano">Chiudi</button>`} <button class="btn danger" data-del="commesse" data-id="${esc(c.id)}" data-n="${nb(c.id)}">Elimina</button>`}</td></tr>`}).join("")||`<tr><td colspan="10" class="muted">${S.cFilt?"Nessuna commessa trovata.":(S.cStato||"aperte")==="chiuse"?"Nessuna commessa chiusa.":"Ancora nessuna commessa."}</td></tr>`}
     </tbody></table></div>
     ${roC?"":`<form class="addrow" id="add-c"><input class="inp" id="nc-cod" placeholder="Codice (es. 26-001)" required><input class="inp" id="nc-nome" placeholder="Nome commessa" required><input class="inp" id="nc-cli" placeholder="Cliente"><label class="hint" for="nc-cons" style="font-size:12.5px">Consegna</label><input class="inp" id="nc-cons" type="date" aria-label="Data di consegna"><input class="inp num" id="nc-bud" type="number" min="0" placeholder="Budget h"><button class="btn primary">Aggiungi commessa</button></form>`}
    </div>
