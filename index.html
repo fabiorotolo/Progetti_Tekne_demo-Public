@@ -1644,7 +1644,7 @@ const repP=pid=>(persById(pid)||{}).repartoId||null;
 const repNomeId=id=>(S.reparti.find(x=>x.id===id)||{}).nome||"";
 const respRep=rep=>!!S.me&&!!rep&&(S.me.admin||can("pianifica")||myReparti().some(x=>x.id===rep));
 const propR=r=>r.proposta&&Array.isArray(r.proposta.persone)?r.proposta.persone:[];
-const daApprovareMe=r=>r.stato!=="fatto"&&propR(r).some(p=>respRep(repP(p)));
+const daApprovareMe=r=>propR(r).some(p=>respRep(repP(p)));
 const daAssegnareMe=r=>r.stato!=="fatto"&&respRep(r.repartoId)&&!(r.assegnati||[]).length&&!propR(r).length;
 const canAssR=r=>canReqC(r.commessaId)||respRep(r.repartoId)||daApprovareMe(r);
 const reqLate=r=>r.stato!=="fatto"&&!!r.scadenza&&dnum(r.scadenza)<todayN;
@@ -2776,7 +2776,7 @@ const LEGGIMI=[["Come usare questo file"],[""],
 
 /* --- dal foglio alle operazioni --- */
 function xPiano(fogli,mappa){mappa=mappa||{};
-  const R_=xRisolutori(),ops=[],righe=[];let nref=0;const ref=()=>"r"+(++nref);
+  const R_=xRisolutori(),ops=[],righe=[],avvisi=[];let nref=0;const ref=()=>"r"+(++nref);
   const add=(foglio,o,riga,cosa,testo,dett)=>{righe.push({foglio,riga,cosa,testo,dett});if(o)for(const x of[].concat(o)){x.foglio=foglio;x.riga=riga;ops.push(x)}};
   const err=(foglio,riga,testo,msg)=>righe.push({foglio,riga,cosa:"errore",testo,dett:msg});
   const trova=nome=>Object.keys(fogli).find(k=>xNorm(k)===xNorm(nome));
@@ -2858,7 +2858,8 @@ function xPiano(fogli,mappa){mappa=mappa||{};
     const cod=fn.slice(XREQ.length).trim(),cid0=R_.commessa(cod),cid=fn in mappa?mappa[fn]:cid0;
     if(!cid||String(cid).startsWith("@")){err(fn,1,cod,"Scegli qui sopra in quale commessa importare questo foglio.");continue}
     if(!canReqC(cid)){err(fn,1,codC(cid),"Non puoi modificare i requisiti della commessa "+codC(cid)+": scegli qui sopra una commessa tua.");continue}
-    const all=reqOf(cid),byId=Object.fromEntries(all.map(r=>[r.id,r]));const{righe:rr}=xRighe(fogli[fn]);
+    const all=reqOf(cid),byId=Object.fromEntries(all.map(r=>[r.id,r]));const{h:hh,righe:rr}=xRighe(fogli[fn]);
+    if(all.length&&!hh.includes(xNorm("id (non modificare)"))&&!hh.includes("id"))avvisi.push(`Il foglio «${fn}» non ha la colonna ID (è il file di consultazione): tutte le righe diventano requisiti NUOVI e la commessa ${codC(cid)}, che ne ha già ${all.length}, li avrà doppi. Per modificare quelli che ci sono usa «⇅ Modifica in Excel».`);
     const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
     const prevCur={};const walk=par=>{let pv="";for(const r of kids(par)){prevCur[r.id]=pv;pv=r.id;walk(r.id)}};walk(null);
     const chiave={},ultimo={};let erroreStruttura=false;
@@ -2875,19 +2876,19 @@ function xPiano(fogli,mappa){mappa=mappa||{};
       const asn=lista(xc(o,"assegnato a (separati da virgola)","assegnato a")),ass=[],ign=[];for(const x of asn){const pid=R_.persona(x);if(pid)ass.push(pid);else ign.push(x)}
       if(ign.length){err(fn,o._riga,testo,"Progettisti non trovati: "+ign.join(", "));continue}
       const repCol=xc(o,"reparto"),repN=xTxt(repCol),repI=repN?R_.reparto(repN):null;if(repN&&!repI){err(fn,o._riga,testo,"Reparto «"+repN+"» non trovato.");continue}
-      const prop=ass.filter(x=>!respRep(repP(x))&&!(S.me&&S.me.admin)&&!(r&&(r.assegnati||[]).includes(x))&&repP(x));const propT=prop.length?" (proposta: "+prop.map(nomeP).join(", ")+" da approvare dal responsabile)":"";
+      const prop=ass.filter(x=>!respRep(repP(x))&&!(S.me&&S.me.admin)&&!(r&&(r.assegnati||[]).includes(x))&&repP(x));const propT=prop.length?"proposti "+prop.map(nomeP).join(", ")+" (da approvare dal responsabile)":"";const assT=[ass.filter(x=>!prop.includes(x)).length?"a "+ass.filter(x=>!prop.includes(x)).map(nomeP).join(", "):"",propT].filter(Boolean).join(", ");
       const sc=xData(xc(o,"scadenza"));if(sc===undefined){err(fn,o._riga,testo,"Scadenza non valida.");continue}
       const stT=xNorm(xc(o,"stato")),st=/^fatt/.test(stT)?"fatto":/^blocc/.test(stT)?"bloccato":"aperto",mot=xTxt(xc(o,"motivo del blocco","motivo","nota / motivo"));
       if(st==="bloccato"&&!mot){err(fn,o._riga,testo,"Bloccato: scrivi il motivo.");continue}
       const statoOp=k=>({M:"PATCH",p:"/api/requisiti/"+k,body:st==="fatto"?{stato:"fatto",nota:"Segnato fatto da Excel"}:st==="bloccato"?{stato:"bloccato",motivo:mot}:{stato:"aperto",nota:"Riaperto da Excel"}});
       if(!r){const k=ref();chiave[n||("__"+k)]="@"+k;ultimo[pk]="@"+k;
         const ps=[{M:"POST",p:"/api/requisiti",body:{commessaId:cid,testo,parentId:par,dopo,assegnati:ass,scadenza:sc,repartoId:repI||null},ref:k}];if(st!=="aperto")ps.push(statoOp("@"+k));
-        add(fn,ps,o._riga,"nuovo",(n?n+" ":"")+testo,[copia?((S.requisiti||[]).some(x=>x.id===id)?"copiato da "+codC((S.requisiti||[]).find(x=>x.id===id).commessaId):"ID sconosciuto: aggiunto come nuovo"):"",repI?"reparto "+repN:"",ass.length?"a "+ass.map(x=>pn(persById(x))).join(", ")+propT:"",sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
+        add(fn,ps,o._riga,"nuovo",(n?n+" ":"")+testo,[copia?((S.requisiti||[]).some(x=>x.id===id)?"copiato da "+codC((S.requisiti||[]).find(x=>x.id===id).commessaId):"ID sconosciuto: aggiunto come nuovo"):"",repI?"reparto "+repN:"",assT,sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
       if(n)chiave[n]=r.id;ultimo[pk]=r.id;
       const ch={},dif=[],ps=[];
       if(testo!==r.testo){ch.testo=testo;dif.push("testo")}
       if(repCol!==undefined&&(r.repartoId||null)!==(repI||null)){ch.repartoId=repI||null;dif.push("reparto → "+(repN||"nessuno"))}
-      if(!xEq([...(r.assegnati||[]),...propR(r)].sort(),[...ass].sort())){ch.assegnati=ass;dif.push("assegnati: "+(ass.map(x=>pn(persById(x))).join(", ")||"nessuno")+propT)}
+      if(!xEq([...(r.assegnati||[]),...propR(r)].sort(),[...ass].sort())){ch.assegnati=ass;dif.push("assegnati: "+(assT||"nessuno"))}
       if((r.scadenza||null)!==sc){ch.scadenza=sc;dif.push("scadenza "+(sc?fmtD(dnum(sc)):"tolta"))}
       if((r.parentId||null)!==(par&&!String(par).startsWith("@")?par:par)||prevCur[r.id]!==dopo){ch.parentId=par;ch.dopo=dopo;if((r.parentId||null)!==par)dif.push(par?"spostato sotto "+parN:"portato al primo livello");else dif.push("ordine")}
       if(Object.keys(ch).length)ps.push({M:"PATCH",p:"/api/requisiti/"+r.id,body:ch});
@@ -2912,7 +2913,7 @@ function xPiano(fogli,mappa){mappa=mappa||{};
       const nuovo={nome,dal,al:al||dal,annuale:ann};
       if(!x){if(!dal){err(f,o._riga,nome,"Manca la data.");continue}add(f,{M:"POST",p:"/api/impostazioni/festivi",body:nuovo},o._riga,"nuovo",nome||"Chiusura",fmtD(dnum(dal))+(al&&al!==dal?" – "+fmtD(dnum(al)):""));continue}
       if(x.nome!==nome||x.dal!==dal||x.al!==(al||dal)||!!x.annuale!==ann)add(f,[{M:"DELETE",p:"/api/impostazioni/festivi/"+x.id},{M:"POST",p:"/api/impostazioni/festivi",body:nuovo}],o._riga,"modifica",x.nome,"diventa: "+(nome||"")+" "+fmtD(dnum(dal))+(al&&al!==dal?" – "+fmtD(dnum(al)):""))}}
-  return{ops,righe}}
+  return{ops,righe,avvisi}}
 
 /* --- finestra Excel --- */
 function xAree(){return Object.entries(XA).filter(([,a])=>a.ok())}
@@ -2947,7 +2948,7 @@ function xMappaReq(fogli){const fr=Object.keys(fogli).filter(k=>xNorm(k).startsW
     m[fn]=XORIG&&fr.length===1&&canReqC(XORIG)?XORIG:c0&&!String(c0).startsWith("@")&&canReqC(c0)?c0:mie.length===1?mie[0].id:null}
   return m}
 async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
-  const{ops,righe}=xPiano(fogli,mappa);let esiti=[];
+  const{ops,righe,avvisi}=xPiano(fogli,mappa);let esiti=[];
   if(ops.length){try{const j=await api("POST","/api/import",{ops,prova:true,area:nome});esiti=j.esiti||[]}catch(e){righe.push({foglio:"",riga:"",cosa:"errore",testo:"",dett:e&&e.msg||"Anteprima non riuscita."})}}
   const errOp={};esiti.forEach((x,i)=>{const o=ops[i];if(!x.ok){const k=o.foglio+"|"+o.riga;errOp[k]=errOp[k]||x.errore}});
   for(const r of righe){const e=errOp[r.foglio+"|"+r.riga];if(e&&r.cosa!=="errore"){r.err=e}}
@@ -2958,6 +2959,7 @@ async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
     ${Object.keys(mappa).map(fn=>{const R_=xRisolutori(),c0=R_.commessa(fn.slice(XREQ.length).trim()),d=mappa[fn];
       const ops_=S.commesse.filter(c=>canReqC(c.id)&&(!c.chiusa||c.id===d||c.id===c0)).sort((a,b)=>a.codice.localeCompare(b.codice,"it",{numeric:true}));
       return`<div class="xl-dest"><span>Foglio <b>«${esc(fn)}»</b> → importa nella commessa</span> <select data-xm="${esc(fn)}"><option value="">— scegli —</option>${ops_.map(c=>`<option value="${esc(c.id)}"${c.id===d?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${c.chiusa?" (chiusa)":""}</option>`).join("")}</select>${d&&c0&&d!==c0?` <span class="muted" style="font-size:12px">le righe di ${esc(codC(c0))} vengono aggiunte come requisiti nuovi</span>`:""}</div>`}).join("")}
+    ${avvisi.map(a=>`<div class="banner" style="margin:0"><span>⚠ ${esc(a)}</span></div>`).join("")}
     <p style="margin:0">${buone.length?`<b>${buone.length} modific${buone.length>1?"he":"a"}</b> pronte da salvare`:"Nessuna modifica rispetto ai dati attuali."}${cattive.length?` · <b style="color:var(--over)">${cattive.length} righe con problemi</b> (non vengono importate)`:""}. <span class="muted">Fogli letti: ${esc(fogliOk.join(", ")||"nessuno")}.</span></p>
     ${righe.length?`<div class="tbl-wrap" style="max-height:52vh;overflow:auto"><table><thead><tr><th>Foglio</th><th class="n">Riga</th><th>Cosa</th><th>Elemento</th><th>Dettaglio</th></tr></thead><tbody>
       ${[...cattive,...buone].map(r=>`<tr${r.cosa==="errore"||r.err?' class="xl-bad"':""}><td>${esc(r.foglio)}</td><td class="n">${esc(String(r.riga))}</td><td><span class="pill xl-${r.err?"errore":r.cosa}">${LAB[r.err?"errore":r.cosa]}</span></td><td>${esc(r.testo||"")}</td><td>${esc(r.err||r.dett||"")}</td></tr>`).join("")}
