@@ -793,12 +793,14 @@ var files={};
 var fsShim={
   existsSync:function(p){if(/\/allegati\//.test(p))return window.__tekneFile(idFile(p))!=null;if(/db\.json$/.test(p))return dbGet()!=null;if(/esempio\.json$/.test(p))return true;return Object.prototype.hasOwnProperty.call(files,p)},
   readFileSync:function(p){if(/config\.json$/.test(p))return JSON.stringify({password:false});if(/db\.json$/.test(p)){var v=dbGet();if(v==null)throw new Error("ENOENT");return v}
-    if(/esempio\.json$/.test(p))return esempioSpostato();if(Object.prototype.hasOwnProperty.call(files,p))return files[p];throw new Error("ENOENT")},
+    if(/esempio\.json$/.test(p))return esempioSpostato();if(/aiuto-domande\.jsonl$/.test(p)){var a=null;try{a=localStorage.getItem(KEY+"-aiuto")}catch(e){}if(a==null)throw new Error("ENOENT");return a}if(Object.prototype.hasOwnProperty.call(files,p))return files[p];throw new Error("ENOENT")},
   writeFileSync:function(p,d){if(/\/allegati\//.test(p)){try{localStorage.setItem(FK+idFile(p),String(d))}catch(e){throw new Error("spazio")}return}if(/db\.json$/.test(p))dbSet(String(d));else files[p]=String(d)},
   renameSync:function(a,b){if(/\/allegati\//.test(a)){var v=window.__tekneFile(idFile(a));if(v!=null){try{localStorage.setItem(FK+idFile(b),v)}catch(e){}sdel(FK+idFile(a))}return}var v=files[a];delete files[a];if(/db\.json$/.test(b))dbSet(v);else files[b]=v},
   copyFileSync:function(a,b){fsShim.writeFileSync(b,fsShim.readFileSync(a))},
   mkdirSync:function(){},unlinkSync:function(p){if(/\/allegati\//.test(p))sdel(FK+idFile(p));delete files[p]},readdirSync:function(){return[]},
-  statSync:function(){throw new Error("ENOENT")},appendFileSync:function(){},
+  statSync:function(){throw new Error("ENOENT")},
+  // le domande all'Aiuto restano nel browser del visitatore (ultime ~150 KB), cosi' il riquadro in Impostazioni funziona anche nella demo
+  appendFileSync:function(p,d){if(/aiuto-domande\.jsonl$/.test(p)){try{var v=(localStorage.getItem(KEY+"-aiuto")||"")+String(d);if(v.length>150000)v=v.slice(v.indexOf("\n",v.length-150000)+1);localStorage.setItem(KEY+"-aiuto",v)}catch(e){}}},
   createReadStream:function(){return{pipe:function(res){res.end("")}}}
 };
 var pathShim={
