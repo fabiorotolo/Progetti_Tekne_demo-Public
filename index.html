@@ -37,12 +37,14 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);fon
 button,input,select,textarea{font:inherit;color:inherit}
 .wrap{max-width:1880px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px}
+/* stessa disposizione per tutti gli utenti: in alto il marchio a sinistra e i comandi (Esci sempre in fondo a destra), sotto le schede */
+header.top>.brand{order:1}header.top>.whobox{order:2}header.top>nav.tabs{order:3;flex-basis:100%}
+.brand{display:grid;grid-template-columns:auto auto;justify-content:start;align-items:center;column-gap:12px;row-gap:2px}
 .brand h1{font-family:var(--f-disp);font-weight:700;font-size:28px;letter-spacing:.01em;margin:0;text-wrap:balance;text-transform:uppercase;display:flex;align-items:baseline;gap:10px}
 .brand h1 .mark{font-weight:700;letter-spacing:.14em}
 .brand h1 .app{font-weight:600;color:var(--accent);letter-spacing:.06em;font-size:.82em;padding-left:10px;border-left:2px solid var(--line)}
-.brand .sub{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+.brand .sub{grid-column:1/-1;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
 nav.tabs{display:flex;flex-wrap:wrap;gap:2px;background:var(--line-soft);padding:3px;border-radius:8px}
 nav.tabs button{border:0;background:transparent;padding:7px 12px;white-space:nowrap;border-radius:6px;cursor:pointer;font-weight:600;color:var(--muted);font-family:var(--f-disp);font-size:15px;letter-spacing:.03em;text-transform:uppercase}
 nav.tabs button[aria-selected="true"]{background:var(--panel);color:var(--fg);box-shadow:var(--shadow)}
@@ -545,7 +547,7 @@ table.foglio tr.assrow td{color:var(--muted);font-style:italic}
 .mentp .ml button:hover,.mentp .ml button:focus{background:var(--line-soft)}
 b.ment{color:var(--accent)}
 .bellw{position:relative;display:inline-flex}
-.bellw .cnt{margin-left:2px}
+#bell{position:relative}.bellw .cnt{position:absolute;top:-5px;right:-4px;margin:0;min-width:16px;line-height:16px;font-size:10.5px;padding:0 4px}
 .bellp{position:absolute;right:0;top:calc(100% + 6px);width:340px;max-width:calc(100vw - 24px);max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:90;padding:6px}
 .bellp .bh{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 8px}
 .bellp .bn{display:block;width:100%;text-align:left;border:0;border-radius:6px;background:transparent;padding:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:400;color:var(--fg)}
@@ -573,7 +575,7 @@ svg.diph marker path,svg.diph circle{fill:var(--accent);stroke:none}
 .qres .qk{grid-row:span 2;align-self:center;font-family:var(--f-disp);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:66px}
 .qres .qi b{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qres .qi small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media (max-width:900px){#q{width:150px}}
+@media (max-width:1250px){#q{width:170px}}@media (max-width:900px){#q{width:150px}}
 #v-set #fa-t,#v-set #fa-d,#v-set #fa-a{flex:0 0 auto;width:auto}#v-set #fa-n{flex:1 1 200px}
 .blk .dep{display:inline-flex;align-items:center;gap:1px;flex:none;color:var(--accent);font-size:10px;font-weight:700;background:color-mix(in srgb,var(--panel) 70%,transparent);border-radius:4px;padding:0 3px;line-height:16px;cursor:help}
 th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--fg)}
@@ -618,7 +620,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
       <button role="tab" id="tab-perm" aria-selected="false" data-tab="perm" hidden>Utenti</button>
       <button role="tab" id="tab-set" aria-selected="false" data-tab="set" hidden>Impostazioni</button>
     </nav>
-    <div class="whobox" id="who" hidden><select class="inp ditta-sel" id="ditta-sel" hidden aria-label="Ditta" title="Cambia ditta: ogni ditta ha i suoi dati e i suoi utenti"></select><span class="qw"><input class="inp" id="q" type="search" placeholder="Cerca… (Ctrl+K)" autocomplete="off" aria-label="Cerca commesse, attività, persone e richieste"><div class="qres" id="qres" hidden role="listbox"></div></span><select class="inp" id="scope" aria-label="Reparto" hidden></select><button class="btn ghost" id="xl-btn" hidden title="Esporta in Excel, modifica e reimporta: requisiti, commesse, progettisti, team, utenti, eventi, impostazioni">⇅ Excel</button><button class="btn ghost" id="print" title="Stampa la scheda aperta. Per avere il PDF, nella finestra di stampa scegli “Salva come PDF” come stampante.">🖨 Stampa</button><span class="bellw"><button class="btn ghost" id="bell" aria-label="Notifiche" title="Notifiche">🔔<span class="cnt" id="bell-cnt" hidden></span></button><div class="bellp" id="bellp" hidden></div></span><span id="who-name"></span><button class="btn ghost" id="chpw">Cambia password</button><button class="btn" id="logout">Esci</button></div>
+    <div class="whobox" id="who" hidden><select class="inp ditta-sel" id="ditta-sel" hidden aria-label="Ditta" title="Cambia ditta: ogni ditta ha i suoi dati e i suoi utenti"></select><span class="qw"><input class="inp" id="q" type="search" placeholder="Cerca… (Ctrl+K)" autocomplete="off" aria-label="Cerca commesse, attività, persone e richieste"><div class="qres" id="qres" hidden role="listbox"></div></span><select class="inp" id="scope" aria-label="Reparto" hidden></select><button class="btn ghost" id="xl-btn" hidden title="Esporta in Excel, modifica e reimporta: requisiti, commesse, progettisti, team, utenti, eventi, impostazioni">⇅ Excel</button><button class="btn ghost" id="print" title="Stampa la scheda aperta. Per avere il PDF, nella finestra di stampa scegli “Salva come PDF” come stampante.">🖨 Stampa</button><span id="who-name"></span><span class="bellw"><button class="btn ghost" id="bell" aria-label="Notifiche" title="Notifiche">🔔<span class="cnt" id="bell-cnt" hidden></span></button><div class="bellp" id="bellp" hidden></div></span><button class="btn ghost" id="chpw">Cambia password</button><button class="btn" id="logout">Esci</button></div>
   </header>
 
   <div id="banner" hidden></div>
