@@ -3236,25 +3236,33 @@ async function pallino(ids,letta){if(!ids.length)return;for(const l of[S.notifAl
 /* ---------- messaggio diretto a un collega: a chi, testo e allegati, niente altro ---------- */
 function msgConv(conv){const m=new Map();for(const n of[...(S.notifAll||[]),...(S.notifiche||[])])if(conv&&n.conv===conv)m.set(n.id,n);return[...m.values()].sort((a,b)=>String(a.t).localeCompare(String(b.t)))}
 function partecipantiConv(conv){const ids=new Set();for(const n of msgConv(conv)){ids.add(n.da);for(const d of n.dest||[])ids.add(d)}if(S.me)ids.delete(S.me.id);return[...ids]}
+function storiaHtml(storia){return storia.map(n=>`<div class="ms-m${S.me&&n.da===S.me.id?" io":""}" data-mmid="${esc(n.id)}"><div class="ms-h"><b>${esc(S.me&&n.da===S.me.id?"Tu":n.daNome||"")}</b> <span class="muted">${esc(fmtTs(n.t))}</span></div>${n.testo?`<div class="ms-tx">${esc(n.testo)}</div>`:""}${allegChips(n.allegati)}</div>`).join("")}
+// conversazione aperta: le risposte che arrivano compaiono subito sotto (e risultano lette, perche' le stai guardando)
+let convAperta=null;rdlg.addEventListener("close",()=>{convAperta=null});
+function aggiornaConv(){const st=$("#rd .ms-storia");if(!st||!convAperta)return;const storia=msgConv(convAperta);
+  const viste=new Set([...st.querySelectorAll("[data-mmid]")].map(x=>x.dataset.mmid));const nuove=storia.filter(n=>!viste.has(n.id));if(!nuove.length)return;
+  const giu=st.scrollHeight-st.scrollTop-st.clientHeight<40;st.innerHTML=storiaHtml(storia);if(giu||nuove.some(n=>S.me&&n.da!==S.me.id))st.scrollTop=st.scrollHeight;
+  const ids=nuove.filter(n=>!n.letta).map(n=>n.id);if(ids.length)pallino(ids,true)}
 function openScrivi(pre){pre=pre||{};rdId=null;const sel=new Set((pre.a||[]).filter(id=>S.utentiMini.some(u=>u.id===id)));
   const conv=pre.conv||null,storia=msgConv(conv),box=$("#rd");
   const disegnaA=()=>{$("#ms-a").innerHTML=[...sel].map(id=>`<span class="pill ms-p">${esc(userName(id))}<button type="button" data-msx="${esc(id)}" aria-label="Togli ${esc(userName(id))}">✕</button></span>`).join("");
     $("#ms-add").innerHTML=`<option value="">${sel.size?"+ aggiungi…":"scegli il collega…"}</option>`+S.utentiMini.filter(u=>u.nome&&(!S.me||u.id!==S.me.id)&&!sel.has(u.id)).sort((a,b)=>a.nome.localeCompare(b.nome,"it")).map(u=>`<option value="${esc(u.id)}">${esc(u.nome)}${u.ruolo?" · "+esc(u.ruolo):""}</option>`).join("");
     box.querySelectorAll("[data-msx]").forEach(b=>b.onclick=()=>{sel.delete(b.dataset.msx);disegnaA()})};
   box.innerHTML=`<h3>${conv?"Conversazione":"Nuovo messaggio"}</h3>
-    ${storia.length?`<div class="ms-storia">${storia.map(n=>`<div class="ms-m${S.me&&n.da===S.me.id?" io":""}"><div class="ms-h"><b>${esc(S.me&&n.da===S.me.id?"Tu":n.daNome||"")}</b> <span class="muted">${esc(fmtTs(n.t))}</span></div>${n.testo?`<div class="ms-tx">${esc(n.testo)}</div>`:""}${allegChips(n.allegati)}</div>`).join("")}</div>`:""}
+    ${storia.length?`<div class="ms-storia">${storiaHtml(storia)}</div>`:""}
     <div class="f"><span>A</span><div class="ms-a-w"><span id="ms-a"></span><select class="inp" id="ms-add" aria-label="Aggiungi un destinatario" style="width:auto;max-width:100%"></select></div></div>
     <label class="f">${conv?"Rispondi":"Messaggio"}<textarea class="inp" id="ms-t" rows="4" maxlength="2000" placeholder="Scrivi qui…"></textarea></label>
     ${filePicker("ms-al")}<div class="err" id="ms-err"></div>
     <div class="acts"><span class="muted" style="font-size:12.5px">Lo ricevono in Messaggi e possono rispondere.</span><div><button class="btn ghost" id="ms-no" type="button">Chiudi</button><button class="btn primary" id="ms-go" type="button">Invia</button></div></div>`;
   disegnaA();$("#ms-add").onchange=e=>{if(e.target.value){sel.add(e.target.value);disegnaA();$("#ms-t").focus()}};
-  const files=bindPicker("ms-al");const st=box.querySelector(".ms-storia");if(st)st.scrollTop=st.scrollHeight;
+  convAperta=conv;const files=bindPicker("ms-al");const st=box.querySelector(".ms-storia");if(st)st.scrollTop=st.scrollHeight;
   $("#ms-no").onclick=()=>rdlg.close();
   $("#ms-go").onclick=async()=>{const testo=$("#ms-t").value.trim(),fl=files(),er=$("#ms-err");
     if(!sel.size){er.textContent="Scegli a chi scrivere.";return}if(!testo&&!fl.length){er.textContent="Scrivi il messaggio.";return}
     const bt=$("#ms-go");bt.disabled=true;
     try{const allegati=fl.length?await caricaFile(fl,t=>{er.textContent=t}):[];await api("POST","/api/messaggi",{a:[...sel],testo,allegati,conv});
-      rdlg.close();toast("Messaggio inviato.");await doRefresh();await caricaMessaggi();render()}
+      if(conv){$("#ms-t").value="";files().length=0;files.redraw();bt.disabled=false;er.textContent="";await doRefresh();await caricaMessaggi();aggiornaConv();$("#ms-t").focus()}
+      else{rdlg.close();toast("Messaggio inviato.");await doRefresh();await caricaMessaggi();render()}}
     catch(e){bt.disabled=false;er.textContent=e&&e.msg||"Invio non riuscito."}};
   showRdlg();setTimeout(()=>{const f=sel.size?$("#ms-t"):$("#ms-add");if(f)f.focus()},30)}
 async function caricaMessaggi(){try{const j=await api("GET","/api/notifiche");S.notifAll=j.notifiche||[];S.notifRev=S.rev}catch(e){S.notifAll=S.notifAll||[]}}
@@ -3924,7 +3932,7 @@ async function doRefresh(){
   try{const j=await api("GET","/api/state");
     S.rev=j.rev;S.persone=j.persone;S.commesse=j.commesse;S.blocchi=j.blocchi;S.team=j.team;S.me=j.me;S.isOwner=!!j.me.admin;
     S.oreStd=j.oreStd||8;S.reparti=j.reparti||[];S.richieste=(j.richieste||[]).filter(r=>!r.eliminata);S.richiesteRit=(j.richieste||[]).filter(r=>r.eliminata);S.utentiMini=j.utenti||[];S.ruoli=j.ruoli||{};S.tipiAssenza=j.tipiAssenza||ASS;S.festivi=j.festivi||{};S.foglioOre=!!j.foglioOre;S.annulla=j.annulla||null;
-    {const prima=new Set((S.notifiche||[]).map(n=>n.id));S.notifiche=j.notifiche||[];S.nonLette=j.nonLette;S.requisiti=j.requisiti||[];S.eventi=j.eventi||[];try{$("#xl-btn").hidden=!(xAree().length||S.commesse.some(c=>canReqC(c.id)))}catch(_){}S.allegati=j.allegati||{};const nuove=S.notifiche.filter(n=>!n.letta&&!prima.has(n.id));if(S.notInit&&nuove.length)toast(`🔔 ${nuove[0].daNome} ${nuove[0].msg||"ti ha menzionato"}`);S.notInit=true}
+    {const prima=new Set((S.notifiche||[]).map(n=>n.id));S.notifiche=j.notifiche||[];S.nonLette=j.nonLette;S.requisiti=j.requisiti||[];S.eventi=j.eventi||[];try{$("#xl-btn").hidden=!(xAree().length||S.commesse.some(c=>canReqC(c.id)))}catch(_){}S.allegati=j.allegati||{};const nuove=S.notifiche.filter(n=>!n.letta&&!prima.has(n.id));if(S.notInit&&nuove.length&&!(convAperta&&nuove.every(n=>n.conv===convAperta)))toast(`🔔 ${nuove[0].daNome} ${nuove[0].msg||"ti ha menzionato"}`);S.notInit=true}
     S.reparti.sort((a,b)=>String(a.nome).localeCompare(b.nome));
     S.loaded={persone:true,commesse:true,blocchi:true,team:true};
     initScope();
@@ -3933,6 +3941,7 @@ async function doRefresh(){
     if(drag)return;
     if(dlg.open){const b=edId&&S.blocchi.find(x=>x.id===edId);if(edId&&!b){closeEd();toast("L'attività è stata eliminata da un collega.")}return}
     if(rdlg.open&&RT){if(!(document.activeElement&&$("#rd").contains(document.activeElement)&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)))rtRender();return}
+    if(rdlg.open&&convAperta){aggiornaConv();renderBell();return}
     if(rdlg.open){if(rdId&&S.richieste.some(x=>x.id===rdId))openReq(rdId);const n=S.richieste.filter(attendeMe).length;$("#req-cnt").textContent=n;$("#req-cnt").hidden=!n;return}
     render();
   }catch(e){if(e&&e.code==="force")showAuth("force")}
