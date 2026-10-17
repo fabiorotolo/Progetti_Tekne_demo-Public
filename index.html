@@ -535,7 +535,7 @@ tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor
 .g-r{display:grid;grid-template-columns:32px 1fr;gap:10px;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:9px 12px;cursor:pointer;font:inherit;color:inherit}
 .g-r>span:last-child{display:flex;flex-direction:column;gap:2px;font-size:13px}.g-r b{font-size:14.5px}.g-r .code{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
 .ai-num{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:0 0 12px}.ai-num>div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}.ai-num b{font-size:26px;line-height:1.1;font-family:var(--f-mono)}.ai-num span{font-size:13px;font-weight:600}.ai-num small{font-size:12px}
-.g-r.g-no{cursor:default;border-style:dashed}.g-no-t{color:var(--over)}.g-chi{font-size:13px!important}
+.g-r.g-no{cursor:default;border-style:dashed}.g-no-t{color:var(--over)}.g-chi{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--accent);color:var(--accent);background:var(--panel);border-radius:999px;padding:1px 10px;cursor:pointer;margin:2px 2px 0 0}.g-chi:hover{background:var(--accent);color:#fff}
 .g-r:hover,.g-r.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .g-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--line-soft);font-size:14px}
 .g-cat{border-top:1px solid var(--line-soft);padding:6px 0}.g-cat summary{cursor:pointer;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;font-weight:700;font-size:13.5px;padding:4px 0}
@@ -3259,7 +3259,7 @@ function openScrivi(pre){pre=pre||{};rdId=null;const sel=new Set((pre.a||[]).fil
   box.innerHTML=`<h3>${conv?"Conversazione":"Nuovo messaggio"}</h3>
     ${storia.length?`<div class="ms-storia">${storiaHtml(storia)}</div>`:""}
     <div class="f"><span>A</span><div class="ms-a-w"><span id="ms-a"></span><select class="inp" id="ms-add" aria-label="Aggiungi un destinatario" style="width:auto;max-width:100%"></select></div></div>
-    <label class="f">${conv?"Rispondi":"Messaggio"}<textarea class="inp" id="ms-t" rows="4" maxlength="2000" placeholder="Scrivi qui…"></textarea></label>
+    <label class="f">${conv?"Rispondi":"Messaggio"}<textarea class="inp" id="ms-t" rows="4" maxlength="2000" placeholder="Scrivi qui…">${esc(pre.testo||"")}</textarea></label>
     ${filePicker("ms-al")}<div class="err" id="ms-err"></div>
     <div class="acts"><span class="muted" style="font-size:12.5px">Lo ricevono in Messaggi e possono rispondere.</span><div><button class="btn ghost" id="ms-no" type="button">Chiudi</button><button class="btn primary" id="ms-go" type="button">Invia</button></div></div>`;
   disegnaA();$("#ms-add").onchange=e=>{if(e.target.value){sel.add(e.target.value);disegnaA();$("#ms-t").focus()}};
@@ -3272,7 +3272,7 @@ function openScrivi(pre){pre=pre||{};rdId=null;const sel=new Set((pre.a||[]).fil
       if(conv){$("#ms-t").value="";files().length=0;files.redraw();bt.disabled=false;er.textContent="";await doRefresh();await caricaMessaggi();aggiornaConv();$("#ms-t").focus()}
       else{rdlg.close();toast("Messaggio inviato.");await doRefresh();await caricaMessaggi();render()}}
     catch(e){bt.disabled=false;er.textContent=e&&e.msg||"Invio non riuscito."}};
-  showRdlg();setTimeout(()=>{const f=sel.size?$("#ms-t"):$("#ms-add");if(f)f.focus()},30)}
+  showRdlg();setTimeout(()=>{const f=sel.size?$("#ms-t"):$("#ms-add");if(f){f.focus();if(f.id==="ms-t")f.setSelectionRange(f.value.length,f.value.length)}},30)}
 async function caricaMessaggi(){try{const j=await api("GET","/api/notifiche");S.notifAll=j.notifiche||[];S.notifRev=S.rev}catch(e){S.notifAll=S.notifAll||[]}}
 // argomenti: le notifiche dello stesso argomento diventano una riga (la piu' recente, con quante sono)
 function argomenti(l){const m=new Map();for(const n of l){const k=argN(n);const a=m.get(k);if(!a)m.set(k,{n,tutte:[n],nuove:n.letta?0:1,stella:!!n.stella});else{a.tutte.push(n);if(!n.letta)a.nuove++;if(n.stella)a.stella=true}}return[...m.values()]}
@@ -3414,7 +3414,9 @@ function gCerca(q){const ws=gTok(q).map(G_RAD);if(!ws.length)return[];const ctx=
 function gNomi(tipo,ctx){const io=S.me&&S.me.id,um=S.utentiMini.filter(u=>u.nome&&u.id!==io),adm=um.filter(u=>u.ruolo==="Amministratore");
   const resp=()=>{const r=S.reparti.find(r=>r.id===myRepId());const ids=r&&r.responsabile?[r.responsabile]:S.reparti.map(r=>r.responsabile).filter(Boolean);return um.filter(u=>ids.includes(u.id))};
   let l=tipo==="capo_pm"?um.filter(u=>u.capoPm):tipo==="admin"?adm:tipo==="resp"?resp():tipo==="pm"?(ctx&&ctx.comm?um.filter(u=>pmAtt(ctx.comm).includes(u.id)):[]).concat(um.filter(u=>u.capoPm)):[];
-  if(!l.length)l=adm;return[...new Set(l.map(u=>u.nome))].slice(0,4)}
+  if(!l.length)l=adm;const m=new Map();for(const u of l)if(!m.has(u.id))m.set(u.id,u);return[...m.values()].slice(0,4)}
+// «Chiedi a»: ogni nome è un pulsante che apre un messaggio già indirizzato a quella persona
+const gChiedi=(g,ctx)=>{const n=gNomi(g.chi,ctx);return n.length?`<span>Chiedi a: ${n.map(u=>`<button type="button" class="g-chi" data-gask="${esc(u.id)}" data-gt="${esc(g.t)}" title="Scrivi un messaggio a ${esc(u.nome)}">✍ ${esc(u.nome)}</button>`).join(" ")}</span>`:""}
 /* ---------- panoramica del primo accesso: chi fa cosa e le schede del proprio ruolo, poi il pulsante Aiuto ---------- */
 function tourPassi(){const me=S.me||{},nome=(userName(me.id)||"").split(" ")[0]||"";
   const adm=!!me.admin,capoPm=can("capo_pm"),pm=can("pm")||S.commesse.some(c=>isPmOf(c.id)),resp=myReparti().length>0,capoT=can("pianifica_team"),pian=canPlanAny();
@@ -3456,12 +3458,14 @@ function apriGuida(testo){
   const d=$("#guida");if(!d)return;
   const disegna=()=>{const q=$("#g-q").value;const box=$("#g-ris");
     if(!q.trim()){const cats=[...new Set(GUIDA.map(g=>g.cat))];
-      box.innerHTML=`<p class="muted" style="margin:0 0 6px;font-size:13px">Scrivi cosa vuoi fare (es. «nuova commessa», «ferie di Marco», «requisiti 24-004») oppure sfoglia il manuale. <button type="button" class="btn ghost" id="g-tour" style="padding:2px 8px;font-size:12.5px">🧭 Rivedi la panoramica</button></p>`+cats.map(c=>`<details class="g-cat"><summary>${esc(c)}</summary>${GUIDA.filter(g=>g.cat===c).map(g=>{let ok=true;try{ok=g.ok()}catch(e){ok=false}return`<div class="g-man"><b>${g.ic} ${esc(g.t)}</b> <span class="muted">· ${esc(g.dove)}</span><div>${esc(g.h)}</div>${ok?`<button type="button" class="btn ghost" data-gi="${GUIDA.indexOf(g)}">Portami lì →</button>`:`<span class="g-no-t" style="font-size:12.5px">🔒 Non puoi farlo con il tuo ruolo.${g.no?" "+esc(g.no):""}${g.no&&gNomi(g.chi,{}).length?" Chiedi a: <b>"+esc(gNomi(g.chi,{}).join(", "))+"</b>.":""}</span>`}</div>`}).join("")}</details>`).join("");}
+      box.innerHTML=`<p class="muted" style="margin:0 0 6px;font-size:13px">Scrivi cosa vuoi fare (es. «nuova commessa», «ferie di Marco», «requisiti 24-004») oppure sfoglia il manuale. <button type="button" class="btn ghost" id="g-tour" style="padding:2px 8px;font-size:12.5px">🧭 Rivedi la panoramica</button></p>`+cats.map(c=>`<details class="g-cat"><summary>${esc(c)}</summary>${GUIDA.filter(g=>g.cat===c).map(g=>{let ok=true;try{ok=g.ok()}catch(e){ok=false}return`<div class="g-man"><b>${g.ic} ${esc(g.t)}</b> <span class="muted">· ${esc(g.dove)}</span><div>${esc(g.h)}</div>${ok?`<button type="button" class="btn ghost" data-gi="${GUIDA.indexOf(g)}">Portami lì →</button>`:`<span class="g-no-t" style="font-size:12.5px">🔒 Non puoi farlo con il tuo ruolo.${g.no?" "+esc(g.no):""}</span> ${g.no?gChiedi(g,{}):""}<span></span>`}</div>`}).join("")}</details>`).join("");}
     else if(q.trim().length<3){box.innerHTML=`<p class="muted" style="margin:0">Continua a scrivere…</p>`}
     else{const {ris,ctx}=gCerca(q);box._ctx=ctx;
-      box.innerHTML=ris.length?ris.map((x,i)=>x.lock?`<div class="g-r g-no${i===0?" sel":""}" data-lock="1" tabindex="-1"><span class="g-ic">🔒</span><span><b>${esc(x.g.t)}</b><span class="g-no-t">Non puoi farlo con il tuo ruolo. ${esc(x.g.no)}</span>${(n=>n.length?`<span>Chiedi a: <b class="g-chi">${esc(n.join(", "))}</b></span>`:"")(gNomi(x.g.chi,ctx))}</span></div>`:`<button type="button" class="g-r${i===0?" sel":""}" data-gi="${GUIDA.indexOf(x.g)}"><span class="g-ic">${x.g.ic}</span><span><b>${esc(x.g.t)}${ctx.comm&&x.g.usaComm?` <span class="code">${esc(ctx.comm.codice)}</span>`:""}${ctx.pers&&/persona/.test(x.g.t)?` · ${esc(pn(ctx.pers))}`:""}</b><span class="muted">${esc(x.g.dove)}</span><span>${esc(x.g.h)}</span></span></button>`).join("")
+      box.innerHTML=ris.length?ris.map((x,i)=>x.lock?`<div class="g-r g-no${i===0?" sel":""}" data-lock="1" tabindex="-1"><span class="g-ic">🔒</span><span><b>${esc(x.g.t)}</b><span class="g-no-t">Non puoi farlo con il tuo ruolo. ${esc(x.g.no)}</span>${gChiedi(x.g,ctx)}</span></div>`:`<button type="button" class="g-r${i===0?" sel":""}" data-gi="${GUIDA.indexOf(x.g)}"><span class="g-ic">${x.g.ic}</span><span><b>${esc(x.g.t)}${ctx.comm&&x.g.usaComm?` <span class="code">${esc(ctx.comm.codice)}</span>`:""}${ctx.pers&&/persona/.test(x.g.t)?` · ${esc(pn(ctx.pers))}`:""}</b><span class="muted">${esc(x.g.dove)}</span><span>${esc(x.g.h)}</span></span></button>`).join("")
         :`<p class="muted" style="margin:0">Non ho capito. Prova con altre parole (es. «crea commessa», «chiedi al PM», «ore del mese») o sfoglia il manuale cancellando il testo.</p>`}
     box.querySelectorAll("[data-gi]").forEach(b=>b.onclick=()=>esegui(GUIDA[b.dataset.gi],box._ctx||{}));
+    box.querySelectorAll("[data-gask]").forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.gask,t=b.dataset.gt;d.close();
+      openScrivi({a:[id],testo:`Ciao, mi serve il tuo aiuto per: ${t.charAt(0).toLowerCase()+t.slice(1)}. `})});
     const gt=$("#g-tour");if(gt)gt.onclick=()=>{fatto=true;d.close();apriTour()}};
   // raccolta delle domande (per migliorare l'aiuto): la frase, cosa e' stato scelto, cosa era stato proposto
   // esito: GIUSTA (prima proposta), ALTRA PROPOSTA, NON PERMESSO (la prima diceva chi puo' farlo), LASCIATA, NON CAPITA, DAL MANUALE
