@@ -1,6 +1,6 @@
-# Progetti Tekne · demo
+# Tekne FloWork · demo
 
-Versione dimostrativa di **Progetti Tekne**, la pianificazione delle attività dei reparti tecnici.
+Versione dimostrativa di **Tekne FloWork**, la pianificazione delle attività dei reparti tecnici.
 
 Apri la demo: **https://fabiorotolo.github.io/Progetti_Tekne_demo-Public/**
 
