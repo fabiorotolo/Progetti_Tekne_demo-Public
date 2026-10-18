@@ -41,7 +41,9 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-
 /* PC: intestazione e schede restano ferme in alto, sotto scorre la pagina */
 @media (min-width:701px){
   header.top{position:sticky;top:0;z-index:40;background:var(--bg);margin-top:-14px;padding:12px 0 8px;box-shadow:0 8px 10px -10px rgba(0,0,0,.28)}
-  #v-perm thead{top:var(--hdrH,0px)!important}.msg-side{top:calc(var(--hdrH,0px) + 10px)!important}
+  .msg-side{top:calc(var(--hdrH,0px) + 10px)!important}
+  /* tabella Utenti: scorre dentro il suo riquadro (alto quanto lo schermo), cosi' le intestazioni delle colonne restano sempre in vista */
+  #v-perm .tbl-wrap{max-height:calc(100vh - var(--hdrH,0px) - 24px);overflow:auto}
 }
 @media print{header.top{position:static;box-shadow:none}}
 /* stessa disposizione per tutti gli utenti: in alto il marchio a sinistra e i comandi (Esci sempre in fondo a destra), sotto le schede */
@@ -4337,6 +4339,8 @@ function start(){hideAuth();S.regLoaded=false;S.utentiLoaded=false;caricaDitte()
 
 /* ---------- avvio ---------- */
 /* altezza dell'intestazione fissa (PC): serve a cio' che resta fermo sotto di lei */
+// tabella Utenti (PC): quando si scorre dentro, la pagina si allinea perche' le intestazioni non finiscano sotto la barra fissa
+document.addEventListener("scroll",e=>{const w=e.target;if(innerWidth<=700||!w.matches||!w.matches("#v-perm .tbl-wrap"))return;const h=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hdrH"))||0,t=w.getBoundingClientRect().top;if(t<h+2)scrollBy(0,t-h-8)},true);
 try{const hdr=document.querySelector("header.top");const setH=()=>document.documentElement.style.setProperty("--hdrH",(innerWidth>700?hdr.getBoundingClientRect().height:0)+"px");new ResizeObserver(setH).observe(hdr);addEventListener("resize",setH);setH()}catch(_){}
 
 render();
