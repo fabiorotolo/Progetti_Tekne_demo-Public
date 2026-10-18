@@ -1007,7 +1007,8 @@ const scopeNome=()=>{const r=S.reparti.find(x=>x.id===scopeRep());return r?r.nom
 const canEditRep=rid=>can("gestione")||myReparti().some(r=>r.id===rid);
 const canUtenti=()=>!!S.me&&(S.isOwner||myReparti().length>0);
 function initScope(){
-  if(S.me&&S.tabUser!==S.me.id){S.tabUser=S.me.id;let t=null;try{t=localStorage.getItem("cut-tab")}catch(e){}if(!t&&myPersona())S.tab="mio"}
+  // ognuno ritrova la scheda dove era rimasto; la prima volta parte da "Il mio lavoro" (uguale per tutte le figure)
+  if(S.me&&S.tabUser!==S.me.id){S.tabUser=S.me.id;let t=null;try{t=localStorage.getItem("cut-tab-"+S.me.id)}catch(e){}S.tab=t||"mio"}
   // "Le mie in evidenza": acceso di base per progettisti e capi team, spento per chi pianifica tutto; poi vale la scelta dell'utente
   if(S.me&&S.mieUser!==S.me.id){S.mieUser=S.me.id;let v=null;try{v=localStorage.getItem("cut-mie-"+S.me.id)}catch(e){}S.soloMie=v==null?fadeAttivo():v!=="0";
     let w=null;try{w=localStorage.getItem("cut-solo-"+S.me.id)}catch(e){}S.soloRighe=w==="1"}
@@ -1017,7 +1018,7 @@ function initScope(){
   // il capo di un team misto lavora su più reparti: di base vede "Tutti i reparti"
   const capoMisto=S.team.some(t=>!t.repartoId&&((!!myPersona()&&t.capo===myPersona())||t.capoU===S.me.id));
   // il coordinatore di reparto parte sempre dal reparto che guida
-  const mioR=myReparti()[0];
+  const mioR=myReparti()[0]||mySup()[0];
   if(!valid(S.scope))S.scope=valid(v)?v:(mioR&&valid("r:"+mioR.id)?"r:"+mioR.id:capoMisto&&valid("tutti")?"tutti":myRepId()?"r:"+myRepId():"tutti");
   if(!S.vista){let vv=null;try{vv=localStorage.getItem("cut-vista-"+S.me.id)}catch(e){}S.vista=vv==="commesse"||vv==="persone"?vv:(can("pm")&&!myPersona()?"commesse":"persone")}
   if(!S.commF)S.commF=S.commesse.some(c=>isPmOf(c.id))?"mie":"tutte";
@@ -1187,7 +1188,7 @@ function renderNow(){
   S.persone.sort((a,b)=>(a.ordine??999)-(b.ordine??999)||String(a.nome).localeCompare(b.nome));
   S.commesse.sort((a,b)=>String(a.codice).localeCompare(b.codice));
   S.team.sort((a,b)=>String(a.nome).localeCompare(b.nome));
-  const vis={mio:!!S.me&&(!!(myPersona()&&persById(myPersona()))||S.persone.some(p=>canPlanOn(p.id))||S.commesse.some(c=>isPmOf(c.id))),plan:true,msg:!!S.me,comm:schedaVis(),ore:canFoglio(),req:true,rep:can("report"),mgmt:canMgmt()||canTeam()||canAssegnaPM()||can("pm")||myReparti().length>0||S.isOwner,reg:can("registro"),perm:canUtenti(),set:!!(S.me&&S.me.admin)};
+  const vis={mio:!!S.me,plan:true,msg:!!S.me,comm:schedaVis(),ore:canFoglio(),req:true,rep:can("report"),mgmt:canMgmt()||canTeam()||canAssegnaPM()||can("pm")||myReparti().length>0||mySup().length>0||S.isOwner,reg:can("registro"),perm:canUtenti(),set:!!(S.me&&S.me.admin)};
   if(!vis[S.tab])S.tab="plan";
   document.querySelectorAll("nav.tabs button").forEach(b=>{b.hidden=!vis[b.dataset.tab];b.setAttribute("aria-selected",b.dataset.tab===S.tab?"true":"false")});{const sel=document.querySelector('nav.tabs button[aria-selected="true"]'),nv=document.querySelector("nav.tabs");if(sel&&nv&&nv.scrollWidth>nv.clientWidth){const x=sel.offsetLeft-nv.offsetLeft-12;if(x<nv.scrollLeft||x+sel.offsetWidth+24>nv.scrollLeft+nv.clientWidth)nv.scrollLeft=x}}
   ["mio","msg","plan","comm","ore","req","rep","mgmt","reg","perm","set"].forEach(k=>$("#v-"+k).hidden=S.tab!==k);
@@ -1239,10 +1240,11 @@ function renderMio(){
   // assenze prossime
   const assP=ass.filter(b=>bEnd(b)>=oggi&&bStart(b)<=oggi+60).sort((a,b)=>bStart(a)-bStart(b));
   // PM: le mie commesse
-  const mieC=io?S.commesse.filter(c=>!c.chiusa&&isPmOf(c.id)):[];
+  // il responsabile PM (che non e' PM di commesse sue) vede tutte le commesse aperte
+  const capoTutte=io&&can("capo_pm")&&!S.commesse.some(c=>!c.chiusa&&isPmOf(c.id));
+  const mieC=io?S.commesse.filter(c=>!c.chiusa&&(capoTutte||isPmOf(c.id))):[];
   const giorno=dobj(oggi).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
   const tile=(n,l,cls)=>`<div class="mio-t${cls?" "+cls:""}"><b>${n}</b><span>${l}</span></div>`;
-  if(!p&&!mieC.length&&!rich.length&&!repReq.length){el.innerHTML=`<div class="panel"><h2>Il mio lavoro</h2><p class="muted" style="margin:0">Non sei collegato a un progettista: qui compaiono le attività, i requisiti e le richieste di chi ha un progettista collegato (scheda Utenti).</p></div>`;return}
   el.innerHTML=`<div class="mio">
     <div class="mio-h"><div><h2 style="margin:0">${io||!p?"Ciao "+esc(S.me.nome.split(" ")[0]):"Il lavoro di "+esc(pn(p))}</h2><span class="muted">${esc(giorno.charAt(0).toUpperCase()+giorno.slice(1))}</span></div>
       ${io?`<form class="mio-ask" id="mio-ask"><input class="inp" id="mio-ask-q" placeholder="❓ Cosa vuoi fare? es. chiedere al PM, inserire ferie…" aria-label="Cosa vuoi fare"><button class="btn">Vai</button></form>`:""}
@@ -1272,7 +1274,7 @@ function renderMio(){
     ${p&&inAtt.length?`<div class="panel"><h2>In attesa<small>attività che aspettano qualcos'altro</small></h2><table class="mio-tb"><tbody>${inAtt.map(b=>riga(b,`<td class="muted" style="white-space:nowrap">${fmtD(bStart(b))} – ${fmtD(bEnd(b))}</td>`)).join("")}</tbody></table></div>`:""}
     ${p?`<div class="panel"><h2>Prossime due settimane</h2>${pross.length?`<table class="mio-tb"><tbody>${pross.map(b=>riga(b,`<td class="muted" style="white-space:nowrap">dal ${fmtD(bStart(b))} al ${fmtD(bEnd(b))}</td><td class="n">${fmtH(bOre(b))} h</td>`)).join("")}</tbody></table>`:`<p class="muted" style="margin:0">Nessuna nuova attività in arrivo.</p>`}</div>`:""}
     ${assP.length?`<div class="panel"><h2>Ferie e assenze</h2><table class="mio-tb"><tbody>${assP.map(b=>`<tr><td>🌴 ${esc(b.attivita||assLab(b.assenza))}</td><td class="muted">${fmtD(bStart(b))}${bEnd(b)!==bStart(b)?" – "+fmtD(bEnd(b)):""}</td><td class="n">${fmtH(b.oreGiorno)} h/g</td></tr>`).join("")}</tbody></table></div>`:""}
-    ${mieC.length?`<div class="panel"><h2>Le tue commesse<small>sei il PM</small></h2><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
+    ${mieC.length?`<div class="panel"><h2>${capoTutte?"Commesse aperte<small>sei il responsabile PM</small>":"Le tue commesse<small>sei il PM</small>"}</h2><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
       return`<tr><td><span class="code" style="--h:${c.colore}">${esc(c.codice)}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} requisiti aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div>`:""}
     </div>${apMioHtml(p)}</div>`;
   bindApMio();bindOltre($("#mio-olt"));
@@ -1599,7 +1601,7 @@ $("#commf").onchange=e=>{S.commF=e.target.value;render()};
 $("#vista").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.vista=b.dataset.v;try{localStorage.setItem("cut-vista-"+S.me.id,S.vista)}catch(_){}render()};
 $("#scope").onchange=e=>setScope(e.target.value);
 $("#new-blk").onclick=()=>openEditor(null,{});
-function saveTab(){try{localStorage.setItem("cut-tab",S.tab)}catch(_){}}
+function saveTab(){try{localStorage.setItem("cut-tab",S.tab);if(S.me)localStorage.setItem("cut-tab-"+S.me.id,S.tab)}catch(_){}}
 document.querySelector("nav.tabs").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.tab=b.dataset.tab;saveTab();render()};
 
 /* ---------- editor ---------- */
