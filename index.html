@@ -2754,11 +2754,11 @@ function withMent(t){let h=esc(t);for(const u of S.utentiMini){if(!u.nome)contin
 let qItems=[],qSel=0;
 function qSearch(){
   const t=$("#q").value.trim().toLowerCase(),box=$("#qres");if(t.length<2){box.hidden=true;return}
-  const has=(...xs)=>xs.some(x=>String(x||"").toLowerCase().includes(t));
+  const tw=t.split(/\s+/).filter(Boolean),has=(...xs)=>{const h=xs.map(x=>String(x||"").toLowerCase()).join(" ");return h.includes(t)||tw.every(w=>h.includes(w))};
   const it=[];
   for(const c of S.commesse)if(has(c.codice,c.nome,c.cliente))it.push({k:"Commessa",t:`${c.codice} · ${c.nome}`,s:(c.chiusa?"chiusa · ":"")+(c.cliente||"")+(pmNomi(c.id)?" · PM "+pmNomi(c.id):""),go:()=>goComm(c)});
   for(const p of S.persone)if(has(pn(p),p.tk,p.ruolo))it.push({k:"Persona",t:pn(p),s:[(S.reparti.find(r=>r.id===p.repartoId)||{}).nome,teamsOf(p.id).map(x=>x.nome).join(", ")].filter(Boolean).join(" · "),go:()=>goPers(p)});
-  for(const u of S.utentiMini)if(!u.personaId&&has(u.nome))it.push({k:"Utente",t:u.nome,s:u.pm?"PM":"",go:()=>goUtente(u)});
+  for(const u of S.utentiMini)if(!u.personaId&&has(u.nome,u.ruolo))it.push({k:"Utente",t:u.nome,s:u.pm?"PM":"",go:()=>goUtente(u)});
   for(const b of S.blocchi)if(has(b.attivita,b.note))it.push({k:isAss(b)?"Assenza":"Attività",t:b.attivita||"(senza titolo)",s:`${isAss(b)?"":codC(b.commessaId)+" · "}${nomeP(b.personaId)} · ${fmtD(bStart(b))}–${fmtD(bEnd(b))}`,go:()=>goBlk(b)});
   for(const r of S.richieste)if(has(r.titolo,r.testo))it.push({k:"Richiesta",t:r.titolo,s:`${codC(r.commessaId)} · ${STATO_LAB[r.stato]||r.stato}`,go:()=>openReq(r.id)});
   qItems=it.slice(0,30);qSel=0;
@@ -4028,7 +4028,9 @@ function renderPerm(){
   const uScope=S.uScope&&(adm||S.uScope.startsWith("r:"))?S.uScope:(rS?"r:"+rS:(adm?"tutti":"r:"+((myReparti()[0]||{}).id||"")));
   const urep=uScope.startsWith("r:")?uScope.slice(2):null;
   const uq=(S.uFilt||"").trim().toLowerCase();
-  const rows=S.utenti.filter(u=>uq?[u.nome,u.cognome,u.tk,S.ruoli[u.ruolo]].some(x=>String(x||"").toLowerCase().includes(uq)):(uScope==="tutti"||(uScope==="pm"?!u.repartoId:u.repartoId===urep)));
+  const uqw=uq.split(/\s+/).filter(Boolean);
+  // ogni parola cercata deve stare in nome, cognome, TK o ruolo (cosi' "Mario Rossi" trova nome + cognome)
+  const rows=S.utenti.filter(u=>uq?(h=>uqw.every(w=>h.includes(w)))([u.nome,u.cognome,u.tk,S.ruoli[u.ruolo]].map(x=>String(x||"").toLowerCase()).join(" ")):(uScope==="tutti"||(uScope==="pm"?!u.repartoId:u.repartoId===urep)));
   const pList=adm?PERMS:PERMS.filter(([k])=>(S.permsResp||[]).includes(k));
   const ruoliOk=Object.entries(S.ruoli).filter(([k])=>adm||(S.ruoliResp||[]).includes(k));
   const ruoliNew=uScope==="pm"?ruoliOk.filter(([k])=>["pm","capo_pm","direzione"].includes(k)||k.startsWith("r_")):ruoliOk.filter(([k])=>!["pm","capo_pm","direzione"].includes(k));
