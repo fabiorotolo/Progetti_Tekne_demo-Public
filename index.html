@@ -529,8 +529,9 @@ tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor
 .rt-sub.rt-pick .rt-mini{text-align:left}
 .rt-rep-chk{display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:2px}.rt-rep-chk b{margin:0!important;color:var(--fg)!important}.rt-rep-chk input{width:16px;height:16px}
 .rt-sub.rt-pick>.rt-pick-r{border:1px solid transparent;border-radius:8px;padding:6px 8px;margin:-6px -8px}.rt-sub.rt-pick>.rt-pick-r.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent)}
-.rt-sub.rt-pick>.rt-pick-rep{order:0}.rt-sub.rt-pick>.rt-pick-pm{order:1}.rt-sub.rt-pick>.rt-pick-team{order:2}.rt-sub.rt-pick>.rt-pick-r{order:3}.rt-sub.rt-pick>.rt-pick-r.primo{grid-column-start:1}.rt-sub.rt-pick>.rt-pick-ok{order:4}
-.rt-sub.rt-pick>.rt-pick-team{flex-direction:row;flex-wrap:wrap;gap:4px 6px;grid-column:span 2}.rt-sub.rt-pick>.rt-pick-team>b{flex-basis:100%}
+/* una riga: PM della commessa e i reparti affiancati; sotto i team su tutta la larghezza */
+.rt-sub.rt-pick>.rt-pick-rep{order:0}.rt-sub.rt-pick>.rt-pick-pm{order:1}.rt-sub.rt-pick>.rt-pick-r{order:2}.rt-sub.rt-pick>.rt-pick-team{order:3}.rt-sub.rt-pick>.rt-pick-ok{order:4}
+.rt-sub.rt-pick>.rt-pick-team{flex-direction:row;flex-wrap:wrap;gap:4px 6px;grid-column:1/-1;padding-top:8px;border-top:1px dashed var(--line)}.rt-sub.rt-pick>.rt-pick-team>b{margin-right:6px!important;align-self:center}
 .olt{font-size:10.5px;font-weight:700;border-radius:4px;padding:0 4px;margin-right:4px;white-space:nowrap}.olt.att{background:#d97706;color:#fff}.olt.no{background:var(--over);color:#fff}.olt.ok{color:var(--muted);border:1px solid var(--line)}
 .olt-box{border:1px solid #d97706;border-radius:8px;padding:8px 10px;background:color-mix(in srgb,#d97706 8%,var(--panel));font-size:13.5px;display:flex;flex-direction:column;gap:6px}.olt-box.no{border-color:var(--over)}.olt-box.ok{border-color:var(--line);background:none}
 .olt-mot{display:flex;gap:6px}.olt-mot .ap-t{min-height:0;height:auto;resize:none}#mio-olt tr.flash td{animation:rtflash 2.4s ease}
