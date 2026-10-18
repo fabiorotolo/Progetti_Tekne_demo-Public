@@ -320,9 +320,10 @@ a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:cente
 .org-root{font-family:var(--f-disp);font-size:24px;font-weight:700;letter-spacing:.12em;padding:10px 46px;border-radius:999px;border:5px solid #2A87B8;box-shadow:0 0 0 4px var(--panel),0 0 0 6px #7A8B91;color:var(--fg)}
 .org{position:relative}.org-svg{position:absolute;left:0;top:0;pointer-events:none;z-index:2;overflow:visible}.org>*:not(.org-svg){position:relative;z-index:1}
 .og-row{display:grid;grid-template-columns:repeat(var(--n),minmax(230px,1fr));gap:22px;position:relative;padding-top:58px}
+.og-grp{display:flex;flex-direction:column;gap:30px;min-width:0}.og-gsup{display:flex;justify-content:center}.og-gr{display:grid;grid-template-columns:repeat(var(--n),minmax(230px,1fr));gap:22px}
 .og{position:relative;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:22px;background:color-mix(in srgb,var(--c) 9%,var(--panel));border:0}
 .og-h{align-self:center;background:var(--c);color:#fff;font-weight:700;border-radius:999px;padding:6px 20px;font-size:14px;text-align:center}
-.og-l1{display:flex;flex-direction:column;gap:8px;align-items:center}.og-l2{display:flex;flex-wrap:wrap;gap:14px 30px;justify-content:center;margin-top:24px}
+.og-l1{display:flex;flex-direction:column;gap:22px;align-items:center}.og-l2{display:flex;flex-wrap:wrap;gap:14px 30px;justify-content:center;margin-top:24px}
 .og-l1+.og-k{margin-top:30px}.og-h+.og-k{margin-top:30px}.og-l2+.og-k{margin-top:46px}
 .og-k{list-style:none;margin:0 0 0 30px;padding:6px 0 0;position:relative;display:flex;flex-direction:column;gap:8px}
 .og-k li{position:relative}
@@ -2190,7 +2191,9 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
     const pmN=u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A");
     if(capiPm.length||pms.length)rami.push(capiPm.length===1?ramo("PM","#C2563A",[nodo(capiPm[0].nome,"Responsabile PM","#C2563A","big col")],[],pms.map(pmN))
       :ramo("PM","#C2563A",[],[],[...capiPm.map(u=>nodo(u.nome,"Responsabile PM","#C2563A","capo")),...pms.map(pmN)]));
-    for(const r of reps){const col=colRep(r.id);const respU=r.responsabile&&S.utentiMini.find(u=>u.id===r.responsabile),supU=r.supervisore&&S.utentiMini.find(u=>u.id===r.supervisore);
+    const supCount={};for(const r of reps)if(r.supervisore)supCount[r.supervisore]=(supCount[r.supervisore]||0)+1;
+    const grpFatti=new Set();
+    for(const r of reps){const col=colRep(r.id);const inGrp=r.supervisore&&supCount[r.supervisore]>1;const respU=r.responsabile&&S.utentiMini.find(u=>u.id===r.responsabile),supU=r.supervisore&&S.utentiMini.find(u=>u.id===r.supervisore);
       const persone=S.persone.filter(p=>p.repartoId===r.id&&!(respU&&respU.personaId===p.id)&&!(supU&&supU.personaId===p.id)).sort((a,b)=>pn(a).localeCompare(pn(b)));
       const uDi=p=>S.utentiMini.find(x=>x.personaId===p.id);
       const ruoloP=p=>{const u=uDi(p);return u&&u.ruolo?u.ruolo:(p.ruolo||"progettista")};
@@ -2198,10 +2201,14 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
       const capo=p=>S.team.some(t=>t.capo===p.id)||!!(uDi(p)&&uDi(p).capoTeam);
       // fino a 2 capi affiancati sotto il responsabile; se sono di piu' vanno in testa alla cascata (evidenziati)
       const capi=persone.filter(capo),poche=capi.length<=2&&!!respU;
-      rami.push(ramo("Reparto "+r.nome,col,[...(supU?[nodo(supU.nome,"Responsabile di reparto",col,"big col")]:[]),...(respU?[nodo(respU.nome,"Coordinatore di reparto",col,"big col")]:[])],poche?capi.map(p=>nodo(pn(p),ruoloP(p),col,"col")):[],[...(poche?[]:capi.map(p=>nodo(pn(p),ruoloP(p),col,"capo"))),...persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))]))}
+      const sez=ramo("Reparto "+r.nome,col,[...(supU&&!inGrp?[nodo(supU.nome,"Responsabile di reparto",col,"big col")]:[]),...(respU?[nodo(respU.nome,"Coordinatore di reparto",col,"big col")]:[])],poche?capi.map(p=>nodo(pn(p),ruoloP(p),col,"col")):[],[...(poche?[]:capi.map(p=>nodo(pn(p),ruoloP(p),col,"capo"))),...persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))]);
+      if(!inGrp)rami.push(sez);else{if(!grpFatti.has(r.supervisore)){grpFatti.add(r.supervisore);rami.push({sup:r.supervisore,sez:[]})}rami.find(x=>x&&x.sup===r.supervisore).sez.push(sez)}}
     const altri=um.filter(u=>!u.personaId&&!u.pm&&!u.capoPm&&u.ruolo&&!reps.some(r=>r.responsabile===u.id||r.supervisore===u.id));
     if(altri.length)rami.push(ramo("Direzione e sviluppo","#5B6E76",[],[],altri.map(u=>nodo(u.nome,u.ruolo,"#5B6E76"))));
-    corpo=`<svg class="org-svg" aria-hidden="true"></svg><div class="org-top"><div class="org-root">TEKNE</div></div><div class="og-row" style="--n:${rami.length}">${rami.join("")}</div>`;
+    const colN=rami.reduce((n,x)=>n+(typeof x==="string"?1:x.sez.length),0);
+    const html=rami.map(x=>{if(typeof x==="string")return x;const su=S.utentiMini.find(u=>u.id===x.sup);
+      return`<div class="og-grp" style="grid-column:span ${x.sez.length}"><div class="og-gsup">${nodo(su?su.nome:"?","Responsabile di reparto","#5B6E76","big col")}</div><div class="og-gr" style="--n:${x.sez.length}">${x.sez.join("")}</div></div>`}).join("");
+    corpo=`<svg class="org-svg" aria-hidden="true"></svg><div class="org-top"><div class="org-root">TEKNE</div></div><div class="og-row" style="--n:${colN}">${html}</div>`;
   }else{
     // ogni team e' un cerchio: capo al centro, membri tutt'attorno
     const cerchio=t=>{const col=t.repartoId?colRep(t.repartoId):"#5B6E76";const capoN=t.capoU?userName(t.capoU):t.capo?nomeP(t.capo):null;
@@ -2230,13 +2237,21 @@ function orgLinee(){const org=$("#rd .org"),svg=org&&org.querySelector(".org-svg
   // come sopra ma risale (dal basso del capo al punto di ricongiunzione)
   const linea=(d,c,w=3)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
   const dot=(x,y,c,f)=>`<circle cx="${x}" cy="${y}" r="5" fill="${f?c:"var(--panel)"}" stroke="${c}" stroke-width="3"/>`;
-  let g="";const root=R(org.querySelector(".org-root"));const cols=[...org.querySelectorAll(".og")];const n=cols.length;
-  cols.forEach((col,i)=>{const c=col.dataset.col,k=R(col);const off=(i-(n-1)/2)*16,x0=root.cx+off,y0=root.b+2;
+  let g="";const root=R(org.querySelector(".org-root"));const tops=[...org.querySelectorAll(".og-row>.og,.og-row>.og-grp")];const n=tops.length;
+  // dalla radice a ogni ramo (o al responsabile che ne segue piu' d'uno)
+  tops.forEach((t,i)=>{const grp=t.classList.contains("og-grp"),c=grp?"#5B6E76":t.dataset.col,off=(i-(n-1)/2)*16,x0=root.cx+off,y0=root.b+2;
     const dist=Math.abs(i-(n-1)/2),yH=root.b+16+((n-1)/2-dist)*9+10;
-    g+=linea(gomito(x0,y0+6,yH,k.cx,k.t-8),c)+dot(x0,y0+6,c,true);
+    if(!grp){const k=R(t);g+=linea(gomito(x0,y0+6,yH,k.cx,k.t-8),c)+dot(x0,y0+6,c,true);return}
+    const sn=t.querySelector(".og-gsup .on"),so=R(sn.querySelector(".oc")||sn),sb=R(sn);g+=linea(gomito(x0,y0+6,yH,so.cx,so.t-4),c)+dot(x0,y0+6,c,true);
+    const figli=[...t.querySelectorAll(".og-gr>.og")],ys=Math.min(...figli.map(f=>R(f).t))-22;
+    figli.forEach(f=>{const k=R(f);g+=linea(gomito(so.cx,sb.b+2,ys,k.cx,k.t-8,12),f.dataset.col)})});
+  const cols=[...org.querySelectorAll(".og")];
+  cols.forEach((col,i)=>{const c=col.dataset.col,k=R(col);
     // "cappello" sopra il riquadro, come nell'infografica
     g+=linea(`M${k.l+4},${k.t+22}Q${k.l+4},${k.t-8} ${k.l+34},${k.t-8}H${k.l+k.w-34}Q${k.l+k.w-4},${k.t-8} ${k.l+k.w-4},${k.t+22}`,c,3);
-    const l1=col.querySelector(".og-l1 .on"),l2n=[...col.querySelectorAll(".og-l2 .on")],ul=col.querySelector(".og-k");
+    const l1s=[...col.querySelectorAll(".og-l1 .on")],l1=l1s[l1s.length-1]||null,l2n=[...col.querySelectorAll(".og-l2 .on")],ul=col.querySelector(".og-k");
+    // responsabile sopra il coordinatore: linea tra i due
+    for(let q=1;q<l1s.length;q++){const A=R(l1s[q-1]),Bn=R(l1s[q]),ax=R(l1s[q-1].querySelector(".oc")||l1s[q-1]).cx,bx=R(l1s[q].querySelector(".oc")||l1s[q]).cx;g+=linea(gomito(ax,A.b+2,(A.b+Bn.t)/2,bx,Bn.t-2,10),c)}
     // cascata disegnata tutta qui: spina verticale a sinistra dei cerchi e un ramo per persona, cosi' le linee combaciano al pixel
     const items=ul?[...ul.querySelectorAll(":scope>li")].map(li=>R(li.querySelector(".oc"))):[];
     const sx=items.length?Math.round(Math.min(...items.map(o=>o.l))-16):null,st=ul?Math.round(R(ul).t-4):null,rr=10;
