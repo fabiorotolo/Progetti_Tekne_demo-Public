@@ -520,7 +520,7 @@ tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor
 .ap-new{border:1px dashed var(--line);border-radius:10px;padding:10px;background:var(--line-soft)}.ap-nt{font-size:13px;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .ap-sep{display:flex;align-items:center;gap:10px;margin:4px 0 0;font-size:12.5px;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.ap-sep::before,.ap-sep::after{content:"";flex:1;border-top:2px solid var(--line)}
 .ap-pronti{font-size:13px;font-weight:600;color:var(--warn)}.ap-go{outline:3px solid var(--accent);outline-offset:2px;animation:tourpulse 1.4s ease-in-out infinite}
-.ap-all{align-self:flex-start}#rd textarea.ap-t,dialog textarea.ap-t{min-height:56px;height:64px}.dc-nav{display:flex;gap:6px;flex-wrap:wrap}.dc-nav .rqchip{font-family:inherit;font-size:12.5px;padding:3px 9px}.ap-ed{border:1px solid var(--line);border-radius:8px;padding:6px 10px}.ap-ed>summary{cursor:pointer;font-size:14px;padding:2px 0}.ap-ed[open]>summary{margin-bottom:8px}
+.ap-c.flash{animation:rtflash 2.4s ease}.ap-all{align-self:flex-start}#rd textarea.ap-t,dialog textarea.ap-t{min-height:56px;height:64px}.dc-nav{display:flex;gap:6px;flex-wrap:wrap}.dc-nav .rqchip{font-family:inherit;font-size:12.5px;padding:3px 9px}.ap-ed{border:1px solid var(--line);border-radius:8px;padding:6px 10px}.ap-ed>summary{cursor:pointer;font-size:14px;padding:2px 0}.ap-ed[open]>summary{margin-bottom:8px}
 .ap-ed .ap-l{grid-template-columns:1fr}.ap-n{background:#d4a017;color:#fff;border-radius:9px;padding:0 7px;font-size:11.5px;font-family:var(--f-mono)}
 .ap-pan h2 small{font-weight:400}
 .msg-pag{display:grid;grid-template-columns:minmax(220px,280px) 1fr;gap:14px;align-items:start}@media (max-width:800px){.msg-pag{grid-template-columns:1fr}}
@@ -3329,7 +3329,7 @@ async function apriNotifica(x){
   if(ids.length){try{await api("POST","/api/notifiche/lette",{ids})}catch(_){}for(const l of[S.notifAll||[],S.notifiche||[]])for(const y of l)if(ids.includes(y.id))y.letta=true}
   await doRefresh();
   if(x.tipo==="messaggio"){if(!S.notifAll)await caricaMessaggi();openScrivi({a:partecipantiConv(x.conv),conv:x.conv});return}
-  if(x.tipo==="appunto"&&commById(x.commessaId)){openScheda(x.commessaId)}
+  if(x.tipo==="appunto"&&commById(x.commessaId)){vaiAppunto(x.commessaId,x.appuntoId)}
   else if(x.tipo==="documento"&&commById(x.commessaId)){openDocs(x.commessaId)}
   else if(x.tipo==="team"){S.tab="mgmt";saveTab();render()}
   else if(x.tipo==="evento"){if(evById(x.eventoId))openEvento(x.eventoId);else toast("L'evento non esiste più.")}
@@ -3560,6 +3560,7 @@ function tourPassi(){const me=S.me||{},nome=(userName(me.id)||"").split(" ")[0]|
     {t:"Chi fa cosa",h:`<ul><li>La <b>commessa</b> la crea il responsabile PM${esc(nomi())}, che assegna anche il PM.</li><li>Il <b>PM</b> della commessa ne cambia nome e dati, scrive i <b>requisiti</b> e li dà a un reparto.</li><li>Il <b>responsabile del reparto</b> sceglie chi fa ogni requisito e <b>pianifica</b> le attività (con il capo team).</li><li>Il <b>progettista</b> fa il lavoro, segna l'avanzamento e spunta i requisiti fatti.</li></ul>`}];
   const tab=(k,t,h,sel)=>{if(vis(k))P.push({t,h,tab:k,sel:sel||"#tab-"+k})};
   tab("mio","Il mio lavoro",ruolo==="progettista"||ruolo==="capo team"?"<p>Parti da qui ogni mattina: le ore di <b>oggi</b> e della settimana, i <b>requisiti assegnati a te</b> (✓ Fatto, 💬 nota), le richieste che aspettano te e i messaggi da leggere.</p>":"<p>Il riassunto di quello che aspetta te: requisiti e richieste da approvare o assegnare, attività in attesa e messaggi da leggere.</p>");
+  if(vis("mio"))P.push({t:"📌 Appunti di commessa",tab:"mio",sel:"#mio-ap",h:"<p>In fondo a <b>Il mio lavoro</b> scegli una commessa (anche una dove non lavori) e trovi gli <b>appunti</b> dei colleghi: misure, decisioni, foto e schizzi.</p><p>Scrivi nel riquadro <b>✍ Nuovo appunto</b>, aggiungi una <b>📷 foto</b> dal cellulare o un file, poi premi <b>Aggiungi appunto</b>. Con <b>@Nome</b> avvisi un collega; il PM riceve sempre l'avviso. Gli stessi appunti li ritrovi nei <b>📎 Documenti</b> della commessa.</p>"});
   tab("msg","Messaggi","<p>Tutti gli avvisi in un posto, divisi per commessa. Il <b>pallino</b> pieno = da leggere (clic per cambiarlo); <b>✍ Scrivi a un collega</b> per un messaggio con allegati. Clic su un messaggio = ti porta al punto giusto.</p>");
   tab("plan","Pianificazione",pian?"<p>La timeline per persone o per commessa. <b>Doppio clic</b> su uno spazio vuoto = nuova attività (anche ferie e permessi); <b>trascina</b> per spostare, tira i bordi per allungare; il pallino ai lati aggancia un'attività a un'altra. Ctrl+Z annulla.</p>":"<p>La timeline: vedi le tue attività e quelle dei colleghi, per persona o per commessa. <b>Clic su una tua attività</b> per segnare la percentuale o che è svolta. Le attività le pianifica il responsabile del tuo reparto.</p>");
   tab("req","Richieste",pm||resp?"<p>Le domande dei progettisti e le richieste di lavoro tra reparti: rispondi, approva, assegna. Quelle <b>bloccanti</b> contano i giorni di fermo.</p>":"<p>Hai un dubbio o sei fermo? <b>+ Nuova richiesta</b>: una domanda al PM della commessa, oppure un lavoro da chiedere a un reparto. Spunta <b>Bloccante</b> se il lavoro è fermo.</p>");
@@ -3673,6 +3674,10 @@ function bindAppunti(root,cid,o,ridisegna){o=o||{};if(!root)return;const box=roo
     if(tx)tx.replaceWith(ed);else c.querySelector(".ap-h").after(ed);const [an,sv]=ed.querySelectorAll("button");ed.querySelector("textarea").focus();an.onclick=ridisegna;
     sv.onclick=async()=>{try{await api("PATCH","/api/appunti/"+x.id,{testo:ed.querySelector("textarea").value.trim()});await doRefresh();ridisegna()}catch(er){handleErr(er)}}});
   const all=box.querySelector("[data-apall]");if(all)all.onclick=()=>o.onAll&&o.onAll()}
+// dall'avviso: apre la commessa (Scheda commessa, o Il mio lavoro per chi non ha la scheda), scende all'appunto e lo evidenzia
+function vaiAppunto(cid,id){S.apTutti=cid;let v;if(schedaVis()){openScheda(cid);v="#v-comm"}else{S.apMioC=cid;S.tab="mio";saveTab();render();v="#v-mio"}
+  setTimeout(()=>{const c=(id&&document.querySelector(`${v} .ap-c[data-apid="${CSS.escape(id)}"]`))||document.querySelector(`${v} .ap-pan`);
+    if(!c){if(id)toast("L'appunto non c'è più: forse è stato tolto.");return}c.scrollIntoView({block:"center",behavior:"smooth"});c.classList.add("flash");setTimeout(()=>c.classList.remove("flash"),2600)},200)}
 // nella scheda di un'attivita': gli appunti della sua commessa (gli ultimi 3) e il modo di aggiungerne
 function apEditor(b,cc){const fa=$("#f-app");if(!fa)return;if(!b||!cc||isAss(b)){fa.innerHTML="";return}
   const n=appuntiDi(cc.id).length,ap=fa.querySelector("details");const aperto=ap?ap.open:n>0;
