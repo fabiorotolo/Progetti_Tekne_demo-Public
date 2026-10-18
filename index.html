@@ -517,7 +517,7 @@ tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor
 .ap-tx{white-space:pre-wrap;font-size:14px;overflow-wrap:anywhere}
 .ap-im{display:flex;gap:6px;flex-wrap:wrap}.ap-th{padding:0;border:1px solid var(--line);border-radius:6px;background:var(--line-soft);cursor:zoom-in;width:96px;height:72px;overflow:hidden;display:grid;place-items:center;font-size:22px}
 .ap-th img{width:100%;height:100%;object-fit:cover;display:block}
-.ap-all{align-self:flex-start}.ap-ed{border:1px solid var(--line);border-radius:8px;padding:6px 10px}.ap-ed>summary{cursor:pointer;font-size:14px;padding:2px 0}.ap-ed[open]>summary{margin-bottom:8px}
+.ap-all{align-self:flex-start}#rd textarea.ap-t,dialog textarea.ap-t{min-height:56px;height:64px}.dc-nav{display:flex;gap:6px;flex-wrap:wrap}.dc-nav .rqchip{font-family:inherit;font-size:12.5px;padding:3px 9px}.ap-ed{border:1px solid var(--line);border-radius:8px;padding:6px 10px}.ap-ed>summary{cursor:pointer;font-size:14px;padding:2px 0}.ap-ed[open]>summary{margin-bottom:8px}
 .ap-ed .ap-l{grid-template-columns:1fr}.ap-n{background:#d4a017;color:#fff;border-radius:9px;padding:0 7px;font-size:11.5px;font-family:var(--f-mono)}
 .ap-pan h2 small{font-weight:400}
 .msg-pag{display:grid;grid-template-columns:minmax(220px,280px) 1fr;gap:14px;align-items:start}@media (max-width:800px){.msg-pag{grid-template-columns:1fr}}
@@ -649,7 +649,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
   nav.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}nav.tabs::-webkit-scrollbar{display:none}
   nav.tabs button{font-size:13.5px;padding:8px 11px;scroll-snap-align:start}
   .panel{padding:12px}
-  dialog:not(#okdlg){width:100vw!important;max-width:100vw!important;height:100dvh;max-height:100dvh!important;margin:0;border:0;border-radius:0}
+  dialog:not(#okdlg){width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;margin:0;border:0;border-radius:0}
   .rd{padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px));font-size:14.5px}.ed{padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px))}
   dialog .xcl{position:sticky;top:0;float:right;z-index:3}
   #rd:has(.ms-storia){min-height:100%;box-sizing:border-box}
@@ -2115,8 +2115,8 @@ function openEvento(id,opt){opt=opt||{};const e=evById(id);if(!e){toast("L'event
     catch(err){$("#ev-err").textContent=err&&err.msg||"Operazione non riuscita.";$("#ev-go").disabled=false}};
   showRdlg();
 }
-function docChip(cid){const n=docsOf(cid).length;if(!n&&!canReqC(cid))return"";
-  return`<button class="rqchip${n?"":" vuoto"}" data-docc="${esc(cid)}" title="Documenti della commessa (capitolato, proposta tecnica…)">📎 ${n||"Documenti"}</button>`}
+function docChip(cid){const n=docsOf(cid).length,a=appuntiDi(cid).length;if(!n&&!a&&!canReqC(cid))return"";
+  return`<button class="rqchip${n||a?"":" vuoto"}" data-docc="${esc(cid)}" title="Documenti della commessa (capitolato, proposta tecnica…) e appunti">📎 ${n||(a?"":"Documenti")}${a?` · 📌 ${a}`:""}</button>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-docc]");if(b){e.preventDefault();e.stopPropagation();openDocs(b.dataset.docc)}},true);
 function openDocs(cid,aperto){const c=commById(cid);if(!c)return;RT=null;rdId=null;rdlg.classList.add("wide");
   const ed=canReqC(cid),l=docsOf(cid);const tipi=[...new Set([...DOC_TIPI,...l.map(d=>d.tipo)])].filter(t=>l.some(d=>d.tipo===t));
@@ -2131,13 +2131,17 @@ function openDocs(cid,aperto){const c=commById(cid);if(!c)return;RT=null;rdId=nu
     ${RTD.rev===d.id?`<tr class="dc-new"><td colspan="6"><div class="dc-up-r"><b style="align-self:center">Nuova revisione di ${esc(a.codice)}</b><label class="f" style="flex:0 0 110px">Revisione<input class="inp" id="dcr-rev" placeholder="auto"></label><label class="f" style="flex:1">Cosa cambia<input class="inp" id="dcr-nota" maxlength="500" placeholder="Es. aggiornato il capitolo 3 su richiesta del cliente"></label></div>${filePicker("dcr-al")}<div class="calc" id="dcr-prog"></div><div class="acts"><span></span><div><button class="btn ghost" id="dcr-no">Annulla</button><button class="btn primary" id="dcr-go">Carica revisione</button></div></div></td></tr>`:""}`};
   $("#rd").innerHTML=`<h3 style="padding-right:30px">Documenti · ${esc(c.codice)} <span class="muted" style="font-weight:400">${esc(c.nome)}</span></h3>
     <p class="muted" style="margin:0;font-size:13px">Ogni documento ha un codice (<b>${esc(c.codice)}-CAP-001</b> = capitolato n.1) e una revisione: il file si scarica sempre come <i>codice_revN_titolo</i>, qualunque nome avesse.</p>
-    ${l.length?tipi.map(t=>`<div class="dc-g"><b>${esc(t)} <span class="muted">(${esc(siglaDoc(t))})</span></b><div class="tbl-wrap"><table><thead><tr><th>Codice</th><th>Titolo</th><th class="n">Rev.</th><th>Caricato</th><th>Nota</th><th></th></tr></thead><tbody>${l.filter(d=>d.tipo===t).sort((x,y)=>String((allegInfo(x.id)||{}).codice).localeCompare(String((allegInfo(y.id)||{}).codice))).map(riga).join("")}</tbody></table></div></div>`).join("")
+    ${l.length||appuntiDi(cid).length?`<div class="dc-nav">${tipi.map((t,i)=>`<button type="button" class="rqchip" data-dcgo="dc-g${i}">${esc(t)} (${l.filter(d=>d.tipo===t).length})</button>`).join("")}<button type="button" class="rqchip" data-dcgo="dc-ap">📌 Appunti (${appuntiDi(cid).length})</button></div>`:""}
+    ${l.length?tipi.map((t,i)=>`<div class="dc-g" id="dc-g${i}"><b>${esc(t)} <span class="muted">(${esc(siglaDoc(t))})</span></b><div class="tbl-wrap"><table><thead><tr><th>Codice</th><th>Titolo</th><th class="n">Rev.</th><th>Caricato</th><th>Nota</th><th></th></tr></thead><tbody>${l.filter(d=>d.tipo===t).sort((x,y)=>String((allegInfo(x.id)||{}).codice).localeCompare(String((allegInfo(y.id)||{}).codice))).map(riga).join("")}</tbody></table></div></div>`).join("")
       :`<p class="muted" style="margin:0">${ed?"Nessun documento: carica qui il capitolato tecnico, la proposta tecnica e gli altri documenti di riferimento.":"Nessun documento caricato per questa commessa."}</p>`}
+    <div class="dc-g" id="dc-ap"><b>📌 Appunti <span class="muted">(${appuntiDi(cid).length}) · testo, foto e schizzi: li scrive chiunque, senza codici</span></b>${appuntiHtml(cid,{pre:"d"})}</div>
     ${ed?`<div class="dc-up"><b>Carica nuovi documenti</b><div class="dc-up-r"><label class="f" style="flex:0 0 200px">Tipo<select class="inp" id="dc-tipo">${DOC_TIPI.map(t=>`<option>${esc(t)}</option>`).join("")}</select></label><label class="f" style="flex:1 1 220px">Titolo<input class="inp" id="dc-titolo" maxlength="150" placeholder="Es. Capitolato tecnico (se vuoto: dal nome del file)"></label><label class="f" style="flex:0 0 90px">Rev.<input class="inp" id="dc-rev" value="0" maxlength="10"></label><label class="f" style="flex:1 1 220px">Nota<input class="inp" id="dc-nota" maxlength="500" placeholder="Es. ricevuto dal cliente il 10/10"></label></div>
       ${filePicker("dc-al")}<div class="calc" id="dc-prog"></div><div class="err" id="dc-err"></div>
       <div class="acts"><span class="muted" style="font-size:12.5px">Il codice si assegna da solo. Li vedono tutti; li caricano il PM della commessa, il responsabile PM e chi ha la spunta Commesse.</span><button class="btn primary" id="dc-go">Carica</button></div></div>`:""}
     ${reqOf(cid).length||canReqC(cid)?`<div><button type="button" class="btn ghost" data-reqc="${esc(cid)}">☑ Vai ai requisiti</button></div>`:""}`;
   const R$=q=>$("#rd").querySelectorAll(q);const ri=()=>openDocs(cid,aperto);
+  bindAppunti($("#dc-ap"),cid,{pre:"d"},()=>{const st=rdlg.scrollTop;ri();render();rdlg.scrollTop=st});
+  R$("[data-dcgo]").forEach(b=>b.onclick=()=>{const g=document.getElementById(b.dataset.dcgo);if(!g)return;let y=0;for(let e=g;e&&e!==rdlg;e=e.offsetParent)y+=e.offsetTop;rdlg.scrollTo({top:Math.max(0,y-12),behavior:"smooth"})});
   const files=bindPicker("dc-al",(f,i,n)=>nomeStd(prossimoCod(cid,siglaDoc($("#dc-tipo").value),i),$("#dc-rev").value.trim()||0,n===1&&$("#dc-titolo").value.trim()?$("#dc-titolo").value.trim():titoloDaNome(f.name),extDi(f.name)));
   ["dc-tipo","dc-titolo","dc-rev"].forEach(k=>{const e=$("#"+k);if(e)e.oninput=e.onchange=()=>files.redraw()});
   const go=$("#dc-go");if(go)go.onclick=async()=>{if(!files().length){$("#dc-err").textContent="Scegli almeno un file.";return}go.disabled=true;
@@ -3623,9 +3627,9 @@ function apMioC(p){const mie=new Set(S.blocchi.filter(b=>p&&b.personaId===p.id&&
 function apMioHtml(p){const {cid,mieL,altre}=apMioC(p);if(!cid)return"";const n=appuntiDi(cid).length;
   const o=c=>`<option value="${esc(c.id)}"${c.id===cid?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${appuntiDi(c.id).length?" ("+appuntiDi(c.id).length+")":""}</option>`;
   return`<div class="panel ap-pan" id="mio-ap"><h2>📌 Appunti di commessa<small>misure, decisioni, foto e schizzi utili a tutti${n?" · "+n:""}</small></h2>
-    <div class="toolbar" style="margin:0 0 8px"><select class="inp" id="mio-apc" aria-label="Commessa" style="width:auto;max-width:100%">${mieL.length?`<optgroup label="Le mie commesse">${mieL.map(o).join("")}</optgroup>`:""}${altre.length?`<optgroup label="Altre commesse">${altre.map(o).join("")}</optgroup>`:""}</select></div>
+    <div class="toolbar" style="margin:0 0 8px"><select class="inp" id="mio-apc" aria-label="Commessa" style="width:auto;max-width:100%">${mieL.length?`<optgroup label="Le mie commesse">${mieL.map(o).join("")}</optgroup>`:""}${altre.length?`<optgroup label="Altre commesse">${altre.map(o).join("")}</optgroup>`:""}</select><button type="button" class="btn ghost" id="mio-apd" title="Documenti della commessa (capitolato, disegni…) con gli appunti">📎 Documenti della commessa${docsOf(cid).length?" ("+docsOf(cid).length+")":""}</button></div>
     ${appuntiHtml(cid,{pre:"m",max:S.apTutti===cid?0:3})}</div>`}
-function bindApMio(){const sel=$("#mio-apc");if(!sel)return;const cid=sel.value;sel.onchange=()=>{S.apMioC=sel.value;render()};
+function bindApMio(){const sel=$("#mio-apc");if(!sel)return;const cid=sel.value;sel.onchange=()=>{S.apMioC=sel.value;render()};$("#mio-apd").onclick=()=>openDocs(cid);
   bindAppunti($("#mio-ap"),cid,{pre:"m",onAll:()=>{S.apTutti=cid;const y=scrollY;render();scrollTo(0,y)}},()=>{const y=scrollY;render();scrollTo(0,y)})}
 /* ---------- appunti della commessa: testo, foto e disegni (senza codici ne' revisioni) ---------- */
 const appuntiDi=cid=>(S.appunti||[]).filter(x=>x.commessaId===cid).sort((a,b)=>(!!b.fissato-!!a.fissato)||String(b.t).localeCompare(String(a.t)));
