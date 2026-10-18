@@ -2192,7 +2192,10 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
       ${l2.length?`<div class="og-l2">${l2.join("")}</div>`:""}
       ${l3.length?`<ul class="og-k">${l3.map(f=>`<li>${f}</li>`).join("")}</ul>`:""}
       ${!l1.length&&!l2.length&&!l3.length?`<span class="muted" style="font-size:12.5px;text-align:center">nessuno</span>`:""}</section>`;
-    const capiPm=um.filter(u=>u.capoPm),pms=um.filter(u=>u.pm&&!u.capoPm);
+    // chi ha gia' un posto in un reparto (coordinatore, responsabile, progettista) resta solo li', con "· PM" accanto al ruolo
+    const inRep=u=>reps.some(r=>r.responsabile===u.id||r.supervisore===u.id)||(!!u.personaId&&S.persone.some(p=>p.id===u.personaId&&p.repartoId));
+    const capiPm=um.filter(u=>u.capoPm),pms=um.filter(u=>u.pm&&!u.capoPm&&!inRep(u));
+    const conPm=(u,lab)=>u&&u.pm&&!u.capoPm?lab+" · PM":lab;
     const rami=[];
     // un solo responsabile PM in cima; se sono piu' di uno stanno in testa alla cascata (evidenziati), cosi' le linee non li attraversano
     const pmN=u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A");
@@ -2203,12 +2206,12 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
     for(const r of reps){const col=colRep(r.id);const inGrp=r.supervisore&&supCount[r.supervisore]>1;const respU=r.responsabile&&S.utentiMini.find(u=>u.id===r.responsabile),supU=r.supervisore&&S.utentiMini.find(u=>u.id===r.supervisore);
       const persone=S.persone.filter(p=>p.repartoId===r.id&&!(respU&&respU.personaId===p.id)&&!(supU&&supU.personaId===p.id)).sort((a,b)=>pn(a).localeCompare(pn(b)));
       const uDi=p=>S.utentiMini.find(x=>x.personaId===p.id);
-      const ruoloP=p=>{const u=uDi(p);return u&&u.ruolo?u.ruolo:(p.ruolo||"progettista")};
+      const ruoloP=p=>{const u=uDi(p);return conPm(u,u&&u.ruolo?u.ruolo:(p.ruolo||"progettista"))};
       // capi: chi guida un team del reparto o ha la spunta Pianifica team
       const capo=p=>S.team.some(t=>t.capo===p.id)||!!(uDi(p)&&uDi(p).capoTeam);
       // fino a 2 capi affiancati sotto il responsabile; se sono di piu' vanno in testa alla cascata (evidenziati)
       const capi=persone.filter(capo),poche=capi.length<=2&&!!respU;
-      const sez=ramo("Reparto "+r.nome,col,[...(supU&&!inGrp?[nodo(supU.nome,"Responsabile di reparto",col,"big col")]:[]),...(respU?[nodo(respU.nome,"Coordinatore di reparto",col,"big col")]:[])],poche?capi.map(p=>nodo(pn(p),ruoloP(p),col,"col")):[],[...(poche?[]:capi.map(p=>nodo(pn(p),ruoloP(p),col,"capo"))),...persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))]);
+      const sez=ramo("Reparto "+r.nome,col,[...(supU&&!inGrp?[nodo(supU.nome,conPm(supU,"Responsabile di reparto"),col,"big col")]:[]),...(respU?[nodo(respU.nome,conPm(respU,"Coordinatore di reparto"),col,"big col")]:[])],poche?capi.map(p=>nodo(pn(p),ruoloP(p),col,"col")):[],[...(poche?[]:capi.map(p=>nodo(pn(p),ruoloP(p),col,"capo"))),...persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))]);
       if(!inGrp)rami.push(sez);else{if(!grpFatti.has(r.supervisore)){grpFatti.add(r.supervisore);rami.push({sup:r.supervisore,sez:[]})}rami.find(x=>x&&x.sup===r.supervisore).sez.push(sez)}}
     const altri=um.filter(u=>!u.personaId&&!u.pm&&!u.capoPm&&u.ruolo&&!reps.some(r=>r.responsabile===u.id||r.supervisore===u.id));
     if(altri.length)rami.push(ramo("Direzione e sviluppo","#5B6E76",[],[],altri.map(u=>nodo(u.nome,u.ruolo,"#5B6E76"))));
