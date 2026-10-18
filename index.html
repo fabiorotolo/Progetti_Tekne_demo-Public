@@ -654,6 +654,12 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
   .rt-row{flex-shrink:0;padding-left:calc(2px + var(--lv)*10px);gap:4px 6px}
   .rt-row .rt-d{grid-column:3;width:auto;max-width:140px}.rt-row .rt-act{grid-column:4;grid-row:auto}
   .rt-row:has(.rt-d) .rt-act{grid-row:span 1}
+  /* niente pagina piu' larga del telefono (altrimenti il browser rimpicciolisce o sposta tutto): le tabelle scorrono dentro il riquadro */
+  html,body{overflow-x:clip}.panel table:not(.tl table){display:block;overflow-x:auto;max-width:100%}
+  .toolbar,.seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  /* iPhone: con testo sotto i 16px toccare un campo ingrandisce la pagina */
+  input.inp,select.inp,textarea.inp,#q,#g-q{font-size:16px!important}
+  .tour{left:8px;right:8px;width:auto;bottom:calc(52px + env(safe-area-inset-bottom,0px));max-height:55dvh;overflow:auto;padding:12px 14px}
 }
 </style>
 </head>
