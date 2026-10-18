@@ -38,6 +38,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .wrap{max-width:1880px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 
 header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px}
+/* PC: intestazione e schede restano ferme in alto, sotto scorre la pagina */
+@media (min-width:701px){
+  header.top{position:sticky;top:0;z-index:40;background:var(--bg);margin-top:-14px;padding:12px 0 8px;box-shadow:0 8px 10px -10px rgba(0,0,0,.28)}
+  #v-perm thead{top:var(--hdrH,0px)!important}.msg-side{top:calc(var(--hdrH,0px) + 10px)!important}
+}
+@media print{header.top{position:static;box-shadow:none}}
 /* stessa disposizione per tutti gli utenti: in alto il marchio a sinistra e i comandi (Esci sempre in fondo a destra), sotto le schede */
 header.top>.brand{order:1}header.top>.whobox{order:2}header.top>nav.tabs{order:3;flex-basis:100%}
 .brand{display:grid;grid-template-columns:auto auto;justify-content:start;align-items:center;column-gap:12px;row-gap:2px}
@@ -1273,7 +1279,7 @@ function renderMio(){
     ${p&&inAtt.length?`<div class="panel"><h2>In attesa<small>attività che aspettano qualcos'altro</small></h2><table class="mio-tb"><tbody>${inAtt.map(b=>riga(b,`<td class="muted" style="white-space:nowrap">${fmtD(bStart(b))} – ${fmtD(bEnd(b))}</td>`)).join("")}</tbody></table></div>`:""}
     ${p?`<div class="panel"><h2>Prossime due settimane</h2>${pross.length?`<table class="mio-tb"><tbody>${pross.map(b=>riga(b,`<td class="muted" style="white-space:nowrap">dal ${fmtD(bStart(b))} al ${fmtD(bEnd(b))}</td><td class="n">${fmtH(bOre(b))} h</td>`)).join("")}</tbody></table>`:`<p class="muted" style="margin:0">Nessuna nuova attività in arrivo.</p>`}</div>`:""}
     ${assP.length?`<div class="panel"><h2>Ferie e assenze</h2><table class="mio-tb"><tbody>${assP.map(b=>`<tr><td>🌴 ${esc(b.attivita||assLab(b.assenza))}</td><td class="muted">${fmtD(bStart(b))}${bEnd(b)!==bStart(b)?" – "+fmtD(bEnd(b)):""}</td><td class="n">${fmtH(b.oreGiorno)} h/g</td></tr>`).join("")}</tbody></table></div>`:""}
-    ${mieC.length?`<div class="panel"><h2>${capoTutte?"Commesse aperte<small>sei il responsabile PM</small>":"Le tue commesse<small>sei il PM</small>"}</h2><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
+    ${mieC.length?`<div class="panel"><h2>${capoTutte?"Commesse aperte<small>"+(S.me.admin?"panoramica":"sei il responsabile PM")+"</small>":"Le tue commesse<small>sei il PM</small>"}</h2><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
       return`<tr><td><span class="code" style="--h:${c.colore}">${esc(c.codice)}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} requisiti aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div>`:""}
     </div>${apMioHtml(p)}</div>`;
   bindApMio();bindOltre($("#mio-olt"));
@@ -4330,6 +4336,9 @@ function openEvents(){
 function start(){hideAuth();S.regLoaded=false;S.utentiLoaded=false;caricaDitte().then(()=>{if(S.tab==="set")render()});refresh();openEvents();if(!S.started){S.started=true;setInterval(()=>{if(S.me)refresh()},60000)}}
 
 /* ---------- avvio ---------- */
+/* altezza dell'intestazione fissa (PC): serve a cio' che resta fermo sotto di lei */
+try{const hdr=document.querySelector("header.top");const setH=()=>document.documentElement.style.setProperty("--hdrH",(innerWidth>700?hdr.getBoundingClientRect().height:0)+"px");new ResizeObserver(setH).observe(hdr);addEventListener("resize",setH);setH()}catch(_){}
+
 render();
 /* ---------- piu' ditte: selettore (compare solo se le ditte sono piu' di una) ---------- */
 async function caricaDitte(){try{const d=await api("GET","/api/ditte",null,true);S.ditte=d.ditte||[];S.ditta=d.attuale;S.gestDitte=!!d.gestisci;S.piuDitte=!!d.piuDitte;S.dittaReg=d.registrate||[]}catch(_){S.ditte=[]}dittaUI()}
