@@ -627,6 +627,34 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:640px){.brand h1{font-size:23px}.ed .f{grid-template-columns:1fr}.tl{max-height:calc(100dvh - 300px)}}
+/* cellulare: intestazione compatta, schede su una riga che scorre, finestre a tutto schermo, messaggi tipo chat */
+@media (max-width:700px){
+  .wrap{gap:10px}header.top{gap:6px 8px}.brand h1{font-size:20px}.brand .sub{display:none}
+  .whobox{flex-wrap:wrap;gap:4px;margin-left:0;flex-basis:100%;justify-content:flex-start}
+  .whobox .qw{flex:1 1 100%;order:-1}#q{width:100%!important}.whobox #scope{flex:1;min-width:0}
+  #xl-btn,#print,#chpw{display:none!important}
+  nav.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{font-size:13.5px;padding:8px 11px;scroll-snap-align:start}
+  .panel{padding:12px}
+  dialog:not(#okdlg){width:100vw!important;max-width:100vw!important;height:100dvh;max-height:100dvh!important;margin:0;border:0;border-radius:0}
+  .rd{padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px));font-size:14.5px}.ed{padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px))}
+  dialog .xcl{position:sticky;top:0;float:right;z-index:3}
+  #rd:has(.ms-storia){min-height:100%;box-sizing:border-box}
+  #rd .ms-storia{max-height:none;flex:1 1 auto;min-height:120px;overflow:auto;background:var(--line-soft);border-radius:10px;padding:10px}
+  .ms-m{max-width:88%;background:var(--panel);border-radius:12px}.ms-m.io{border-bottom-right-radius:3px}.ms-m:not(.io){border-bottom-left-radius:3px}
+  #rd textarea#ms-t{min-height:70px}
+  .msg-pag{gap:10px}.msg-side{position:static;padding:8px;gap:6px}.msg-sh{display:none}
+  .msg-f,.msg-f.seg,.msg-cl{flex-direction:row;overflow-x:auto;max-height:none;scrollbar-width:none}.msg-f::-webkit-scrollbar{display:none}
+  .msg-f button{flex:0 0 auto;max-width:70vw}
+  .msg-main .toolbar{flex-wrap:wrap}.msg-main .toolbar #msg-q{min-width:0!important;flex:1 1 100%!important}
+  .msg-r{grid-template-columns:14px 26px 1fr auto;gap:8px;padding:9px 8px}.msg-r .msg-w{grid-column:3/-1;grid-row:2;justify-self:start}
+  .msg-gh{padding:7px 8px}
+  .kpis,.kpi-g{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  table{font-size:13px}
+  .rt-row{flex-shrink:0;padding-left:calc(2px + var(--lv)*10px);gap:4px 6px}
+  .rt-row .rt-d{grid-column:3;width:auto;max-width:140px}.rt-row .rt-act{grid-column:4;grid-row:auto}
+  .rt-row:has(.rt-d) .rt-act{grid-row:span 1}
+}
 </style>
 </head>
 <body>
@@ -1127,7 +1155,7 @@ function renderNow(){
   S.team.sort((a,b)=>String(a.nome).localeCompare(b.nome));
   const vis={mio:!!S.me&&(!!(myPersona()&&persById(myPersona()))||S.persone.some(p=>canPlanOn(p.id))||S.commesse.some(c=>isPmOf(c.id))),plan:true,msg:!!S.me,comm:schedaVis(),ore:canFoglio(),req:true,rep:can("report"),mgmt:canMgmt()||canTeam()||canAssegnaPM()||can("pm")||myReparti().length>0||S.isOwner,reg:can("registro"),perm:canUtenti(),set:!!(S.me&&S.me.admin)};
   if(!vis[S.tab])S.tab="plan";
-  document.querySelectorAll("nav.tabs button").forEach(b=>{b.hidden=!vis[b.dataset.tab];b.setAttribute("aria-selected",b.dataset.tab===S.tab?"true":"false")});
+  document.querySelectorAll("nav.tabs button").forEach(b=>{b.hidden=!vis[b.dataset.tab];b.setAttribute("aria-selected",b.dataset.tab===S.tab?"true":"false")});{const sel=document.querySelector('nav.tabs button[aria-selected="true"]'),nv=document.querySelector("nav.tabs");if(sel&&nv&&nv.scrollWidth>nv.clientWidth){const x=sel.offsetLeft-nv.offsetLeft-12;if(x<nv.scrollLeft||x+sel.offsetWidth+24>nv.scrollLeft+nv.clientWidth)nv.scrollLeft=x}}
   ["mio","msg","plan","comm","ore","req","rep","mgmt","reg","perm","set"].forEach(k=>$("#v-"+k).hidden=S.tab!==k);
   renderBell();$("#undo").disabled=!S.annulla;$("#undo").title=S.annulla?"Annulla: "+S.annulla+" (Ctrl+Z)":"Niente da annullare";
   const nTodo=S.richieste.filter(attendeMe).length;$("#req-cnt").textContent=nTodo;$("#req-cnt").hidden=!nTodo;
@@ -4153,14 +4181,17 @@ async function scegliDitta(id){if(id===S.ditta)return;try{await api("POST","/api
 })();
 </script>
 
-<div class="demo-bar" role="note">Versione dimostrativa · le modifiche restano solo in questo browser
-  <button type="button" onclick="window.__tekneDemoReset()">Ripristina dati di esempio</button></div>
+<div class="demo-bar" role="note"><span class="demo-l">Versione dimostrativa · le modifiche restano solo in questo browser</span><span class="demo-s">Demo</span>
+  <button type="button" onclick="window.__tekneDemoReset()">Ripristina dati di esempio</button><button type="button" class="demo-x" aria-label="Nascondi questo avviso" onclick="this.parentNode.remove()">✕</button></div>
 <style>
 .demo-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:60;
   background:rgba(20,28,38,.86);color:#fff;font:12px/1.3 var(--f-body);padding:6px 8px 6px 12px;border-radius:999px;
   display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.25);max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center}
 .demo-bar button{border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:999px;padding:3px 10px;font:inherit;cursor:pointer}
 .demo-bar button:hover{background:rgba(255,255,255,.12)}
+.demo-bar .demo-x{border:0;padding:3px 6px}
+.demo-s{display:none}
+@media (max-width:700px){.demo-l{display:none}.demo-s{display:inline;font-weight:600}.demo-bar{left:auto;right:8px;transform:none;flex-wrap:nowrap;font-size:11px;gap:6px;padding:4px 4px 4px 10px;bottom:calc(6px + env(safe-area-inset-bottom,0px))}}
 .auth{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))!important}
 </style>
 </body>
