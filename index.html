@@ -1914,6 +1914,7 @@ function rtRender(){
   const altre=S.commesse.filter(x=>x.id!==cid&&reqOf(x.id).length);
   const dl=docsOf(cid);
   const pmL=pmAtt(c),kN=consegnaN(c),rit=ritardoComm(c),scad=kN!=null&&kN<todayN&&!c.chiusa;
+  const _ol=$("#rd .rt-list"),_ost=_ol?_ol.scrollTop:0;
   $("#rd").innerHTML=`<h3 style="padding-right:30px">Requisiti · ${esc(c.codice)} <span class="muted" style="font-weight:400">${esc(c.nome)}</span></h3>
     <div class="rt-info"><span>PM: ${pmL.length?pmL.map(id=>`<b>${esc(userName(id))}</b>${S.me&&id!==S.me.id?` <button type="button" class="rt-mini" data-rtpm="${esc(id)}" title="Scrivi un messaggio a ${esc(userName(id))}">✍</button>`:""}`).join(", "):'<span class="muted">non assegnato</span>'}</span>
       <span>Consegna: ${kN!=null?`<b style="${scad||rit?"color:var(--over)":""}">${esc(fmtD(kN))} ${dobj(kN).getUTCFullYear()}</b>${rit?` <span style="color:var(--over)">· fine prevista ${rit} g lavorativi dopo</span>`:scad?` <span style="color:var(--over)">· scaduta</span>`:""}`:'<span class="muted">non indicata</span>'}</span></div>
@@ -1929,6 +1930,13 @@ function rtRender(){
       ${altre.length?`<span class="grow"></span><select class="inp" id="rt-copy-da" style="width:auto"><option value="">Copia la lista da…</option>${altre.map(x=>`<option value="${esc(x.id)}">${esc(x.codice)} · ${esc(x.nome)} (${reqOf(x.id).length})</option>`).join("")}</select><button type="button" class="btn" id="rt-copy">Copia</button>`:""}</div>`:""}
     <p class="muted" style="margin:0;font-size:12.5px">${ed?"Trascina ⠿ per spostare: sopra o sotto una riga = stesso livello, al centro della riga = dentro come sotto-requisito. Invio = nuova voce · Tab / Maiusc+Tab = dentro / fuori di un livello · Alt+↑↓ = sposta. Il PM sceglie il reparto (✎): il coordinatore riceve la notifica e sceglie il progettista; se il PM (o il responsabile di reparto) propone un progettista (⏳), il coordinatore lo approva. Chi viene assegnato riceve la notifica; quando lo chiude o lo blocca, la notifica arriva al PM.":"Spunta i requisiti assegnati a te quando sono fatti: il PM riceve la notifica."+(all.some(r=>daApprovareMe(r)||daAssegnareMe(r))?" Come coordinatore di reparto scegli chi fa i requisiti del tuo reparto (✎) e approvi le proposte del PM (✓ Approva).":"")}</p>`;
   const R$=sel=>$("#rd").querySelectorAll(sel);
+  {const L=$("#rd .rt-list");if(L){
+    // se la riga in modifica e' tra le ultime, aggiungo spazio sotto cosi' puo' salire fino in cima
+    const rw0=RT.ass&&L.querySelector(`[data-rid="${CSS.escape(RT.ass)}"]`);if(rw0){const off=rw0.getBoundingClientRect().top-L.getBoundingClientRect().top+L.scrollTop,serve=L.clientHeight-(L.scrollHeight-off);if(serve>0){const sp=document.createElement("div");sp.style.cssText="flex:0 0 "+Math.ceil(serve)+"px";L.appendChild(sp)}}
+    L.scrollTop=_ost;
+    // riga in modifica (scelta di chi lo fa): portala in cima alla lista, sotto si vedono le scelte e il pulsante Fatto
+    if(RT.ass&&RT.assTop!==RT.ass){const rw=L.querySelector(`[data-rid="${CSS.escape(RT.ass)}"]`);if(rw){L.scrollTop+=rw.getBoundingClientRect().top-L.getBoundingClientRect().top;const lr=L.getBoundingClientRect();if(lr.top<0||lr.bottom>innerHeight)L.scrollIntoView({block:"nearest"})}}
+    RT.assTop=RT.ass||null}}
   const rx=$("#rt-xls");if(rx)rx.onclick=()=>esportaRequisiti(cid);
   const rxi=$("#rt-xli");if(rxi)rxi.onclick=()=>openExcel({req:[cid]});
   const f=$("#rt-f");if(f)f.onclick=e=>{const b=e.target.closest("button");if(!b)return;RT.filt=b.dataset.k;rtRender()};
@@ -2001,7 +2009,7 @@ function rtRender(){
     R$("[data-rteam]").forEach(b=>b.onclick=()=>{const t=S.team.find(x=>x.id===b.dataset.rteam);salva([...new Set([...(r.assegnati||[]),...propR(r),...(t.membri||[])])])});
     R$("[data-rrep]").forEach(c=>c.onchange=()=>{const v=c.checked?c.dataset.rrep:null;rtApi("PATCH","/api/requisiti/"+r.id,{repartoId:v}).then(j=>{if(j&&v)toast("Requisito dato al reparto "+repNomeId(v)+": il coordinatore riceve la notifica.")})});
     $("#rt-ass-ok").onclick=()=>{RT.ass=null;rtRender()}}
-  const ro=$("#rt-root");if(ro){const add=()=>{const t=ro.value.trim();if(!t)return;ro.disabled=true;rtApi("POST","/api/requisiti",{commessaId:cid,parentId:null,testo:t}).then(()=>{const r2=$("#rt-root");if(r2)r2.focus()})};
+  const ro=$("#rt-root");if(ro){const add=()=>{const t=ro.value.trim();if(!t)return;ro.disabled=true;rtApi("POST","/api/requisiti",{commessaId:cid,parentId:null,testo:t}).then(j=>{const nw=j&&j.id&&$("#rd").querySelector(`[data-rid="${CSS.escape(j.id)}"]`);if(nw){nw.scrollIntoView({block:"nearest"});nw.classList.add("flash")}const r2=$("#rt-root");if(r2)r2.focus()})};
     ro.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();add()}};$("#rt-root-ok").onclick=add}
   const cp=$("#rt-copy");if(cp)cp.onclick=()=>{const da=$("#rt-copy-da").value;if(!da){toast("Scegli da quale commessa copiare.");return}
     arm(cp,"Conferma copia",async()=>{const j=await rtApi("POST","/api/requisiti/copia",{da,a:cid});if(j)toast(`Copiati ${j.n} requisiti: ora assegnali e metti le scadenze.`)})};
