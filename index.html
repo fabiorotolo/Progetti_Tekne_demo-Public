@@ -501,7 +501,11 @@ svg.dip path.hit{cursor:pointer}
 .cons-line b{position:absolute;top:2px;left:3px;font-size:10px;font-family:var(--f-mono);background:var(--panel);padding:0 3px;border-radius:3px;white-space:nowrap;color:var(--muted)}
 .cons-line.late{border-left-color:var(--over)}.cons-line.late b{color:var(--over)}
 .sch-h{border-left:5px solid hsl(var(--h) 55% 45%)}.sch-tit{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.sch-tit .code{font-family:var(--f-mono);font-size:15px;color:hsl(var(--h) 55% 38%);font-weight:600}
-.sch-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13.5px;color:var(--muted);align-items:center}.sch-meta b{color:var(--fg);font-weight:600}.sch-chips{display:flex;gap:6px;flex-wrap:wrap}
+.sch-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13.5px;color:var(--muted);align-items:center}.sch-meta b{color:var(--fg);font-weight:600}.sch-chips{display:flex;gap:8px;flex-wrap:wrap}
+.sch-chips .rqchip{font-family:var(--f-body,inherit);font-size:14px;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);box-shadow:var(--shadow);line-height:1.2;display:inline-flex;align-items:center;gap:6px}
+.sch-chips .rqchip:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.sch-chips .rqchip b{font-size:11.5px;color:#fff;background:var(--accent);border-radius:9px;padding:0 6px;font-family:var(--f-mono)}
+.sch-chips .rqchip.vuoto{border-style:dashed;color:var(--muted);box-shadow:none}
 .kpi small{font-size:12px;line-height:1.3}#v-comm tr[data-gb],#v-comm tr[data-rq],#v-comm tr[data-rqt],#v-comm tr[data-evo]{cursor:pointer}#v-comm tr[data-gb]:hover td,#v-comm tr[data-rq]:hover td,#v-comm tr[data-rqt]:hover td,#v-comm tr[data-evo]:hover td{background:var(--line-soft)}
 tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor:pointer;color:inherit;text-decoration:none}.sch-lnk:hover{text-decoration:underline;color:var(--accent)}
 .rt-rep{font-style:normal;font-size:11px;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:4px;background:var(--line-soft);color:var(--muted);white-space:nowrap}
@@ -1816,9 +1820,9 @@ const daAssegnareMe=r=>r.stato!=="fatto"&&respRep(r.repartoId)&&!(r.assegnati||[
 const canAssR=r=>canReqC(r.commessaId)||respRep(r.repartoId)||daApprovareMe(r);
 const reqLate=r=>r.stato!=="fatto"&&!!r.scadenza&&dnum(r.scadenza)<todayN;
 function reqStats(cid){const l=reqOf(cid);return{n:l.length,f:l.filter(r=>r.stato==="fatto").length,b:l.filter(r=>r.stato==="bloccato").length,late:l.filter(reqLate).length,mie:l.filter(r=>reqMio(r)&&r.stato!=="fatto").length}}
-function reqChip(cid){const s=reqStats(cid);
+function reqChip(cid,lab){const s=reqStats(cid);
   if(!s.n)return canReqC(cid)?`<button class="rqchip vuoto" data-reqc="${esc(cid)}" title="Requisiti della commessa: nessuno ancora">☑ Requisiti</button>`:"";
-  return`<button class="rqchip${s.late?" late":s.b?" blk":s.f===s.n?" done":""}" data-reqc="${esc(cid)}" title="Requisiti: ${s.f} fatti su ${s.n}${s.b?" · "+s.b+" bloccati":""}${s.late?" · "+s.late+" in ritardo":""}${s.mie?" · "+s.mie+" assegnati a te":""}">☑ ${s.f}/${s.n}${s.mie?` <b>${s.mie}</b>`:""}</button>`}
+  return`<button class="rqchip${s.late?" late":s.b?" blk":s.f===s.n?" done":""}" data-reqc="${esc(cid)}" title="Requisiti: ${s.f} fatti su ${s.n}${s.b?" · "+s.b+" bloccati":""}${s.late?" · "+s.late+" in ritardo":""}${s.mie?" · "+s.mie+" assegnati a te":""}">☑ ${lab?"Requisiti ":""}${s.f}/${s.n}${s.mie?` <b title="assegnati a te">${s.mie}</b>`:""}</button>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-reqc]");if(b){e.preventDefault();e.stopPropagation();openReqTree(b.dataset.reqc)}},true);
 
 function openReqTree(cid,focus){
@@ -2042,8 +2046,8 @@ const canEvC=cid=>!!S.me&&(canReqC(cid)||can("pianifica"));
 const lavTra=(a,b)=>{let n=0;const s0=Math.min(a,b),z=Math.max(a,b);for(let x=s0+1;x<=z;x++)if(!isOff(x))n++;return b>=a?n:-n};
 const evRinvio=e=>{const st=e.storia||[];if(!st.length)return null;const d0=dnum(e.creato&&e.creato.data||st[0].da);return{n:st.length,gg:lavTra(d0,dnum(e.data)),d0}};
 const sg=n=>(n>0?"+":"")+n;
-function evChip(cid){const n=eventiDi(cid).length;if(!n&&!canEvC(cid))return"";
-  return`<button class="rqchip${n?"":" vuoto"}" data-evc="${esc(cid)}" title="Eventi della commessa (arrivo veicolo, approvazione cliente…): le attività agganciate li aspettano">◆ ${n||"Eventi"}</button>`}
+function evChip(cid,lab){const n=eventiDi(cid).length;if(!n&&!canEvC(cid))return"";
+  return`<button class="rqchip${n?"":" vuoto"}" data-evc="${esc(cid)}" title="Eventi della commessa (arrivo veicolo, approvazione cliente…): le attività agganciate li aspettano">◆ ${lab&&n?"Eventi ":""}${n||"Eventi"}</button>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-evc]");if(b){e.preventDefault();e.stopPropagation();openEventi(b.dataset.evc)}},true);
 const EV_NOMI=["Arrivo veicolo","Arrivo telaio","Arrivo autobus","Approvazione disegni del cliente","Consegna componenti","Collaudo","Sopralluogo dal cliente"];
 // elenco degli eventi di una commessa
@@ -2118,8 +2122,8 @@ function openEvento(id,opt){opt=opt||{};const e=evById(id);if(!e){toast("L'event
     catch(err){$("#ev-err").textContent=err&&err.msg||"Operazione non riuscita.";$("#ev-go").disabled=false}};
   showRdlg();
 }
-function docChip(cid){const n=docsOf(cid).length,a=appuntiDi(cid).length;if(!n&&!a&&!canReqC(cid))return"";
-  return`<button class="rqchip${n||a?"":" vuoto"}" data-docc="${esc(cid)}" title="Documenti della commessa (capitolato, proposta tecnica…) e appunti">📎 ${n||(a?"":"Documenti")}${a?` · 📌 ${a}`:""}</button>`}
+function docChip(cid,lab){const n=docsOf(cid).length,a=appuntiDi(cid).length;if(!n&&!a&&!canReqC(cid))return"";
+  return`<button class="rqchip${n||a?"":" vuoto"}" data-docc="${esc(cid)}" title="Documenti della commessa (capitolato, proposta tecnica…) e appunti">${lab?[n||!a?`📎 Documenti${n?" "+n:""}`:"",a?`📌 Appunti ${a}`:""].filter(Boolean).join(" · "):`📎 ${n||(a?"":"Documenti")}${a?` · 📌 ${a}`:""}`}</button>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-docc]");if(b){e.preventDefault();e.stopPropagation();openDocs(b.dataset.docc)}},true);
 function openDocs(cid,aperto){const c=commById(cid);if(!c)return;RT=null;rdId=null;rdlg.classList.add("wide");
   const ed=canReqC(cid),l=docsOf(cid);const tipi=[...new Set([...DOC_TIPI,...l.map(d=>d.tipo)])].filter(t=>l.some(d=>d.tipo===t));
@@ -3731,7 +3735,7 @@ function renderComm(){
   <div class="panel sch-h" style="--h:${c.colore}">
     <div class="sch-tit"><span class="code">${esc(c.codice)}</span><h2 style="font-size:24px">${esc(c.nome)}</h2>${c.chiusa?`<span class="pill">chiusa${c.chiusaIl?" il "+fmtD(dnum(c.chiusaIl)):""}</span>`:""}${c.extra?'<span class="asspill xtra-p">commessa interna EXTRA</span>':""}</div>
     <div class="sch-meta"><span>Cliente <b>${esc(c.cliente||"—")}</b></span><span>PM <b>${esc(pmNomi(cid)||"—")}</b></span><span>Consegna <b>${kN!=null?fmtD(kN)+" "+dobj(kN).getUTCFullYear():"—"}</b></span><span>Fine prevista <b class="${rit?"late-txt":""}">${fine!=null?fmtD(fine)+" "+dobj(fine).getUTCFullYear():"—"}${rit?` · ⚠ ${gg(rit)} lavorativi di ritardo`:kN!=null&&fine!=null?` · ${gg(workDays(fine+1,kN))} lavorativi di margine`:""}</b></span>
-      <span class="sch-chips">${c.cartella?`<button type="button" class="rqchip" data-fold="${esc(cid)}" title="Cartella della commessa">📁 Cartella</button>`:""}${reqChip(cid)}${docChip(cid)}${evChip(cid)}</span></div>
+      <span class="sch-chips">${c.cartella?`<button type="button" class="rqchip" data-fold="${esc(cid)}" title="Cartella della commessa">📁 Cartella</button>`:""}${reqChip(cid,1)}${docChip(cid,1)}${evChip(cid,1)}</span></div>
   </div>
   <div class="kpis">
     <div class="kpi"><span>Budget</span><b>${bud?fmtH(bud)+" h":"—"}</b></div>
