@@ -1259,7 +1259,8 @@ function renderMio(){
     ${assP.length?`<div class="panel"><h2>Ferie e assenze</h2><table class="mio-tb"><tbody>${assP.map(b=>`<tr><td>🌴 ${esc(b.attivita||assLab(b.assenza))}</td><td class="muted">${fmtD(bStart(b))}${bEnd(b)!==bStart(b)?" – "+fmtD(bEnd(b)):""}</td><td class="n">${fmtH(b.oreGiorno)} h/g</td></tr>`).join("")}</tbody></table></div>`:""}
     ${mieC.length?`<div class="panel"><h2>Le tue commesse<small>sei il PM</small></h2><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
       return`<tr><td><span class="code" style="--h:${c.colore}">${esc(c.codice)}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} requisiti aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div>`:""}
-    </div></div>`;
+    </div>${apMioHtml(p)}</div>`;
+  bindApMio();
   const sp=$("#mio-p");if(sp)sp.onchange=()=>{S.mioP=sp.value||null;render()};
   const ma=$("#mio-ask");if(ma)ma.onsubmit=e=>{e.preventDefault();const q=$("#mio-ask-q");apriGuida(q.value);q.value=""};
   const mm=$("#mio-msg");if(mm)mm.onclick=()=>{S.tab="msg";S.msgF="nuovi";S.msgC="";saveTab();render()};
@@ -3462,7 +3463,8 @@ function gVai(tab,sel,poi){if(tab){S.tab=tab;saveTab();render()}
 const gComm=ctx=>ctx.comm||S.commesse.find(c=>!c.chiusa&&isPmOf(c.id))||aperte()[0];
 // ogni voce: titolo, dove si trova, parole che la richiamano, spiegazione (manuale), quando e' disponibile, cosa fa
 const GUIDA=[
- {cat:"Commesse",ic:"＋",t:"Creare una nuova commessa",dove:"Commesse e persone › Commesse",k:"nuova nuovo commessa commesse crea creare aggiungi aggiungere apri aprire inserisci inserire commessa progetto lavoro cliente ordine",h:"In fondo alla tabella Commesse scrivi codice, nome, cliente, consegna e budget ore, poi «Aggiungi commessa». Poi il responsabile PM assegna il PM.",no:"Solo il responsabile PM può creare una nuova commessa (e chi ha la spunta «Commesse»).",chi:"capo_pm",ok:()=>canCommTutte(),go:()=>gVai("mgmt","#nc-cod")},
+ {cat:"Commesse",ic:"📌",t:"Appunti, foto e disegni di una commessa",dove:"Il mio lavoro › Appunti di commessa · Scheda commessa · scheda di un'attività",k:"appunti appunto foto fotografia foto schizzo schizzi disegno disegni note nota bacheca ricordare misure carica caricare metto mettere allega allegare immagine",h:"In «Il mio lavoro» scegli la commessa nel riquadro 📌 Appunti di commessa: leggi quelli dei colleghi e aggiungi testo, 📷 foto o file. Li trovi anche nella Scheda commessa e nella scheda di ogni attività.",ok:()=>true,go:()=>{if(!$("#tab-mio").hidden)gVai("mio","#mio-ap");else if(!$("#tab-comm").hidden)gVai("comm","#sch-ap");else gVai("plan",null)}},
+{cat:"Commesse",ic:"＋",t:"Creare una nuova commessa",dove:"Commesse e persone › Commesse",k:"nuova nuovo commessa commesse crea creare aggiungi aggiungere apri aprire inserisci inserire commessa progetto lavoro cliente ordine",h:"In fondo alla tabella Commesse scrivi codice, nome, cliente, consegna e budget ore, poi «Aggiungi commessa». Poi il responsabile PM assegna il PM.",no:"Solo il responsabile PM può creare una nuova commessa (e chi ha la spunta «Commesse»).",chi:"capo_pm",ok:()=>canCommTutte(),go:()=>gVai("mgmt","#nc-cod")},
  {cat:"Commesse",ic:"📊",t:"Vedere la scheda di una commessa",usaComm:true,dove:"Commessa",k:"scheda commessa riepilogo situazione analisi stato avanzamento ritardo problemi ore per reparto",h:"Tutto su una commessa: consegna e ritardo, ore per reparto e progettista, problemi e blocchi, richieste, requisiti, eventi, slittamenti, attività.",no:"La scheda commessa la vedono il PM della commessa, il responsabile PM, i responsabili di reparto e l'amministratore.",chi:"pm",ok:()=>schedaVis(),go:c=>{const x=gComm(c);if(x)openScheda(x.id);else gVai("comm")}},
  {cat:"Commesse",ic:"▤",t:"Vedere una commessa in timeline",usaComm:true,dove:"Pianificazione › Commesse",k:"timeline commessa pianificazione attivita commessa gantt barre",h:"La vista per commessa mostra le attività di ogni commessa, la consegna (linea) e gli eventi.",ok:()=>true,go:c=>{const x=gComm(c);if(x)goComm(x);else gVai("plan")}},
  {cat:"Commesse",ic:"☑",t:"Requisiti di una commessa",usaComm:true,dove:"☑ sulla commessa",k:"requisiti requisito checklist lista punti specifiche vedere albero",h:"Il PM scrive i requisiti ad albero e li dà a un reparto; il responsabile sceglie chi li fa. Chi è assegnato li spunta con data e nota.",ok:()=>true,go:c=>{const x=gComm(c);if(x)openReqTree(x.id);else gVai("mgmt")}},
@@ -3611,6 +3613,20 @@ document.addEventListener("keydown",e=>{if(e.key==="F1"||(e.ctrlKey&&e.key==="/"
 
 /* ---------- scheda commessa: tutto su una commessa in una pagina (per il PM) ---------- */
 const schedaVis=()=>!!S.me&&(S.me.admin||can("report")||can("capo_pm")||can("gestione")||S.commesse.some(c=>isPmOf(c.id))||myReparti().length>0);
+// Il mio lavoro: gli appunti di qualsiasi commessa (prima le mie), da leggere e da aggiungere
+function apMioC(p){const mie=new Set(S.blocchi.filter(b=>p&&b.personaId===p.id&&!isAss(b)&&b.commessaId).map(b=>b.commessaId));S.commesse.filter(c=>isPmOf(c.id)).forEach(c=>mie.add(c.id));
+  const tutte=S.commesse.filter(c=>!c.chiusa||mie.has(c.id)).sort((a,b)=>String(a.codice).localeCompare(String(b.codice)));
+  const mieL=tutte.filter(c=>mie.has(c.id)),altre=tutte.filter(c=>!mie.has(c.id));
+  let cid=S.apMioC&&commById(S.apMioC)?S.apMioC:null;
+  if(!cid){const ora=S.blocchi.filter(b=>p&&b.personaId===p.id&&!isAss(b)&&b.commessaId&&bEnd(b)>=todayN).sort((a,b)=>bStart(a)-bStart(b))[0];cid=ora?ora.commessaId:(mieL[0]||altre[0]||{}).id||null}
+  return{cid,mieL,altre}}
+function apMioHtml(p){const {cid,mieL,altre}=apMioC(p);if(!cid)return"";const n=appuntiDi(cid).length;
+  const o=c=>`<option value="${esc(c.id)}"${c.id===cid?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${appuntiDi(c.id).length?" ("+appuntiDi(c.id).length+")":""}</option>`;
+  return`<div class="panel ap-pan" id="mio-ap"><h2>📌 Appunti di commessa<small>misure, decisioni, foto e schizzi utili a tutti${n?" · "+n:""}</small></h2>
+    <div class="toolbar" style="margin:0 0 8px"><select class="inp" id="mio-apc" aria-label="Commessa" style="width:auto;max-width:100%">${mieL.length?`<optgroup label="Le mie commesse">${mieL.map(o).join("")}</optgroup>`:""}${altre.length?`<optgroup label="Altre commesse">${altre.map(o).join("")}</optgroup>`:""}</select></div>
+    ${appuntiHtml(cid,{pre:"m",max:S.apTutti===cid?0:3})}</div>`}
+function bindApMio(){const sel=$("#mio-apc");if(!sel)return;const cid=sel.value;sel.onchange=()=>{S.apMioC=sel.value;render()};
+  bindAppunti($("#mio-ap"),cid,{pre:"m",onAll:()=>{S.apTutti=cid;const y=scrollY;render();scrollTo(0,y)}},()=>{const y=scrollY;render();scrollTo(0,y)})}
 /* ---------- appunti della commessa: testo, foto e disegni (senza codici ne' revisioni) ---------- */
 const appuntiDi=cid=>(S.appunti||[]).filter(x=>x.commessaId===cid).sort((a,b)=>(!!b.fissato-!!a.fissato)||String(b.t).localeCompare(String(a.t)));
 const puoApp=x=>!!S.me&&(x.da===S.me.id||!!S.me.admin||can("capo_pm")||can("gestione")||isPmOf(x.commessaId));
