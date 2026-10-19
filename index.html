@@ -387,6 +387,8 @@ button.al-chip:hover{border-color:var(--accent);color:var(--accent)}.al-chip.off
 .rt-row:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
 .rt-row .rt-t{border-color:transparent;background:transparent;padding:4px 6px;font-size:14px;width:100%;min-width:0}
 .rt-row .rt-t:hover,.rt-row .rt-t:focus{border-color:var(--line);background:var(--panel)}
+.rd .rt-row textarea.rt-ta,.rt-row textarea.rt-ta{min-height:0;height:auto;resize:none;overflow:hidden;padding:4px 6px;line-height:1.3;font:inherit;font-size:14px;display:block;white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:760px){.rt-row span.rt-t{white-space:normal;overflow-wrap:anywhere}}
 span.rt-t{padding:4px 6px}
 .rt-row.st-fatto .rt-t{text-decoration:line-through;color:var(--muted)}
 .rt-row.rt-mio:not(.st-fatto){box-shadow:inset 3px 0 0 var(--accent)}
@@ -1981,8 +1983,10 @@ function openReqTree(cid,focus){
   if(focus)setTimeout(()=>{const r=$("#rd").querySelector(`[data-rid="${CSS.escape(focus)}"]`);if(r){r.scrollIntoView({block:"center"});r.classList.add("flash")}},60);
 }
 async function rtApi(m,url,body){try{const j=await api(m,url,body);await doRefresh();if(RT)rtRender();return j}catch(e){handleErr(e);return null}}
+// schermo stretto (cellulare): il testo dei requisiti va a capo invece di essere tagliato
+let rtStretto=false;
 function rtRender(){
-  if(!RT)return;const cid=RT.cid,c=commById(cid);if(!c){rdlg.close();return}
+  if(!RT)return;rtStretto=innerWidth<=760;const cid=RT.cid,c=commById(cid);if(!c){rdlg.close();return}
   const ed=canReqC(cid),all=reqOf(cid),byId=Object.fromEntries(all.map(r=>[r.id,r]));
   const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
   const desc=id=>{let o=[];for(const k of kids(id)){o.push(k);o=o.concat(desc(k.id))}return o};
@@ -2006,7 +2010,7 @@ function rtRender(){
     let h=`<div class="${cls}" data-rid="${esc(r.id)}" style="--lv:${x.l}">
       <span class="rt-car">${ed?`<span class="rt-drag" data-rdrag="${esc(r.id)}" title="Trascina per spostare: sopra/sotto una riga = stesso livello, al centro = dentro" aria-hidden="true">⠿</span>`:""}${x.nk?`<button type="button" class="rt-tog" data-rtog="${esc(r.id)}" aria-label="${RT.chiusi.has(r.id)?"Apri":"Chiudi"}">${RT.chiusi.has(r.id)?"▸":"▾"}</button>`:""}</span>
       <input type="checkbox" class="rt-box" data-rdone="${esc(r.id)}"${r.stato==="fatto"?" checked":""}${okSt?"":" disabled"} title="${okSt?"Segna come fatto":"Solo gli assegnati e il PM possono chiuderlo"}" aria-label="Fatto">
-      ${ed?`<input class="inp rt-t" data-rtxt="${esc(r.id)}" value="${esc(r.testo)}" maxlength="500" aria-label="Requisito">`:`<span class="rt-t">${esc(r.testo)}</span>`}
+      ${ed?(rtStretto?`<textarea class="inp rt-t rt-ta" data-rtxt="${esc(r.id)}" rows="1" maxlength="500" aria-label="Requisito">${esc(r.testo)}</textarea>`:`<input class="inp rt-t" data-rtxt="${esc(r.id)}" value="${esc(r.testo)}" maxlength="500" aria-label="Requisito">`):`<span class="rt-t">${esc(r.testo)}</span>`}
       <span class="rt-meta">${daApprovareMe(r)?`<button type="button" class="rt-mini ok" data-rappr="${esc(r.id)}" title="Approva: ${esc(propR(r).filter(p=>respRep(repP(p))).map(nomeP).join(", "))} proposto da ${esc(userName(r.proposta.da))}">✓ Approva</button><button type="button" class="rt-mini" data-rrif="${esc(r.id)}" title="Non approvare: lo assegni tu">✕</button>`:""}${x.nk?`<span class="rt-prog" title="Sotto-requisiti fatti">${fatti}/${x.d.length}</span>`:""}${r.stato==="bloccato"?`<span class="pill blocco" title="${esc(r.motivo||"")}">Bloccato</span>`:""}${(r.storia||[]).length?`<button type="button" class="rt-mini" data-rhist="${esc(r.id)}" title="Cronistoria: ${(r.storia||[]).length} eventi"${RT.hist===r.id?' aria-pressed="true"':""}>🕘 ${(r.storia||[]).length}${(()=>{const n=(r.storia||[]).reduce((t,e)=>t+(e.allegati||[]).length,0);return n?` · 📎 ${n}`:""})()}</button>`:""}</span>
       ${(()=>{const pr=propR(r),repT=r.repartoId?`<i class="rt-rep" title="Reparto: ${esc(repNomeId(r.repartoId))}">${esc(repNomeId(r.repartoId))}</i>`:"";
         const inner=`${repT}${(r.assegnati||[]).map(chip).join("")}${(r.assegnatiU||[]).map(uid=>`<i class="rt-who pmw" title="Lo fa il PM: ${esc(userName(uid))}">${esc(userName(uid))} · PM</i>`).join("")}${pr.map(pid=>`<i class="rt-who prop" title="Proposto da ${esc(userName(r.proposta.da))}: aspetta l'approvazione del coordinatore di reparto">⏳ ${esc(nomeP(pid))}</i>`).join("")}${!(r.assegnati||[]).length&&!(r.assegnatiU||[]).length&&!pr.length&&r.repartoId?'<span class="muted" style="font-size:12px">da assegnare</span>':""}`;
@@ -2050,6 +2054,8 @@ function rtRender(){
       ${altre.length?`<span class="grow rt-cp"></span><select class="inp rt-cp" id="rt-copy-da" style="width:auto"><option value="">Copia la lista da…</option>${altre.map(x=>`<option value="${esc(x.id)}">${esc(x.codice)} · ${esc(x.nome)} (${reqOf(x.id).length})</option>`).join("")}</select><button type="button" class="btn rt-cp" id="rt-copy">Copia</button>`:""}</div>`:""}
     <p class="muted rt-help" style="margin:0;font-size:12.5px">${ed?"Trascina ⠿ per spostare: sopra o sotto una riga = stesso livello, al centro della riga = dentro come sotto-requisito. Invio = nuova voce · Tab / Maiusc+Tab = dentro / fuori di un livello · Alt+↑↓ = sposta. Il PM sceglie il reparto (✎): il coordinatore riceve la notifica e sceglie il progettista; se il PM (o il responsabile di reparto) propone un progettista (⏳), il coordinatore lo approva. Chi viene assegnato riceve la notifica; quando lo chiude o lo blocca, la notifica arriva al PM.":"Spunta i requisiti assegnati a te quando sono fatti: il PM riceve la notifica."+(all.some(r=>daApprovareMe(r)||daAssegnareMe(r))?" Come coordinatore di reparto scegli chi fa i requisiti del tuo reparto (✎) e approvi le proposte del PM (✓ Approva).":"")}</p>`;
   const R$=sel=>$("#rd").querySelectorAll(sel);
+  {const alza=t=>{if(!t.isConnected||!t.offsetWidth)return;t.style.height="auto";t.style.height=t.scrollHeight+2+"px"},ta=[...R$("textarea.rt-ta")];
+   ta.forEach(t=>{alza(t);t.addEventListener("input",()=>alza(t))});requestAnimationFrame(()=>ta.forEach(alza))} // anche dopo l'apertura della finestra
   // cellulare: la spiegazione lunga si legge con il pulsante ⓘ
   {const hb=$("#rt-help-b"),hp=$("#rd .rt-help");if(hb&&hp)hb.onclick=()=>{$("#okd").innerHTML=`<h3 style="margin:0 0 8px">ⓘ Come funzionano i requisiti</h3><p style="margin:0;line-height:1.5">${hp.innerHTML}</p><div class="acts" style="margin-top:12px"><span></span><button type="button" class="btn primary" id="rt-help-ok">Ho capito</button></div>`;
     $("#rt-help-ok").onclick=()=>okdlg.close();if(typeof okdlg.showModal==="function")okdlg.showModal();else okdlg.setAttribute("open","")}}
