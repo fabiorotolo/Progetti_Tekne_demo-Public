@@ -572,6 +572,7 @@ body.mob-bar-on{padding-bottom:190px}
 .st-in{padding:3px 6px;font-size:13px;text-align:right}.st-vn{display:inline-flex;gap:4px;align-items:center}.st-vn .st-in{text-align:left}.st-add .st-in{text-align:left}.st-add td .st-in[data-stno]{text-align:right}
 .st-bar{position:relative;height:10px;border-radius:5px;background:var(--line-soft);min-width:140px}.st-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}.st-bar i.pl{background:color-mix(in srgb,var(--accent) 30%,transparent)}.st-bar i.sv{background:var(--accent)}
 .st-bar .tk{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1px;background:var(--fg);border-radius:2px}.st-bar .tk.ov{background:var(--over)}
+.st-tb tr.st-att td{font-size:12.5px;padding-top:2px;padding-bottom:2px;border-top:0;color:var(--fg)}.st-tb tr.st-att{cursor:pointer}.st-tb tr.st-att:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}.st-tb tr.st-att .st-at{font-weight:500}.st-tg{margin-right:4px;font-size:12px}
 .st-su{color:var(--over)}.st-giu{color:var(--muted);font-size:12.5px}.st-ok{color:var(--ok)}
 .bk-wrap{max-height:280px;overflow:auto}.bk-wrap tr.bk-on td{background:color-mix(in srgb,var(--accent) 8%,transparent)}.bk-conta{display:flex;flex-wrap:wrap;gap:4px 24px;font-size:13px}.bk-conta b{margin-right:4px}.bk-ul{margin:4px 0 6px;padding-left:18px;font-size:13px;list-style:none}.bk-ul li{margin:1px 0}.bk-ul li b{display:inline-block;width:14px}
 .rt-sub.rt-pick>.rt-pick-rep{order:0}.rt-sub.rt-pick>.rt-pick-pm{order:1}.rt-sub.rt-pick>.rt-pick-r{order:2}.rt-sub.rt-pick>.rt-pick-team{order:3}.rt-sub.rt-pick>.rt-pick-ok{order:4}
@@ -3974,7 +3975,7 @@ function stimaDati(c,bl){const st=c.stima||{},voci=st.voci||[],vById=Object.from
   const R=new Map(),get=k=>{if(!R.has(k))R.set(k,{rep:k,stima:(st.rep||{})[k]??null,voci:voci.filter(v=>v.rep===k).map(v=>({v,tl:0,sv:0,n:0})),nc:{tl:0,sv:0,n:0},tl:0,sv:0});return R.get(k)};
   for(const k of Object.keys(st.rep||{}))get(k);for(const v of voci)get(v.rep);
   for(const b of bl){if(isAss(b))continue;const v=b.voceId&&vById[b.voceId],k=v?v.rep:((persById(b.personaId)||{}).repartoId||"");const r=get(k);
-    const sv=bSvolte(b),tl=b.stato==="svolto"?sv:bOre(b);r.tl+=tl;r.sv+=sv;const x=v?r.voci.find(y=>y.v.id===v.id):r.nc;x.tl+=tl;x.sv+=sv;x.n++}
+    const sv=bSvolte(b),tl=b.stato==="svolto"?sv:bOre(b);r.tl+=tl;r.sv+=sv;const x=v?r.voci.find(y=>y.v.id===v.id):r.nc;x.tl+=tl;x.sv+=sv;x.n++;(x.att=x.att||[]).push({b,tl,sv})}
   return[...R.values()].sort((a,b)=>{const na=(S.reparti.find(r=>r.id===a.rep)||{}).nome||"~",nb=(S.reparti.find(r=>r.id===b.rep)||{}).nome||"~";return na.localeCompare(nb)})}
 function stimaHtml(c,bl){if(!stimaVede(c.id))return"";const cid=c.id,pmOk=stimaPMok(cid);
   const D=stimaDati(c,bl);
@@ -3986,15 +3987,20 @@ function stimaHtml(c,bl){if(!stimaVede(c.id))return"";const cid=c.id,pmOk=stimaP
     return d>0?`<b class="st-su">▲ ${fmtH(d)} h oltre${st?` <small>(+${p}%)</small>`:""}</b>`:`<span class="st-giu">${fmtH(-d)} h ancora libere</span>`};
   const barra=(tl,sv,st)=>{const m=Math.max(tl,Number(st)||0,1),k=x=>Math.min(100,x/m*100);return`<div class="st-bar" title="Svolte ${fmtH(sv)} h · in timeline ${fmtH(tl)} h${st!=null?" · stima "+fmtH(st)+" h":""}"><i class="pl" style="width:${k(tl)}%"></i><i class="sv" style="width:${k(sv)}%"></i>${st!=null&&st!==""?`<b class="tk${tl>st?" ov":""}" style="left:${k(st)}%"></b>`:""}</div>`};
   const inp=(attr,val,ph,w)=>`<input class="inp st-in" ${attr} value="${val==null?"":esc(String(val))}" placeholder="${ph||""}" style="width:${w||70}px" title="Si può scrivere anche un calcolo, es. 20*8">`;
+  // sotto il reparto (o la voce) le attivita' della pianificazione, con le loro ore: si sommano da sole
+  const apri=k=>!(S.stChiusi&&S.stChiusi.has(cid+"|"+k));
+  const attR=(l,pad)=>(l||[]).sort((a,b)=>bStart(a.b)-bStart(b.b)).map(({b,tl,sv})=>`<tr class="st-att" data-gb="${esc(b.id)}"><td style="padding-left:${pad}px"><span class="st-at">${b.stato==="svolto"?"✓ ":""}${esc(b.attivita||"(senza titolo)")}</span> <span class="muted st-n">· ${esc(nomeP(b.personaId))} · ${fmtD(bStart(b))}–${fmtD(bEnd(b))}</span></td><td></td><td class="n">${fmtH(tl)}</td><td class="n">${sv?fmtH(sv):"—"}</td><td></td><td></td></tr>`).join("");
   let righe="";
   for(const r of D){const vOk=stimaVociOk(cid,r.rep),sumV=r.voci.reduce((a,x)=>a+(Number(x.v.ore)||0),0),hasV=r.voci.length>0;
     const stRif=r.stima!=null?r.stima:(hasV?sumV:null);
-    righe+=`<tr class="st-rep" style="--h:${colR(r.rep)??200}"><td><i class="dot" style="--h:${colR(r.rep)??200}"></i><b>${esc(nomeR(r.rep))}</b>${hasV&&r.stima!=null&&Math.abs(sumV-r.stima)>0.05?`<div class="muted st-nota">voci ${fmtH(sumV)} h su ${fmtH(r.stima)} · ${sumV<r.stima?fmtH(r.stima-sumV)+" h da distribuire":fmtH(sumV-r.stima)+" h oltre la stima del PM"}</div>`:""}</td>
+    const nAtt=r.nc.n+r.voci.reduce((a,x)=>a+x.n,0),aperto=apri(r.rep);
+    righe+=`<tr class="st-rep" style="--h:${colR(r.rep)??200}"><td>${nAtt?`<button type="button" class="rt-mini st-tg" data-sttg="${esc(r.rep)}" aria-expanded="${aperto}" title="${aperto?"Nascondi":"Mostra"} le attività">${aperto?"▾":"▸"}</button>`:""}<i class="dot" style="--h:${colR(r.rep)??200}"></i><b>${esc(nomeR(r.rep))}</b>${nAtt?` <span class="muted st-n">· ${nAtt} attività</span>`:""}${hasV&&r.stima!=null&&Math.abs(sumV-r.stima)>0.05?`<div class="muted st-nota">voci ${fmtH(sumV)} h su ${fmtH(r.stima)} · ${sumV<r.stima?fmtH(r.stima-sumV)+" h da distribuire":fmtH(sumV-r.stima)+" h oltre la stima del PM"}</div>`:""}</td>
       <td class="n">${pmOk&&r.rep?inp(`data-strep="${esc(r.rep)}"`,r.stima,"h"):r.stima!=null?`<b>${fmtH(r.stima)}</b>`:'<span class="muted">—</span>'}</td>
       <td class="n">${fmtH(r.tl)}</td><td class="n">${fmtH(r.sv)}</td><td class="n">${diff(r.tl,stRif)}</td><td>${barra(r.tl,r.sv,stRif)}</td></tr>`;
     for(const x of r.voci)righe+=`<tr class="st-voce"><td>${vOk?`<span class="st-vn">${inp(`data-stvn="${esc(x.v.id)}"`,x.v.nome,"Nome della voce",260)}<button type="button" class="rt-mini" data-stvdel="${esc(x.v.id)}" title="Togli la voce (le attività restano, senza voce)">✕</button></span>`:esc(x.v.nome)}<span class="muted st-n"> · ${x.n} attivit${x.n===1?"à":"à"}</span></td>
-      <td class="n">${vOk?inp(`data-stvo="${esc(x.v.id)}"`,x.v.ore,"h"):x.v.ore!=null?fmtH(x.v.ore):'<span class="muted">—</span>'}</td><td class="n">${fmtH(x.tl)}</td><td class="n">${fmtH(x.sv)}</td><td class="n">${diff(x.tl,x.v.ore)}</td><td>${barra(x.tl,x.sv,x.v.ore)}</td></tr>`;
-    if(hasV&&r.nc.n)righe+=`<tr class="st-voce st-nc"><td><span class="muted">Senza voce</span><span class="muted st-n"> · ${r.nc.n} attività</span></td><td class="n"></td><td class="n">${fmtH(r.nc.tl)}</td><td class="n">${fmtH(r.nc.sv)}</td><td></td><td>${barra(r.nc.tl,r.nc.sv,null)}</td></tr>`;
+      <td class="n">${vOk?inp(`data-stvo="${esc(x.v.id)}"`,x.v.ore,"h"):x.v.ore!=null?fmtH(x.v.ore):'<span class="muted">—</span>'}</td><td class="n">${fmtH(x.tl)}</td><td class="n">${fmtH(x.sv)}</td><td class="n">${diff(x.tl,x.v.ore)}</td><td>${barra(x.tl,x.sv,x.v.ore)}</td></tr>`+(aperto?attR(x.att,48):"");
+    if(hasV&&r.nc.n)righe+=`<tr class="st-voce st-nc"><td><span class="muted">Senza voce</span><span class="muted st-n"> · ${r.nc.n} attività</span></td><td class="n"></td><td class="n">${fmtH(r.nc.tl)}</td><td class="n">${fmtH(r.nc.sv)}</td><td></td><td>${barra(r.nc.tl,r.nc.sv,null)}</td></tr>`+(aperto?attR(r.nc.att,48):"");
+    else if(!hasV&&aperto)righe+=attR(r.nc.att,28);
     if(vOk&&r.rep)righe+=`<tr class="st-voce st-add"><td>${inp(`data-stnn="${esc(r.rep)}"`,"","+ Nuova voce (es. Progettazione rampa)",260)}</td><td class="n">${inp(`data-stno="${esc(r.rep)}"`,"","h")}</td><td colspan="4"><button type="button" class="btn ghost" data-stadd="${esc(r.rep)}">Aggiungi voce</button></td></tr>`}
   return`<div class="panel st-pan"><h2>Stima ore<small>il PM stima per reparto · il coordinatore divide in voci · visibile a PM, direzione, responsabili e coordinatori</small></h2>
     <div class="tbl-wrap"><table class="st-tb"><thead><tr><th>Reparto / voce</th><th class="n">Stima</th><th class="n">In timeline</th><th class="n">Svolte</th><th class="n">Rispetto alla stima</th><th data-nosort style="min-width:160px">▮ svolte · ▯ in timeline · | stima</th></tr></thead><tbody>
@@ -4010,6 +4016,7 @@ function calcola(t){t=String(t).replace(/\s+/g,"").replace(/,/g,".").replace(/x/
   const som=()=>{let v=pro();while(t[i]==="+"||t[i]==="-"){const o=t[i++],w=pro();v=o==="+"?v+w:v-w}return v};
   try{const v=som();return i===t.length&&isFinite(v)?Math.round(v*100)/100:NaN}catch(e){return NaN}}
 function bindStima(el,c){const cid=c.id,B=sel=>el.querySelectorAll(sel);
+  B("[data-sttg]").forEach(b=>b.onclick=()=>{S.stChiusi=S.stChiusi||new Set();const k=cid+"|"+b.dataset.sttg;S.stChiusi.has(k)?S.stChiusi.delete(k):S.stChiusi.add(k);render()});
   const num=v=>{const t=String(v).trim();if(t==="")return null;const n=calcola(t);return isFinite(n)&&n>=0?n:NaN};
   // nei campi delle ore si puo' scrivere un calcolo: con Invio (o uscendo dal campo) diventa il risultato
   B("[data-strep],[data-stvo],[data-stno]").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"&&/[+\-*/()x]/i.test(i.value.trim().slice(1))){const n=calcola(i.value);if(isFinite(n)){i.value=String(n).replace(".",",");if(i.dataset.stno){e.preventDefault();e.stopImmediatePropagation();toast("= "+fmtH(n)+" h")}}}},true));
