@@ -3985,7 +3985,7 @@ function stimaHtml(c,bl){if(!stimaVede(c.id))return"";const cid=c.id,pmOk=stimaP
     // oltre la stima = rosso; sotto = ore della stima non ancora messe in timeline (non e' un risparmio finche' il lavoro non e' finito)
     return d>0?`<b class="st-su">▲ ${fmtH(d)} h oltre${st?` <small>(+${p}%)</small>`:""}</b>`:`<span class="st-giu">${fmtH(-d)} h ancora libere</span>`};
   const barra=(tl,sv,st)=>{const m=Math.max(tl,Number(st)||0,1),k=x=>Math.min(100,x/m*100);return`<div class="st-bar" title="Svolte ${fmtH(sv)} h · in timeline ${fmtH(tl)} h${st!=null?" · stima "+fmtH(st)+" h":""}"><i class="pl" style="width:${k(tl)}%"></i><i class="sv" style="width:${k(sv)}%"></i>${st!=null&&st!==""?`<b class="tk${tl>st?" ov":""}" style="left:${k(st)}%"></b>`:""}</div>`};
-  const inp=(attr,val,ph,w)=>`<input class="inp st-in" ${attr} value="${val==null?"":esc(String(val))}" placeholder="${ph||""}" inputmode="decimal" style="width:${w||70}px">`;
+  const inp=(attr,val,ph,w)=>`<input class="inp st-in" ${attr} value="${val==null?"":esc(String(val))}" placeholder="${ph||""}" style="width:${w||70}px" title="Si può scrivere anche un calcolo, es. 20*8">`;
   let righe="";
   for(const r of D){const vOk=stimaVociOk(cid,r.rep),sumV=r.voci.reduce((a,x)=>a+(Number(x.v.ore)||0),0),hasV=r.voci.length>0;
     const stRif=r.stima!=null?r.stima:(hasV?sumV:null);
@@ -4002,8 +4002,17 @@ function stimaHtml(c,bl){if(!stimaVede(c.id))return"";const cid=c.id,pmOk=stimaP
     <tr class="tot"><td>Totale${!D.some(r=>r.stima!=null)&&c.oreBudget?' <span class="muted" style="font-weight:400">(budget della commessa)</span>':""}</td><td class="n">${totSt?fmtH(totSt):"—"}</td><td class="n">${fmtH(totTl)}</td><td class="n">${fmtH(totSv)}</td><td class="n">${diff(totTl,totSt||null)}</td><td>${barra(totTl,totSv,totSt||null)}</td></tr>
     </tbody></table></div>
     <p class="muted" style="margin:6px 0 0;font-size:12.5px">«In timeline» = ore delle attività pianificate (per quelle svolte, le ore effettive). «Ancora libere» = ore della stima non ancora pianificate; «oltre» = la timeline supera la stima. Le attività si collegano a una voce nella loro scheda («Voce della stima ore»); quelle senza voce restano nel reparto del progettista.</p></div>`}
+// piccola calcolatrice per i campi delle ore: «20*8», «150+40+50», «(3+2)*8», «12,5*4» (solo numeri e + - * / ( ))
+function calcola(t){t=String(t).replace(/\s+/g,"").replace(/,/g,".").replace(/x/gi,"*");if(!/^[0-9.+\-*/()]+$/.test(t))return NaN;let i=0;
+  const num=()=>{const m=/^\d+(\.\d+)?|^\.\d+/.exec(t.slice(i));if(!m)throw 0;i+=m[0].length;return Number(m[0])};
+  const fat=()=>{if(t[i]==="-"){i++;return-fat()}if(t[i]==="+"){i++;return fat()}if(t[i]==="("){i++;const v=som();if(t[i]!==")")throw 0;i++;return v}return num()};
+  const pro=()=>{let v=fat();while(t[i]==="*"||t[i]==="/"){const o=t[i++],w=fat();v=o==="*"?v*w:v/w}return v};
+  const som=()=>{let v=pro();while(t[i]==="+"||t[i]==="-"){const o=t[i++],w=pro();v=o==="+"?v+w:v-w}return v};
+  try{const v=som();return i===t.length&&isFinite(v)?Math.round(v*100)/100:NaN}catch(e){return NaN}}
 function bindStima(el,c){const cid=c.id,B=sel=>el.querySelectorAll(sel);
-  const num=v=>{const t=String(v).trim().replace(",",".");if(t==="")return null;const n=Number(t);return isFinite(n)&&n>=0?n:NaN};
+  const num=v=>{const t=String(v).trim();if(t==="")return null;const n=calcola(t);return isFinite(n)&&n>=0?n:NaN};
+  // nei campi delle ore si puo' scrivere un calcolo: con Invio (o uscendo dal campo) diventa il risultato
+  B("[data-strep],[data-stvo],[data-stno]").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"&&/[+\-*/()x]/i.test(i.value.trim().slice(1))){const n=calcola(i.value);if(isFinite(n)){i.value=String(n).replace(".",",");if(i.dataset.stno){e.preventDefault();e.stopImmediatePropagation();toast("= "+fmtH(n)+" h")}}}},true));
   const go=async(m,u,b,msg)=>{try{await api(m,u,b);if(msg)toast(msg);await doRefresh();render()}catch(e){handleErr(e)}};
   B("[data-strep]").forEach(i=>{i.onkeydown=e=>{if(e.key==="Enter")i.blur()};i.onchange=()=>{const n=num(i.value);if(Number.isNaN(n)){toast("Scrivi un numero di ore.");return}go("PATCH",`/api/commesse/${encodeURIComponent(cid)}/stima`,{rep:{[i.dataset.strep]:n}},"Stima aggiornata.")}});
   B("[data-stvo]").forEach(i=>{i.onkeydown=e=>{if(e.key==="Enter")i.blur()};i.onchange=()=>{const n=num(i.value);if(Number.isNaN(n)){toast("Scrivi un numero di ore.");return}go("PATCH",`/api/commesse/${encodeURIComponent(cid)}/voci/${encodeURIComponent(i.dataset.stvo)}`,{ore:n})}});
