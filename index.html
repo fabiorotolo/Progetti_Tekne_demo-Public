@@ -2466,7 +2466,7 @@ function orgLinee(){const org=$("#rd .org"),svg=org&&org.querySelector(".org-svg
       if(b2.length){// dai capi alla cascata: le linee si ricongiungono in un punto sopra la spina
         const yj=st-20;b2.forEach(b=>{const d=sx>b.cx?1:-1;
           g+=linea(Math.abs(b.cx-sx)<2*rr?`M${b.cx},${b.b+2}V${yj}H${sx}V${st}`:`M${b.cx},${b.b+2}V${yj-rr}Q${b.cx},${yj} ${b.cx+d*rr},${yj}H${sx-d*rr}Q${sx},${yj} ${sx},${yj+rr}V${st}`,c)});
-        g+=dot(sx,yj+rr+2,c,false)}
+        if(b2.length>1)g+=dot(sx,yj+rr+2,c,false)} // il pallino segna dove si ricongiungono piu' capi: con uno solo non serve
       else if(a)g+=linea(gomito(a.cx,a.b+2,st-14,sx,st,12),c);
       else{const h=R(col.querySelector(".og-h"));g+=linea(gomito(h.cx,h.b+2,Math.max(h.b+14,st-14),sx,st,12),c)}}
   });
