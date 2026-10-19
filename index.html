@@ -4191,7 +4191,7 @@ function renderSet(){
   $("#set-foglio").onchange=e=>patchSet({foglioOre:e.target.checked},e.target.checked?"Foglio ore attivato: la scheda compare a tutti.":"Foglio ore disattivato.");
   dittePanel(el);controlloPanel(el);spazioPanel(el);aiutoPanel(el);backupPanel(el);
   // ordine dei riquadri: prima le impostazioni di tutti i giorni, poi i controlli, in fondo la pulizia (operazione pericolosa)
-  {const ORD=[["Generali",1],["Ditte",2],["Calendario",3],["Ruoli e permessi",4],["Controllo dei dati",5],["Spazio e limiti",6],["Domande all",7],["Ripristino da backup",8.5],["Pulizia dati",9]];
+  {const ORD=[["Generali",1],["Ditte",2],["Calendario",3],["Ruoli e permessi",4],["Controllo dei dati",5],["Spazio e limiti",6],["Domande all",7],["Pulizia dati",9],["Ripristino da backup",10]];
    for(const p of el.firstElementChild.children){const h=p.querySelector("h2");const t=h?h.textContent:"";const o=ORD.find(([k])=>t.startsWith(k));p.style.order=o?o[1]:8}}
 }
 
