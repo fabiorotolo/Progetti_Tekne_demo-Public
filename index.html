@@ -2366,8 +2366,9 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
   const colRep=id=>{const i=reps.findIndex(r=>r.id===id);return i<0?"#7A8B91":ORG_COL[i%ORG_COL.length]};
   const repN=id=>(S.reparti.find(r=>r.id===id)||{}).nome||"";
   // chi guida un team: sotto il ruolo, in piccolo, le persone che gestisce (membri dei suoi team)
-  const gestiti=(pid,uid)=>{const ids=new Set();for(const t of S.team)if((pid&&t.capo===pid)||(uid&&t.capoU===uid))for(const m of t.membri||[])if(m!==pid&&persById(m))ids.add(m);return[...ids].map(m=>pn(persById(m))).sort((a,b)=>a.localeCompare(b))};
-  const tagG=l=>l.length?`<span class="og-tags" title="Gestisce: ${esc(l.join(", "))}">${l.slice(0,8).map(n=>`<em>${esc(n)}</em>`).join("")}${l.length>8?`<em>+${l.length-8}</em>`:""}</span>`:"";
+  // ogni nome ha il colore del SUO reparto: nei team misti si vede subito chi viene da un altro reparto
+  const gestiti=(pid,uid)=>{const ids=new Set();for(const t of S.team)if((pid&&t.capo===pid)||(uid&&t.capoU===uid))for(const m of t.membri||[])if(m!==pid&&persById(m))ids.add(m);return[...ids].map(m=>{const p=persById(m);return{n:pn(p),r:p.repartoId}}).sort((a,b)=>a.n.localeCompare(b.n))};
+  const tagG=l=>l.length?`<span class="og-tags" title="Gestisce: ${esc(l.map(x=>x.n+(repN(x.r)?" ("+repN(x.r)+")":"")).join(", "))}">${l.slice(0,8).map(x=>`<em style="--c:${colRep(x.r)}">${esc(x.n)}</em>`).join("")}${l.length>8?`<em>+${l.length-8}</em>`:""}</span>`:"";
   const nodo=(nome,ruolo,col,cls,pid,uid)=>{const g=ORGV==="gerarchia"&&(pid||uid)?gestiti(pid,uid):[];return`<div class="on ${cls||""}" style="--c:${col}"><span class="oc">${esc(iniz(nome))}</span><span class="ot"><b>${esc(nome)}</b>${ruolo?`<i>${esc(ruolo)}</i>`:""}${tagG(g)}</span></div>`};
   const um=S.utentiMini.filter(u=>u.nome);
   let corpo="";
