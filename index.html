@@ -538,6 +538,12 @@ tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor
 #tl .blk.mob-on{outline:3px solid var(--accent);outline-offset:1px}
 body.mob-bar-on{padding-bottom:190px}
 @media (pointer:coarse),(max-width:700px){#tl .nd{display:none!important}}
+#dlg.ro .f,#dlg.ro #f-calc,#dlg.ro #f-fold,#dlg.ro #split-box{display:none!important}
+.ed-ro{display:flex;flex-direction:column;gap:2px;margin:0 0 10px}.ed-ro .ro-c{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ed-ro .ro-t{font-size:20px;font-weight:600;line-height:1.25;margin:4px 0 8px}
+.ed-ro .ro-r{display:grid;grid-template-columns:104px 1fr;gap:8px;padding:9px 0;border-top:1px solid var(--line-soft);font-size:15.5px;line-height:1.35;align-items:baseline}
+.ed-ro .ro-r>span{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.ed-ro .ro-av{display:inline-block;width:110px;height:8px;border-radius:4px;background:var(--line);vertical-align:middle;overflow:hidden}.ed-ro .ro-av i{display:block;height:100%;background:var(--accent)}
 .bk-wrap{max-height:280px;overflow:auto}.bk-wrap tr.bk-on td{background:color-mix(in srgb,var(--accent) 8%,transparent)}.bk-conta{display:flex;flex-wrap:wrap;gap:4px 24px;font-size:13px}.bk-conta b{margin-right:4px}.bk-ul{margin:4px 0 6px;padding-left:18px;font-size:13px;list-style:none}.bk-ul li{margin:1px 0}.bk-ul li b{display:inline-block;width:14px}
 .rt-sub.rt-pick>.rt-pick-rep{order:0}.rt-sub.rt-pick>.rt-pick-pm{order:1}.rt-sub.rt-pick>.rt-pick-r{order:2}.rt-sub.rt-pick>.rt-pick-team{order:3}.rt-sub.rt-pick>.rt-pick-ok{order:4}
 .rt-sub.rt-pick>.rt-pick-team{flex-direction:row;flex-wrap:wrap;gap:4px 6px;grid-column:1/-1;padding-top:8px;border-top:1px dashed var(--line)}.rt-sub.rt-pick>.rt-pick-team>b{margin-right:6px!important;align-self:center}
@@ -812,6 +818,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
 <dialog id="dlg">
   <form class="ed" id="ed" novalidate>
     <h3 id="ed-title">Attività</h3>
+    <div id="ed-ro" class="ed-ro" hidden></div>
     <div class="f">
       <label class="w">Commessa o assenza<select class="inp" id="f-comm"></select></label>
       <label class="w">Attività<input class="inp" id="f-att" placeholder="es. Tavole esecutive strutture" autocomplete="off"></label>
@@ -1719,10 +1726,32 @@ function openEditor(id,pre){
   updAssUi();
   updCalc();
   apEditor(b,cc);oltreEditor(b);
+  // cellulare, solo lettura: al posto dei campi grigi una scheda da leggere
+  const ro=!!b&&!full&&!oreOk&&touchUI();dlg.classList.toggle("ro",ro);$("#ed-ro").hidden=!ro;$("#ed-cancel").textContent=ro?"Chiudi":"Annulla";
+  if(ro)$("#ed-ro").innerHTML=schedaLettura(b,cc);
   if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
   if(full&&!b)setTimeout(()=>$("#f-att").focus(),30);
 }
 function closeEd(){if(dlg.open)dlg.close();edId=null}
+function schedaLettura(b,cc){
+  const s=bStart(b),e=bEnd(b);let lav=0;for(let n=s;n<=e;n++)if(!isOff(n))lav++;
+  const av=avPct(b),prev=b.dopo&&S.blocchi.find(x=>x.id===b.dopo),ev=b.dopoEvento&&evById(b.dopoEvento),rit=cc&&ritardoComm(cc);
+  const riga=(l,v)=>v?`<div class="ro-r"><span>${l}</span><div>${v}</div></div>`:"";
+  const ass=isAss(b);
+  return`${ass?`<div class="ro-c">${esc(assLab(b.assenza))}</div>`:cc?`<div class="ro-c"><span class="code" style="--h:${cc.colore}">${esc(cc.codice)}</span> ${esc(cc.nome)}</div>`:""}
+    <div class="ro-t">${esc(b.attivita||(ass?assLab(b.assenza):"senza titolo"))}</div>
+    ${riga("Progettista",esc(nomeP(b.personaId)))}
+    ${riga("Periodo",`<b>${fmtD(s)} → ${fmtD(e)}</b> <span class="muted">· ${lav} giorn${lav===1?"o":"i"} lavorativ${lav===1?"o":"i"}</span>`)}
+    ${riga("Ore",`${fmtH(b.oreGiorno)} h al giorno${ass?"":` · <b>${fmtH(bOre(b))} h</b> in tutto`}`)}
+    ${ass?"":riga("Stato",b.stato==="svolto"?'<b style="color:var(--ok)">✓ Svolta</b>':"Pianificata")}
+    ${ass||b.stato==="svolto"?"":riga("Avanzamento",`<span class="ro-av"><i style="width:${av}%"></i></span> <b>${av}%</b>`)}
+    ${b.oreEffettive!=null&&b.oreEffettive!==""?riga("Ore effettive",`<b>${fmtH(b.oreEffettive)} h</b>`):""}
+    ${prev?riga("Inizia dopo",`«${esc(prev.attivita||"senza titolo")}» <span class="muted">· ${esc(nomeP(prev.personaId))}, fino al ${fmtD(bEnd(prev))}</span>`):""}
+    ${ev?riga("Aspetta",`◆ ${esc(ev.nome)} <span class="muted">· ${fmtD(dnum(ev.data))}</span>`):""}
+    ${b.note?riga("Note",esc(b.note)):""}
+    ${cc&&cc.consegna?riga("Consegna",`<b>${fmtD(consegnaN(cc))}</b>${rit?` <b style="color:var(--over)">· fine prevista ${fmtD(fineComm(cc.id))}, +${rit} g</b>`:""}`):""}
+    ${cc&&cc.cartella?riga("Cartella",`<a href="#" data-fold="${esc(cc.id)}">📁 Apri la cartella</a>`):""}
+    ${(()=>{const pm=cc?pmAtt(cc):[];return pm.length?riga("PM",pm.map(id=>esc(userName(id))).join(", ")):""})()}`}
 // assenza scelta: nasconde stato, avanzamento, ore effettive, divisione e richieste
 // elenco delle attività dopo cui può iniziare questa (prima quelle della stessa commessa)
 function fillDopo(cur){const cid=$("#f-comm").value;const me=edId;const l=S.blocchi.filter(b=>!isAss(b)&&b.id!==me);
