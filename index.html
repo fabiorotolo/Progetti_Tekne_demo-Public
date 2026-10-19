@@ -1752,7 +1752,7 @@ function openEditor(id,pre){
   $("#f-ini").value=d.inizio;$("#f-fin").value=d.fine;
   $("#f-ore").value=d.oreGiorno;$("#f-stato").value=d.stato||"pianificato";
   $("#f-eff").value=d.oreEffettive??"";$("#f-note").value=d.note||"";$("#f-tot").value="";$("#f-tot-da").value="fin";
-  const cons=hasCons(d);$("#f-eff-l").textContent=cons?"Ore effettive (dal foglio ore)":"Ore effettive (se diverse)";
+  const cons=hasCons(d);edCons=cons;$("#f-eff-l").textContent=cons?"Ore effettive (dal foglio ore)":"Ore effettive (se diverse dal pianificato)";
   const cc=commById(d.commessaId);
   $("#f-fold").innerHTML=cc&&(cc.cartella||cc.consegna)?`${cc.consegna?`Consegna ${esc(cc.codice)}: <b>${fmtD(consegnaN(cc))}</b>${ritardoComm(cc)?` · <b style="color:var(--over)">fine prevista ${fmtD(fineComm(cc.id))}, +${ritardoComm(cc)} g</b>`:""}`:""}${cc.cartella?`${cc.consegna?" · ":""}<a href="#" data-fold="${esc(cc.id)}">📁 Cartella della commessa</a>`:""}`:"";
   $("#f-av").value=avPct(d);$("#f-avn").value=avPct(d);
@@ -1771,7 +1771,7 @@ function openEditor(id,pre){
   if(cons)$("#f-eff").disabled=true;
   fillDopo(d.dopo||null);$("#f-dopo").disabled=!full;fillEv(d.dopoEvento||null);$("#f-ev").disabled=!full;fillVoce(d.voceId||null);$("#f-voce").disabled=!full;$("#f-ev-new").hidden=!full;
   dlg.querySelectorAll(".mentb").forEach(x=>x.hidden=!(full||oreOk));
-  updAssUi();
+  updAssUi();updEffUi();
   updCalc();
   apEditor(b,cc);oltreEditor(b);
   // cellulare, solo lettura: al posto dei campi grigi una scheda da leggere
@@ -1851,7 +1851,7 @@ function readForm(){
   if(!ini||!fin)return{err:"Indica le date di inizio e fine."};
   if(dnum(fin)<dnum(ini))return{err:"La data di fine viene prima di quella di inizio."};
   const ore=Number($("#f-ore").value);if(!(ore>0))return{err:"Inserisci le ore al giorno (es. 8)."};
-  const eff=$("#f-eff").value===""?null:Number($("#f-eff").value);
+  const eff=$("#f-stato").value!=="svolto"||$("#f-eff").value===""?null:Number($("#f-eff").value);
   const prev=edId?S.blocchi.find(x=>x.id===edId):null;
   const cv=$("#f-comm").value,ass=cv.startsWith("ass:")?cv.slice(4):null;
   const o={commessaId:ass?null:cv,attivita:$("#f-att").value.trim(),personaId:$("#f-pers").value,inizio:ini,fine:fin,oreGiorno:ore,stato:ass?"pianificato":$("#f-stato").value,oreEffettive:ass?null:eff,note:$("#f-note").value.trim(),avanzamento:ass?0:readAv()};
@@ -1907,13 +1907,18 @@ function setAv(v,from){$("#f-av").value=v;if(from!=="n")$("#f-avn").value=v;
   else if(v<100&&$("#f-stato").value==="svolto")$("#f-stato").value="pianificato"}
 $("#f-av").addEventListener("input",()=>setAv(Number($("#f-av").value),"r"));
 $("#f-avn").addEventListener("input",()=>setAv(readAv(),"n"));
+/* le ore effettive sono il totale vero a lavoro finito: il campo compare solo con lo stato «Svolta»
+   (o se ci sono gia' le ore del foglio ore, solo da leggere); con «Pianificata» non si salvano */
+let edCons=false;
+function updEffUi(){const sv=$("#f-stato").value==="svolto";$("#f-eff").closest("label").hidden=!(sv||edCons)}
+$("#f-stato").addEventListener("change",updEffUi);
 $("#f-stato").addEventListener("change",()=>{const v=$("#f-stato").value==="svolto"?100:Math.min(readAv(),95);$("#f-av").value=v;$("#f-avn").value=v});
 $("#ed").addEventListener("submit",e=>{
   e.preventDefault();
   const cur=edId?S.blocchi.find(x=>x.id===edId):null;
   if(!(cur?canPlanOn(cur.personaId):canPlanAny())){
     if(!cur||!canOreOn(cur))return closeEd();
-    const eff=$("#f-eff").value===""?null:Number($("#f-eff").value);
+    const eff=$("#f-stato").value!=="svolto"||$("#f-eff").value===""?null:Number($("#f-eff").value);
     const patch={stato:$("#f-stato").value,oreEffettive:eff,note:$("#f-note").value.trim(),avanzamento:readAv()};
     const prev={...cur};Object.assign(cur,patch);const df=diffB(prev,cur);
     if(df){dbUpd("blocchi",edId,patch);log(patch.stato==="svolto"&&prev.stato!=="svolto"?"Svolta":"Consuntivo",descB(prev)+" — "+df)}
