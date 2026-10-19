@@ -868,6 +868,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
       <label class="o-al">Al<input class="inp" type="date" id="f-fin"></label>
       <label class="w noass">Avanzamento<span class="avz"><input type="range" class="inp" id="f-av" min="0" max="100" step="5" aria-label="Avanzamento percentuale"><input type="number" class="inp" id="f-avn" min="0" max="100" step="1" aria-label="Avanzamento in percentuale"></span></label>
       <label class="o-ore">Ore al giorno<input class="inp" type="number" id="f-ore" min="0.5" max="24" step="0.5"></label>
+      <label class="noass" id="f-tot-l">Ore totali (calcola le date)<span class="withment"><input class="inp" id="f-tot" placeholder="es. 250 o 25*8" autocomplete="off" title="Scrivi le ore totali (anche un calcolo) e premi Invio: il programma calcola la data di fine (o di inizio) con le ore al giorno"><select class="inp" id="f-tot-da" style="flex:none;width:auto" aria-label="Quale data calcolare"><option value="fin">→ Al</option><option value="ini">→ Dal</option></select></span></label>
       <label class="w noass">Inizia dopo (facoltativo)<select class="inp" id="f-dopo"></select></label>
       <label class="w noass">Aspetta un evento (facoltativo)<span class="withment"><select class="inp" id="f-ev"></select><button type="button" class="btn ghost mentb" id="f-ev-new" title="Nuovo evento della commessa (es. arrivo veicolo)">+ Evento</button></span></label>
       <label class="w noass" id="f-voce-l" hidden>Voce della stima ore (facoltativo)<select class="inp" id="f-voce"></select></label>
@@ -1750,7 +1751,7 @@ function openEditor(id,pre){
   $("#f-pers").innerHTML=optsPersone(d.personaId,full&&!canPlan()?allowed:null);
   $("#f-ini").value=d.inizio;$("#f-fin").value=d.fine;
   $("#f-ore").value=d.oreGiorno;$("#f-stato").value=d.stato||"pianificato";
-  $("#f-eff").value=d.oreEffettive??"";$("#f-note").value=d.note||"";
+  $("#f-eff").value=d.oreEffettive??"";$("#f-note").value=d.note||"";$("#f-tot").value="";$("#f-tot-da").value="fin";
   const cons=hasCons(d);$("#f-eff-l").textContent=cons?"Ore effettive (dal foglio ore)":"Ore effettive (se diverse)";
   const cc=commById(d.commessaId);
   $("#f-fold").innerHTML=cc&&(cc.cartella||cc.consegna)?`${cc.consegna?`Consegna ${esc(cc.codice)}: <b>${fmtD(consegnaN(cc))}</b>${ritardoComm(cc)?` · <b style="color:var(--over)">fine prevista ${fmtD(fineComm(cc.id))}, +${ritardoComm(cc)} g</b>`:""}`:""}${cc.cartella?`${cc.consegna?" · ":""}<a href="#" data-fold="${esc(cc.id)}">📁 Cartella della commessa</a>`:""}`:"";
@@ -1881,6 +1882,25 @@ function updCalc(){
   $("#f-ecc-reset").onclick=e=>{e.preventDefault();edEccReset=true;if(prev.fineOriginale&&$("#f-fin").value===prev.fine)$("#f-fin").value=prev.fineOriginale;updCalc()};
 }
 ["f-ini","f-fin","f-ore"].forEach(id=>$("#"+id).addEventListener("input",updCalc));
+/* Ore totali: scrivi 250 (o 25*8) e Invio -> il programma mette la data di fine (o di inizio) contando solo i giorni lavorativi
+   con le ore al giorno dell'attivita' (es. 250 h a 8 h = 32 giorni = 256 h, si arrotonda al giorno intero).
+   Ferie e permessi del progettista li gestisce poi il salvataggio, come sempre (allungando o spalmando le ore). */
+let totIn=false;
+function oreTotali(avvisa){const t=$("#f-tot").value.trim();if(!t)return;const n=calcola(t),ore=Number($("#f-ore").value)||0;
+  if(!(n>0)){if(avvisa)toast("Scrivi le ore totali (es. 250 o 25*8).");return}if(!(ore>0)){if(avvisa)toast("Prima scrivi le ore al giorno.");return}
+  $("#f-tot").value=String(n).replace(".",",");
+  const gg=Math.max(1,Math.ceil(n/ore-1e-9)),daFine=$("#f-tot-da").value==="ini",ref=$(daFine?"#f-fin":"#f-ini").value;
+  if(!ref){if(avvisa)toast(daFine?"Prima scegli la data «Al».":"Prima scegli la data «Dal».");return}
+  let d=dnum(ref),v=daFine?-1:1;while(isOff(d))d+=v; // se la data di partenza cade di sabato, domenica o festivo si parte dal primo giorno lavorativo
+  const a=d;for(let k=1;k<gg;k++)d=passoLav(d,v);
+  totIn=true;try{if(daFine){$("#f-ini").value=dstr(d);if(dnum($("#f-fin").value)!==a)$("#f-fin").value=dstr(a)}else{if(dnum($("#f-ini").value)!==a)$("#f-ini").value=dstr(a);$("#f-fin").value=dstr(d)}updCalc()}finally{totIn=false}
+  $("#f-tot").dataset.fatto=$("#f-tot").value+"|"+$("#f-tot-da").value;
+  if(avvisa)toast(`${daFine?"Dal":"Al"}: ${dpTesto(dstr(d))} · ${gg} giorni lavorativi × ${fmtH(ore)} h = ${fmtH(gg*ore)} h`)}
+$("#f-tot").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();e.stopImmediatePropagation();oreTotali(true)}},true);
+$("#f-tot").addEventListener("change",()=>{if($("#f-tot").dataset.fatto!==$("#f-tot").value+"|"+$("#f-tot-da").value)oreTotali(true)});$("#f-tot-da").addEventListener("change",()=>oreTotali(true));
+// cambiando le ore al giorno con le ore totali scritte, si ricalcola la data; cambiando a mano una data, le ore totali non valgono piu'
+$("#f-ore").addEventListener("change",()=>oreTotali(false));
+["f-ini","f-fin"].forEach(id=>$("#"+id).addEventListener("input",()=>{if(!totIn)$("#f-tot").value=""}));
 function readAv(){const v=Math.round(Number($("#f-avn").value));return isFinite(v)?Math.max(0,Math.min(100,v)):0}
 function setAv(v,from){$("#f-av").value=v;if(from!=="n")$("#f-avn").value=v;
   if(v>=100&&$("#f-stato").value!=="svolto")$("#f-stato").value="svolto";
@@ -4683,6 +4703,21 @@ function dpEnh(i){if(i.dataset.dp||i.type!=="date")return;i.dataset.dp="1";
   Object.defineProperty(i,"disabled",{configurable:true,get(){return DP_D.get.call(this)},set(v){DP_D.set.call(this,v);upd()}});
   Object.defineProperty(i,"hidden",{configurable:true,get(){return DP_H.get.call(this)},set(v){DP_H.set.call(this,v);upd()}});
   i.focus=()=>b.focus();upd();b.addEventListener("click",()=>dpApri(i,b))}
+/* Calcoli nei campi delle ore: in tutti i campi delle ore (riconosciuti dal passo di mezz'ora, piu' il budget delle commesse)
+   si puo' scrivere un calcolo, es. 25*8, 150+40, (3+2)*8, 7,5; con Invio (o uscendo dal campo) diventa il risultato.
+   Il campo diventa di testo (un campo "number" non accetta * e +); prima che il resto del programma legga il valore
+   (change in fase di cattura) la virgola diventa punto e il calcolo diventa il numero. */
+const CALC_SEL='input[type="number"][step="0.5"],#nc-bud,input[data-f="oreBudget"]';
+function calcEnh(i){if(i.dataset.calc)return;i.dataset.calc="1";i.type="text";i.autocomplete="off";if(!i.title)i.title="Si può scrivere anche un calcolo, es. 25*8: con Invio diventa il risultato"}
+function calcRisolvi(i,avvisa){const t=i.value.trim();if(!t||/^\d+(\.\d+)?$/.test(t))return true;const n=calcola(t);
+  if(!isFinite(n)){if(avvisa)toast("Calcolo non valido: usa numeri e + − * / ( ).");return false}
+  DP_V.set.call(i,String(n));i.dispatchEvent(new Event("input",{bubbles:true}));return /[+\-*/()x]/i.test(t.slice(1))}
+document.addEventListener("keydown",e=>{const i=e.target;if(e.key!=="Enter"||!i.dataset||!i.dataset.calc)return;const t=i.value.trim();
+  if(/[+\-*/()x]/i.test(t.slice(1))){calcRisolvi(i,true);e.preventDefault();e.stopImmediatePropagation();toast("= "+fmtH(Number(i.value))+" h")}else calcRisolvi(i,false)},true);
+document.addEventListener("change",e=>{const i=e.target;if(i.dataset&&i.dataset.calc)calcRisolvi(i,true)},true);
+function calcScan(r){(r||document).querySelectorAll(CALC_SEL).forEach(i=>{if(!i.dataset.calc)calcEnh(i)})}
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1){if(n.matches(CALC_SEL))calcEnh(n);else if(n.querySelector&&n.querySelector(CALC_SEL))calcScan(n)}}).observe(document.body,{childList:true,subtree:true});
+calcScan();
 function dpScan(r){(r||document).querySelectorAll('input[type="date"]:not([data-dp])').forEach(dpEnh)}
 new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1){if(n.matches('input[type="date"]'))dpEnh(n);else if(n.querySelector&&n.querySelector('input[type="date"]:not([data-dp])'))dpScan(n)}}).observe(document.body,{childList:true,subtree:true});
 dpScan();
