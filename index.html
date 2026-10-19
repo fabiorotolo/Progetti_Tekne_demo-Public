@@ -324,6 +324,8 @@ a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:cente
 #rdlg.org-w{width:min(1400px,calc(100vw - 24px))}
 .org-bar{display:flex;gap:14px;align-items:center;padding-right:30px;flex-wrap:wrap}
 .org{display:flex;flex-direction:column;gap:18px;overflow-x:auto;padding-bottom:6px}
+.og-tags{display:flex;flex-wrap:wrap;gap:2px 3px;margin-top:3px;max-width:190px}.og-tags em{font-style:normal;font-size:10px;line-height:1.35;padding:0 5px;border-radius:7px;background:color-mix(in srgb,var(--c) 14%,transparent);color:color-mix(in srgb,var(--c) 75%,var(--fg));white-space:nowrap}
+.on.big .og-tags{justify-content:center;margin-left:auto;margin-right:auto}
 .org-top{display:flex;flex-direction:column;align-items:center;gap:26px}.org-dir{display:flex;gap:18px;justify-content:center}
 .org-root{font-family:var(--f-disp);font-size:24px;font-weight:700;letter-spacing:.12em;padding:10px 46px;border-radius:999px;border:5px solid #2A87B8;box-shadow:0 0 0 4px var(--panel),0 0 0 6px #7A8B91;color:var(--fg)}
 .org{position:relative}.org-svg{position:absolute;left:0;top:0;pointer-events:none;z-index:2;overflow:visible}.org>*:not(.org-svg){position:relative;z-index:1}
@@ -2363,7 +2365,10 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
   const reps=[...S.reparti].sort((a,b)=>String(a.nome).localeCompare(b.nome));
   const colRep=id=>{const i=reps.findIndex(r=>r.id===id);return i<0?"#7A8B91":ORG_COL[i%ORG_COL.length]};
   const repN=id=>(S.reparti.find(r=>r.id===id)||{}).nome||"";
-  const nodo=(nome,ruolo,col,cls)=>`<div class="on ${cls||""}" style="--c:${col}"><span class="oc">${esc(iniz(nome))}</span><span class="ot"><b>${esc(nome)}</b>${ruolo?`<i>${esc(ruolo)}</i>`:""}</span></div>`;
+  // chi guida un team: sotto il ruolo, in piccolo, le persone che gestisce (membri dei suoi team)
+  const gestiti=(pid,uid)=>{const ids=new Set();for(const t of S.team)if((pid&&t.capo===pid)||(uid&&t.capoU===uid))for(const m of t.membri||[])if(m!==pid&&persById(m))ids.add(m);return[...ids].map(m=>pn(persById(m))).sort((a,b)=>a.localeCompare(b))};
+  const tagG=l=>l.length?`<span class="og-tags" title="Gestisce: ${esc(l.join(", "))}">${l.slice(0,8).map(n=>`<em>${esc(n)}</em>`).join("")}${l.length>8?`<em>+${l.length-8}</em>`:""}</span>`:"";
+  const nodo=(nome,ruolo,col,cls,pid,uid)=>{const g=ORGV==="gerarchia"&&(pid||uid)?gestiti(pid,uid):[];return`<div class="on ${cls||""}" style="--c:${col}"><span class="oc">${esc(iniz(nome))}</span><span class="ot"><b>${esc(nome)}</b>${ruolo?`<i>${esc(ruolo)}</i>`:""}${tagG(g)}</span></div>`};
   const um=S.utentiMini.filter(u=>u.nome);
   let corpo="";
   if(ORGV==="gerarchia"){
@@ -2382,9 +2387,9 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
     const conPm=(u,lab)=>u&&u.pm&&!u.capoPm?lab+" · PM":lab;
     const rami=[];
     // un solo responsabile PM in cima; se sono piu' di uno stanno in testa alla cascata (evidenziati), cosi' le linee non li attraversano
-    const pmN=u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A");
-    if(capiPm.length||pms.length)rami.push(capiPm.length===1?ramo("PM","#C2563A",[nodo(capiPm[0].nome,"Responsabile PM","#C2563A","big col")],[],pms.map(pmN))
-      :ramo("PM","#C2563A",[],[],[...capiPm.map(u=>nodo(u.nome,"Responsabile PM","#C2563A","capo")),...pms.map(pmN)]));
+    const pmN=u=>nodo(u.nome,u.ruolo&&u.ruolo!=="PM"?u.ruolo+" · PM":"PM","#C2563A","",u.personaId,u.id);
+    if(capiPm.length||pms.length)rami.push(capiPm.length===1?ramo("PM","#C2563A",[nodo(capiPm[0].nome,"Responsabile PM","#C2563A","big col",capiPm[0].personaId,capiPm[0].id)],[],pms.map(pmN))
+      :ramo("PM","#C2563A",[],[],[...capiPm.map(u=>nodo(u.nome,"Responsabile PM","#C2563A","capo",u.personaId,u.id)),...pms.map(pmN)]));
     const supCount={};for(const r of reps)if(r.supervisore)supCount[r.supervisore]=(supCount[r.supervisore]||0)+1;
     const grpFatti=new Set();
     for(const r of reps){const col=colRep(r.id);const inGrp=r.supervisore&&supCount[r.supervisore]>1;const respU=r.responsabile&&S.utentiMini.find(u=>u.id===r.responsabile),supU=r.supervisore&&S.utentiMini.find(u=>u.id===r.supervisore);
@@ -2395,14 +2400,14 @@ function openOrg(v){if(v)ORGV=v;RT=null;rdId=null;rdlg.classList.add("wide","org
       const capo=p=>S.team.some(t=>t.capo===p.id)||!!(uDi(p)&&uDi(p).capoTeam);
       // fino a 2 capi affiancati sotto il responsabile; se sono di piu' vanno in testa alla cascata (evidenziati)
       const capi=persone.filter(capo),poche=capi.length<=2&&!!respU;
-      const sez=ramo("Reparto "+r.nome,col,[...(supU&&!inGrp?[nodo(supU.nome,conPm(supU,"Responsabile di reparto"),col,"big col")]:[]),...(respU?[nodo(respU.nome,conPm(respU,"Coordinatore di reparto"),col,"big col")]:[])],poche?capi.map(p=>nodo(pn(p),ruoloP(p),col,"col")):[],[...(poche?[]:capi.map(p=>nodo(pn(p),ruoloP(p),col,"capo"))),...persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col))]);
+      const sez=ramo("Reparto "+r.nome,col,[...(supU&&!inGrp?[nodo(supU.nome,conPm(supU,"Responsabile di reparto"),col,"big col",supU.personaId,supU.id)]:[]),...(respU?[nodo(respU.nome,conPm(respU,"Coordinatore di reparto"),col,"big col",respU.personaId,respU.id)]:[])],poche?capi.map(p=>nodo(pn(p),ruoloP(p),col,"col",p.id,(uDi(p)||{}).id)):[],[...(poche?[]:capi.map(p=>nodo(pn(p),ruoloP(p),col,"capo",p.id,(uDi(p)||{}).id))),...persone.filter(p=>!capo(p)).map(p=>nodo(pn(p),ruoloP(p),col,"",p.id,(uDi(p)||{}).id))]);
       if(!inGrp)rami.push(sez);else{if(!grpFatti.has(r.supervisore)){grpFatti.add(r.supervisore);rami.push({sup:r.supervisore,sez:[]})}rami.find(x=>x&&x.sup===r.supervisore).sez.push(sez)}}
     const altri=um.filter(u=>!u.personaId&&!u.pm&&!u.capoPm&&u.ruolo&&!isDir(u)&&u.ruolo!=="Amministratore"&&!reps.some(r=>r.responsabile===u.id||r.supervisore===u.id));
-    if(altri.length)rami.push(ramo("Altri","#5B6E76",[],[],altri.map(u=>nodo(u.nome,u.ruolo,"#5B6E76"))));
+    if(altri.length)rami.push(ramo("Altri","#5B6E76",[],[],altri.map(u=>nodo(u.nome,u.ruolo,"#5B6E76","",u.personaId,u.id))));
     const colN=rami.reduce((n,x)=>n+(typeof x==="string"?1:x.sez.length),0);
     const html=rami.map(x=>{if(typeof x==="string")return x;const su=S.utentiMini.find(u=>u.id===x.sup);
       return`<div class="og-grp" style="grid-column:span ${x.sez.length}"><div class="og-gsup">${nodo(su?su.nome:"?","Responsabile di reparto","#5B6E76","big col")}</div><div class="og-gr" style="--n:${x.sez.length}">${x.sez.join("")}</div></div>`}).join("");
-    corpo=`<svg class="org-svg" aria-hidden="true"></svg><div class="org-top"><div class="org-root">TEKNE</div>${dirs.length?`<div class="org-dir">${dirs.map(u=>nodo(u.nome,"Direttore tecnico","#2A87B8","big col")).join("")}</div>`:""}</div><div class="og-row" style="--n:${colN}">${html}</div>`;
+    corpo=`<svg class="org-svg" aria-hidden="true"></svg><div class="org-top"><div class="org-root">TEKNE</div>${dirs.length?`<div class="org-dir">${dirs.map(u=>nodo(u.nome,"Direttore tecnico","#2A87B8","big col",u.personaId,u.id)).join("")}</div>`:""}</div><div class="og-row" style="--n:${colN}">${html}</div>`;
   }else{
     // ogni team e' un cerchio: capo al centro, membri tutt'attorno
     const cerchio=t=>{const col=t.repartoId?colRep(t.repartoId):"#5B6E76";const capoN=t.capoU?userName(t.capoU):t.capo?nomeP(t.capo):null;
