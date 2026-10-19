@@ -530,6 +530,24 @@ tr.sch-bad td{color:var(--over)}#v-comm .pill{white-space:nowrap}.sch-lnk{cursor
 .rt-rep-chk{display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:2px}.rt-rep-chk b{margin:0!important;color:var(--fg)!important}.rt-rep-chk input{width:16px;height:16px}
 .rt-sub.rt-pick>.rt-pick-r{border:1px solid transparent;border-radius:8px;padding:6px 8px;margin:-6px -8px}.rt-sub.rt-pick>.rt-pick-r.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent)}
 /* una riga: PM della commessa e i reparti affiancati; sotto i team su tutta la larghezza */
+input.dp-nat{display:none!important}
+.dp-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;white-space:nowrap;text-align:left;cursor:pointer;min-width:150px;font:inherit;color:var(--fg)}
+.dp-btn i{font-style:normal;font-size:14px;opacity:.75}.dp-btn .dp-vuoto{color:var(--muted)}.dp-btn:disabled{cursor:default;opacity:.65}.dp-btn:disabled i{display:none}
+.dp-btn.rt-d{min-width:0;padding:2px 6px;font-size:12.5px}
+.dpdlg{position:fixed;margin:0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--fg);box-shadow:0 12px 32px rgba(0,0,0,.25);max-width:calc(100vw - 16px)}
+.dpdlg::backdrop{background:transparent}
+.dp-h{display:flex;align-items:center;gap:4px}.dp-h .btn{padding:4px 10px;min-height:32px}.dp-h .dp-oggi{flex:1;font-weight:600}.dp-h .dp-x{margin-left:4px}
+.dp-ms{display:flex;gap:18px;margin-top:6px}.dp-m{width:252px}.dp-mt{text-align:center;font-weight:700;text-transform:capitalize;margin:4px 0 6px}
+.dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}.dp-g>b{font-size:11px;text-align:center;color:var(--muted);padding:2px 0}.dp-g>b.we{color:var(--over);opacity:.7}
+.dp-d{height:34px;border:0;border-radius:6px;background:transparent;font:inherit;font-size:14px;color:var(--fg);cursor:pointer;position:relative;font-variant-numeric:tabular-nums}
+.dp-d:hover:not(:disabled){background:color-mix(in srgb,var(--accent) 14%,transparent)}.dp-d.off{color:var(--muted);background:var(--line-soft)}
+.dp-d.in{background:color-mix(in srgb,var(--accent) 18%,transparent);border-radius:0}
+.dp-d.sel{background:var(--accent);color:#fff;font-weight:700}.dp-d.ini{border-radius:6px 0 0 6px}.dp-d.fin{border-radius:0 6px 6px 0}.dp-d.ini.fin{border-radius:6px}
+.dp-d.oggi{box-shadow:inset 0 0 0 2px var(--over);font-weight:700}.dp-d.oggi::after{content:"oggi";position:absolute;left:0;right:0;bottom:1px;font-size:8px;line-height:1;font-weight:700;color:var(--over);text-transform:uppercase}
+.dp-d.oggi.sel::after{color:#fff}.dp-d:disabled{opacity:.3;cursor:default}
+.dp-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;font-size:12.5px}.dp-p{flex:1 1 100%}.dp-leg{color:var(--muted);display:flex;align-items:center;gap:4px}
+.dp-leg i{display:inline-block;width:12px;height:12px;border-radius:3px}.dp-leg i.oggi{box-shadow:inset 0 0 0 2px var(--over)}.dp-leg i.off{background:var(--line-soft);margin-left:6px}
+@media (max-width:700px){.dpdlg{left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:100%;border-radius:14px 14px 0 0;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}.dp-m{width:100%}.dp-d{height:44px;font-size:16px}}
 .mob-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--panel);border-top:2px solid var(--accent);box-shadow:0 -6px 18px rgba(0,0,0,.15);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
 .mob-bar .mb-t{display:flex;flex-direction:column;font-size:13px;line-height:1.3;min-width:0}.mob-bar .mb-t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}.mob-bar .mb-t span{color:var(--muted)}
 .mob-bar .mb-r{display:flex;align-items:center;gap:6px}.mob-bar .mb-l{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center;margin-bottom:2px}
@@ -695,7 +713,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
   nav.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}nav.tabs::-webkit-scrollbar{display:none}
   nav.tabs button{font-size:13.5px;padding:8px 11px;scroll-snap-align:start}
   .panel{padding:12px}
-  dialog:not(#okdlg){width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;margin:0;border:0;border-radius:0}
+  dialog:not(#okdlg):not(#dpdlg){width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;margin:0;border:0;border-radius:0}
   .rd{padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px));font-size:14.5px}.ed{padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px))}
   dialog .xcl{position:sticky;top:0;float:right;z-index:3}
   #rd:has(.ms-storia){min-height:100%;box-sizing:border-box}
@@ -860,6 +878,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
   <div id="g-ris" class="g-ris"></div>
   <p class="muted" style="margin:8px 0 0;font-size:12px">↑↓ per scegliere, Invio per andare. Si apre anche con F1. Funziona senza internet.</p></dialog>
 <dialog id="rdlg"><button type="button" class="xcl" id="rd-x" aria-label="Chiudi">×</button><div class="rd" id="rd"></div></dialog>
+<dialog id="dpdlg" class="dpdlg" aria-label="Calendario"></dialog>
 
 
 <script>
@@ -4520,6 +4539,79 @@ function start(){hideAuth();S.regLoaded=false;S.utentiLoaded=false;caricaDitte()
 /* altezza dell'intestazione fissa (PC): serve a cio' che resta fermo sotto di lei */
 // tabella Utenti (PC): quando si scorre dentro, la pagina si allinea perche' le intestazioni non finiscano sotto la barra fissa
 document.addEventListener("scroll",e=>{const w=e.target;if(innerWidth<=700||!w.matches||!w.matches("#v-perm .tbl-wrap"))return;const h=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hdrH"))||0,t=w.getBoundingClientRect().top;if(t<h+2)scrollBy(0,t-h-8)},true);
+/* ---------- calendario per le date ----------
+   Al posto del calendario del browser: un clic sulla data apre il calendario con OGGI segnato,
+   sabati, domeniche e festivi in grigio. Per i periodi (dal / al) il primo clic e' l'inizio, il secondo la fine.
+   Il campo vero (input type=date) resta nascosto e tiene il valore: il resto del programma non cambia. */
+const DP_COPPIE={"f-ini":"f-fin","per-da":"per-a","fa-d":"fa-a"};
+const DP_INV=Object.fromEntries(Object.entries(DP_COPPIE).map(([a,b])=>[b,a]));
+const DP_V=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value"),DP_D=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"disabled"),DP_H=Object.getOwnPropertyDescriptor(HTMLElement.prototype,"hidden");
+const DP_GS=["dom","lun","mar","mer","gio","ven","sab"],DP_MESI=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+const dpTesto=v=>{const n=dnum(v);if(!v||isNaN(n))return"";const d=dobj(n);return DP_GS[d.getUTCDay()]+" "+fmtD(n)+" "+d.getUTCFullYear()};
+function dpEnh(i){if(i.dataset.dp||i.type!=="date")return;i.dataset.dp="1";
+  const b=document.createElement("button");b.type="button";b.className="dp-btn "+i.className;b.style.cssText=i.style.cssText;
+  b.setAttribute("aria-label",(i.getAttribute("aria-label")||i.title||"Data")+": apri il calendario");if(i.title)b.title=i.title;
+  i.after(b);i.classList.add("dp-nat");
+  const corto=i.classList.contains("rt-d"); // nelle righe dei requisiti: data corta, su una riga
+  const upd=()=>{const v=DP_V.get.call(i);b.innerHTML=(v?`<span>${corto?fmtD(dnum(v))+" "+String(dobj(dnum(v)).getUTCFullYear()).slice(2):dpTesto(v)}</span>`:`<span class="dp-vuoto">scegli…</span>`)+'<i aria-hidden="true">📅</i>';b.disabled=DP_D.get.call(i);DP_H.set.call(b,DP_H.get.call(i))};
+  Object.defineProperty(i,"value",{configurable:true,get(){return DP_V.get.call(this)},set(v){DP_V.set.call(this,v);upd()}});
+  Object.defineProperty(i,"disabled",{configurable:true,get(){return DP_D.get.call(this)},set(v){DP_D.set.call(this,v);upd()}});
+  Object.defineProperty(i,"hidden",{configurable:true,get(){return DP_H.get.call(this)},set(v){DP_H.set.call(this,v);upd()}});
+  i.focus=()=>b.focus();upd();b.addEventListener("click",()=>dpApri(i,b))}
+function dpScan(r){(r||document).querySelectorAll('input[type="date"]:not([data-dp])').forEach(dpEnh)}
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1){if(n.matches('input[type="date"]'))dpEnh(n);else if(n.querySelector&&n.querySelector('input[type="date"]:not([data-dp])'))dpScan(n)}}).observe(document.body,{childList:true,subtree:true});
+dpScan();
+function dpApri(i,btn){
+  const dd=$("#dpdlg");const pid=DP_COPPIE[i.id]||DP_INV[i.id];let o=pid&&document.getElementById(pid);if(o&&(o.hidden||o.disabled))o=null;
+  const A=o&&DP_INV[i.id]?o:i,Z=o?(A===i?o:i):null; // A = inizio, Z = fine (se e' un periodo)
+  const lim=x=>x?dnum(x):NaN,mn=lim(A.min),mx=lim((Z||A).max);
+  let s=dnum(A.value),e=Z?dnum(Z.value):NaN;if(isNaN(s))s=null;if(isNaN(e))e=null;
+  let fase=0,hov=null;const m0=dobj(s??(e??todayN));let vy=m0.getUTCFullYear(),vm=m0.getUTCMonth();
+  if(Z&&i===Z&&e!=null){const m1=dobj(e);vy=m1.getUTCFullYear();vm=m1.getUTCMonth()}
+  const due=()=>Z&&innerWidth>=640;
+  const fuori=n=>(!isNaN(mn)&&n<mn)||(!isNaN(mx)&&n>mx);
+  const mese=(y,m)=>{const p=Date.UTC(y,m,1)/864e5,g=(new Date(Date.UTC(y,m,1)).getUTCDay()+6)%7,nd=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+    const fest=S.festivi||{};let h=`<div class="dp-m"><div class="dp-mt">${DP_MESI[m]} ${y}</div><div class="dp-g">${["L","M","M","G","V","S","D"].map((x,k)=>`<b class="${k>4?"we":""}">${x}</b>`).join("")}`;
+    for(let k=0;k<g;k++)h+="<span></span>";
+    const fineVis=fase===1&&hov!=null?hov:e;
+    for(let d=1;d<=nd;d++){const n=p+d-1,k=dstr(n),off=isOff(n),c=["dp-d"];
+      if(off)c.push("off");if(n===todayN)c.push("oggi");
+      const a0=s,a1=Z?(fase===1?(hov!=null&&hov>=s?hov:s):e):null;
+      if(s!=null&&n===s)c.push("sel","ini");if(Z&&a1!=null&&n===a1)c.push("sel","fin");
+      if(Z&&a0!=null&&a1!=null&&n>a0&&n<a1)c.push("in");
+      const dis=fuori(n);
+      h+=`<button type="button" class="${c.join(" ")}" data-dpn="${n}"${dis?" disabled":""} title="${DP_GS[dobj(n).getUTCDay()]} ${d} ${DP_MESI[m]} ${y}${n===todayN?" · oggi":""}${fest[k]?" · "+esc(fest[k]):""}">${d}</button>`}
+    return h+"</div></div>"};
+  const testoP=()=>Z?(fase===0?`<b>Clicca il giorno di inizio</b>, poi quello di fine`:`Inizio <b>${fmtD(s)}</b> · ora <b>clicca il giorno di fine</b>`):"Clicca il giorno";
+  const draw=()=>{let y2=vy,m2=vm+1;if(m2>11){m2=0;y2++}
+    dd.innerHTML=`<div class="dp-h"><button type="button" class="btn ghost" data-dpm="-12" title="Anno prima" aria-label="Anno prima">«</button><button type="button" class="btn ghost" data-dpm="-1" title="Mese prima" aria-label="Mese prima">‹</button>
+      <button type="button" class="btn ghost dp-oggi" data-dpm="oggi">Oggi ${fmtD(todayN)}</button>
+      <button type="button" class="btn ghost" data-dpm="1" title="Mese dopo" aria-label="Mese dopo">›</button><button type="button" class="btn ghost" data-dpm="12" title="Anno dopo" aria-label="Anno dopo">»</button><button type="button" class="btn ghost dp-x" data-dpm="x" aria-label="Chiudi">✕</button></div>
+      <div class="dp-ms">${mese(vy,vm)}${due()?mese(y2,m2):""}</div>
+      <div class="dp-f"><span class="dp-p">${testoP()}</span><span class="dp-leg"><i class="oggi"></i> oggi <i class="off"></i> non lavorativo</span>
+        <span class="grow"></span>${!Z&&!A.required&&A.value?`<button type="button" class="btn ghost" data-dpm="togli">Togli la data</button>`:""}${Z&&fase===1?`<button type="button" class="btn" data-dpm="soloini">Tieni solo l'inizio</button>`:""}</div>`};
+  const chiudi=()=>{if(dd.open)dd.close();btn.focus()};
+  const metti=(inp,v)=>{if(inp.value===v)return false;inp.value=v;return true};
+  const applica=(a,z)=>{const c1=metti(A,a!=null?dstr(a):""),c2=Z?metti(Z,z!=null?dstr(z):""):false;chiudi();
+    for(const [inp,c] of [[A,c1],[Z,c2]])if(inp&&c){inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}))}};
+  dd.onclick=ev=>{if(ev.target===dd){const r=dd.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)chiudi();return}
+    const x=ev.target.closest("[data-dpm]");if(x){const k=x.dataset.dpm;
+      if(k==="x"){chiudi();return}if(k==="togli"){applica(null,null);return}if(k==="soloini"){applica(s,e!=null&&e>=s?e:s);return}
+      if(k==="oggi"){const t=dobj(todayN);vy=t.getUTCFullYear();vm=t.getUTCMonth()}else{const t=new Date(Date.UTC(vy,vm+Number(k),1));vy=t.getUTCFullYear();vm=t.getUTCMonth()}
+      draw();return}
+    const c=ev.target.closest("[data-dpn]");if(!c||c.disabled)return;const n=Number(c.dataset.dpn);
+    if(!Z){applica(n);return}
+    if(fase===0){s=n;fase=1;hov=null;draw();return}
+    if(n<s)applica(n,s);else applica(s,n)};
+  dd.onmouseover=ev=>{if(!Z||fase!==1)return;const c=ev.target.closest("[data-dpn]");const n=c?Number(c.dataset.dpn):null;if(n!==hov){hov=n;draw()}};
+  dd.oncancel=ev=>{ev.preventDefault();chiudi()};
+  draw();
+  if(typeof dd.showModal==="function")dd.showModal();else dd.setAttribute("open","");
+  // vicino al campo sul PC; sul cellulare in basso a tutta larghezza
+  if(innerWidth>700){const r=btn.getBoundingClientRect(),w=dd.offsetWidth,h=dd.offsetHeight;
+    let x=Math.min(Math.max(8,r.left),innerWidth-w-8),y=r.bottom+6;if(y+h>innerHeight-8)y=Math.max(8,r.top-h-6);dd.style.left=x+"px";dd.style.top=y+"px"}
+  else{dd.style.left="";dd.style.top=""}
+  const f=dd.querySelector(".dp-d.sel")||dd.querySelector(".dp-d.oggi")||dd.querySelector(".dp-d");if(f)f.focus({preventScroll:true})}
 try{const hdr=document.querySelector("header.top");const setH=()=>document.documentElement.style.setProperty("--hdrH",(innerWidth>700?hdr.getBoundingClientRect().height:0)+"px");new ResizeObserver(setH).observe(hdr);addEventListener("resize",setH);setH()}catch(_){}
 
 render();
