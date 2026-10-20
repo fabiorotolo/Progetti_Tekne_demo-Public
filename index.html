@@ -3360,7 +3360,8 @@ function xPiano(fogli,mappa,opz){mappa=mappa||{};opz=opz||{};
       if(rk!=="__admin"&&(rk||null)!==(u.ruolo||null)){ch.ruolo=rk;dif.push("ruolo → "+(rl||"nessuno"))}
       if(att!=null&&att!==(u.attivo!==false)){ch.attivo=att;dif.push(att?"riattivato":"disattivato")}
       if(Object.keys(ch).length)ps.push({M:"PATCH",p:"/api/utenti/"+u.id,body:ch});
-      const pc={};for(const[k]of PERMS)if(k in perms&&perms[k]!==!!(u.perms||{})[k])pc[k]=perms[k];
+      // ruolo cambiato: il server rimette le spunte del nuovo ruolo, quindi si mandano tutte quelle del file (non solo le differenze)
+      const pc={};for(const[k]of PERMS)if(k in perms&&(ch.ruolo!==undefined||perms[k]!==!!(u.perms||{})[k]))pc[k]=perms[k];
       if(Object.keys(pc).length){ps.push({M:"PATCH",p:"/api/utenti/"+u.id,body:{perms:pc}});dif.push(Object.entries(pc).map(([k,x])=>(x?"+ ":"− ")+PERMS.find(p=>p[0]===k)[2]).join(", "))}
       if(ps.length)add(f,ps,o._riga,"modifica",u.nome,dif.join(" · "))}}
   // TEAM
