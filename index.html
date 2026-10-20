@@ -505,7 +505,7 @@ svg.dip path.hit{cursor:pointer}
 .mio-t em{font-style:normal;color:var(--over);font-weight:600}
 .mio .code{white-space:nowrap;font-family:var(--f-mono);font-weight:600;font-size:11px;color:hsl(var(--h,210) 55% 38%)}
 .mio-av{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--line-soft);vertical-align:middle;overflow:hidden}.mio-av i{display:block;height:100%;background:var(--ok)}
-.xl-dest{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:8px;background:var(--bg-soft,transparent)}.xl-dest select{max-width:100%;min-width:0}
+.xl-azz{flex-basis:100%;font-size:13px;align-items:flex-start}.xl-dest{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:8px;background:var(--bg-soft,transparent)}.xl-dest select{max-width:100%;min-width:0}
 .xl-g{display:flex;flex-direction:column;gap:6px}.xl-req{border-top:1px solid var(--line-soft);padding-top:8px;margin-top:4px}.xl-req>div{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 12px;margin-top:4px}
 .pill.xl-nuovo{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.pill.xl-modifica{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
 .pill.xl-elimina,.pill.xl-errore{background:color-mix(in srgb,var(--over) 15%,transparent);color:var(--over)}tr.xl-bad td{color:var(--over)}
@@ -3235,8 +3235,8 @@ const LEGGIMI=[["Come usare questo file"],[""],
   ["7. Puoi lasciare solo i fogli che ti servono: quelli che mancano non vengono toccati."]];
 
 /* --- dal foglio alle operazioni --- */
-function xPiano(fogli,mappa){mappa=mappa||{};
-  const R_=xRisolutori(),ops=[],righe=[],avvisi=[];let nref=0;const ref=()=>"r"+(++nref);
+function xPiano(fogli,mappa,opz){mappa=mappa||{};opz=opz||{};
+  const R_=xRisolutori(),ops=[],righe=[],avvisi=[],estere={};let nref=0;const ref=()=>"r"+(++nref);
   const add=(foglio,o,riga,cosa,testo,dett)=>{righe.push({foglio,riga,cosa,testo,dett});if(o)for(const x of[].concat(o)){x.foglio=foglio;x.riga=riga;ops.push(x)}};
   const err=(foglio,riga,testo,msg)=>righe.push({foglio,riga,cosa:"errore",testo,dett:msg});
   const trova=nome=>Object.keys(fogli).find(k=>xNorm(k)===xNorm(nome));
@@ -3334,6 +3334,10 @@ function xPiano(fogli,mappa){mappa=mappa||{};
     const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
     const prevCur={};const walk=par=>{let pv="";for(const r of kids(par)){prevCur[r.id]=pv;pv=r.id;walk(r.id)}};walk(null);
     const chiave={},ultimo={};let erroreStruttura=false;
+    /* righe che vengono da un'altra commessa (foglio di un'altra commessa o ID di un'altra commessa): di base si riparte da zero,
+       cioe' tutto «Da fare», senza scadenze ne' persone (restano struttura, testo e reparto). Si cambia con la spunta nell'anteprima. */
+    const estera=(!!cid0&&!String(cid0).startsWith("@")&&cid0!==cid)||rr.some(o=>{const id=xTxt(xc(o,"id (non modificare)","id"));return id&&!byId[id]&&(S.requisiti||[]).some(x=>x.id===id)});
+    const azz=estera&&(opz.azzera||{})[fn]!==false;if(estera)estere[fn]=azz;
     // controlli su tutto il foglio prima di leggere le righe:
     // - lo stesso ID in due righe (riga copiata e incollata): errore, la copia va lasciata con l'ID vuoto
     // - le voci eliminate (X) dentro una voce anch'essa eliminata spariscono gia' con lei: nessuna operazione in piu'
@@ -3346,7 +3350,7 @@ function xPiano(fogli,mappa){mappa=mappa||{};
     const giaDoppi=new Set();
     for(const o of rr){const id=xTxt(xc(o,"id (non modificare)","id")),r=id&&byId[id];const testo=xTxt(xc(o,"requisito"));const n=livMode?(o._n||""):xTxt(xc(o,"n.","n"));
       // ID di un'altra commessa (foglio copiato e rinominato) o di un requisito eliminato: diventa un requisito nuovo
-      const copia=!!id&&!r;
+      const copia=!!id&&!r,az=azz&&!r;
       if(r&&doppi.has(id)){if(giaDoppi.has(id)){err(fn,o._riga,testo||r.testo,"Questo ID c'è già in una riga più in alto (riga copiata?): per un requisito nuovo lascia vuota la colonna ID.");continue}giaDoppi.add(id)}
       if(r&&conX.has(id)&&anteX(id)){righe.push({foglio:fn,riga:o._riga,cosa:"elimina",testo:testo||r.testo,dett:"insieme alla voce sopra"});continue}
       if(r&&xSi(xc(o,"elimina"))){add(fn,{M:"DELETE",p:"/api/requisiti/"+r.id},o._riga,"elimina",testo||r.testo,all.some(x=>x.parentId===r.id)?"con i suoi sotto-requisiti":"");continue}
@@ -3356,17 +3360,17 @@ function xPiano(fogli,mappa){mappa=mappa||{};
       let par=null;if(parN){par=chiave[parN];if(par===undefined){err(fn,o._riga,testo,livMode?`La voce di livello ${o._l-1} sopra a questa ha un errore o viene eliminata: correggila, elimina anche questa o cambia il livello.`:"Manca la voce superiore "+parN+" (deve stare più in alto nel foglio).");erroreStruttura=true;continue}}
       else if(!n&&r)par=r.parentId||null;
       const pk=par||"",dopo=ultimo[pk]===undefined?"":ultimo[pk];
-      const asn=lista(xc(o,"assegnato a (separati da virgola)","assegnato a")),ass=[],ign=[];for(const x of asn){const pid=R_.persona(x);if(pid)ass.push(pid);else ign.push(x)}
+      const asn=az?[]:lista(xc(o,"assegnato a (separati da virgola)","assegnato a")),ass=[],ign=[];for(const x of asn){const pid=R_.persona(x);if(pid)ass.push(pid);else ign.push(x)}
       if(ign.length){err(fn,o._riga,testo,"Progettisti non trovati: "+ign.join(", "));continue}
       const repCol=xc(o,"reparto"),repN=xTxt(repCol),repI=repN?R_.reparto(repN):null;if(repN&&!repI){err(fn,o._riga,testo,"Reparto «"+repN+"» non trovato.");continue}
       const prop=ass.filter(x=>!respRep(repP(x))&&!(S.me&&S.me.admin)&&!(r&&(r.assegnati||[]).includes(x))&&repP(x));const propT=prop.length?"proposti "+prop.map(nomeP).join(", ")+" (da approvare dal coordinatore)":"";const assT=[ass.filter(x=>!prop.includes(x)).length?"a "+ass.filter(x=>!prop.includes(x)).map(nomeP).join(", "):"",propT].filter(Boolean).join(", ");
-      const sc=xData(xc(o,"scadenza"));if(sc===undefined){err(fn,o._riga,testo,"Scadenza non valida.");continue}
-      const stT=xNorm(xc(o,"stato")),st=/^fatt/.test(stT)?"fatto":/^blocc/.test(stT)?"bloccato":"aperto",mot=xTxt(xc(o,"motivo del blocco","motivo","nota / motivo"));
+      const sc=az?null:xData(xc(o,"scadenza"));if(sc===undefined){err(fn,o._riga,testo,"Scadenza non valida.");continue}
+      const stT=az?"":xNorm(xc(o,"stato")),st=/^fatt/.test(stT)?"fatto":/^blocc/.test(stT)?"bloccato":"aperto",mot=xTxt(xc(o,"motivo del blocco","motivo","nota / motivo"));
       if(st==="bloccato"&&!mot){err(fn,o._riga,testo,"Bloccato: scrivi il motivo.");continue}
       const statoOp=k=>({M:"PATCH",p:"/api/requisiti/"+k,body:st==="fatto"?{stato:"fatto",nota:"Segnato fatto da Excel"}:st==="bloccato"?{stato:"bloccato",motivo:mot}:{stato:"aperto",nota:"Riaperto da Excel"}});
       if(!r){const k=ref();chiave[n||("__"+k)]="@"+k;ultimo[pk]="@"+k;
         const ps=[{M:"POST",p:"/api/requisiti",body:{commessaId:cid,testo,parentId:par,dopo,assegnati:ass,scadenza:sc,repartoId:repI||null},ref:k}];if(st!=="aperto")ps.push(statoOp("@"+k));
-        add(fn,ps,o._riga,"nuovo",(livMode&&o._l?"liv. "+o._l+" · ":n?n+" ":"")+testo,[copia?((S.requisiti||[]).some(x=>x.id===id)?"copiato da "+codC((S.requisiti||[]).find(x=>x.id===id).commessaId):"ID sconosciuto: aggiunto come nuovo"):"",repI?"reparto "+repN:"",assT,sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
+        add(fn,ps,o._riga,"nuovo",(livMode&&o._l?"liv. "+o._l+" · ":n?n+" ":"")+testo,[copia?((S.requisiti||[]).some(x=>x.id===id)?"copiato da "+codC((S.requisiti||[]).find(x=>x.id===id).commessaId)+(az?", da zero":""):"ID sconosciuto: aggiunto come nuovo"):az?"da zero":"",repI?"reparto "+repN:"",assT,sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
       if(n)chiave[n]=r.id;ultimo[pk]=r.id;
       const ch={},dif=[],ps=[];
       if(testo!==r.testo){ch.testo=testo;dif.push("testo")}
@@ -3396,7 +3400,7 @@ function xPiano(fogli,mappa){mappa=mappa||{};
       const nuovo={nome,dal,al:al||dal,annuale:ann};
       if(!x){if(!dal){err(f,o._riga,nome,"Manca la data.");continue}add(f,{M:"POST",p:"/api/impostazioni/festivi",body:nuovo},o._riga,"nuovo",nome||"Chiusura",fmtD(dnum(dal))+(al&&al!==dal?" – "+fmtD(dnum(al)):""));continue}
       if(x.nome!==nome||x.dal!==dal||x.al!==(al||dal)||!!x.annuale!==ann)add(f,[{M:"DELETE",p:"/api/impostazioni/festivi/"+x.id},{M:"POST",p:"/api/impostazioni/festivi",body:nuovo}],o._riga,"modifica",x.nome,"diventa: "+(nome||"")+" "+fmtD(dnum(dal))+(al&&al!==dal?" – "+fmtD(dnum(al)):""))}}
-  return{ops,righe,avvisi}}
+  return{ops,righe,avvisi,estere}}
 
 /* --- finestra Excel --- */
 function xAree(){return Object.entries(XA).filter(([,a])=>a.ok())}
@@ -3430,8 +3434,8 @@ function xMappaReq(fogli){const fr=Object.keys(fogli).filter(k=>xNorm(k).startsW
   for(const fn of fr){const c0=R_.commessa(fn.slice(XREQ.length).trim());
     m[fn]=XORIG&&fr.length===1&&canReqC(XORIG)?XORIG:c0&&!String(c0).startsWith("@")&&canReqC(c0)?c0:mie.length===1?mie[0].id:null}
   return m}
-async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
-  const{ops,righe,avvisi}=xPiano(fogli,mappa);let esiti=[];
+async function xAnteprima(nome,fogli,mappa,azzera){mappa=mappa||xMappaReq(fogli);azzera=azzera||{};
+  const{ops,righe,avvisi,estere}=xPiano(fogli,mappa,{azzera});let esiti=[];
   if(ops.length){try{const j=await api("POST","/api/import",{ops,prova:true,area:nome});esiti=j.esiti||[]}catch(e){righe.push({foglio:"",riga:"",cosa:"errore",testo:"",dett:e&&e.msg||"Anteprima non riuscita."})}}
   const errOp={};esiti.forEach((x,i)=>{const o=ops[i];if(!x.ok){const k=o.foglio+"|"+o.riga;errOp[k]=errOp[k]||x.errore}});
   for(const r of righe){const e=errOp[r.foglio+"|"+r.riga];if(e&&r.cosa!=="errore"){r.err=e}}
@@ -3441,7 +3445,7 @@ async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
   $("#rd").innerHTML=`<h3 style="padding-right:30px">⇅ Importa: ${esc(nome)}</h3>
     ${Object.keys(mappa).map(fn=>{const R_=xRisolutori(),c0=R_.commessa(fn.slice(XREQ.length).trim()),d=mappa[fn];
       const ops_=S.commesse.filter(c=>canReqC(c.id)&&(!c.chiusa||c.id===d||c.id===c0)).sort((a,b)=>a.codice.localeCompare(b.codice,"it",{numeric:true}));
-      return`<div class="xl-dest"><span>Foglio <b>«${esc(fn)}»</b> → importa nella commessa</span> <select data-xm="${esc(fn)}"><option value="">— scegli —</option>${ops_.map(c=>`<option value="${esc(c.id)}"${c.id===d?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${c.chiusa?" (chiusa)":""}</option>`).join("")}</select>${d&&c0&&d!==c0?` <span class="muted" style="font-size:12px">le righe di ${esc(codC(c0))} vengono aggiunte come requisiti nuovi</span>`:""}</div>`}).join("")}
+      return`<div class="xl-dest"><span>Foglio <b>«${esc(fn)}»</b> → importa nella commessa</span> <select data-xm="${esc(fn)}"><option value="">— scegli —</option>${ops_.map(c=>`<option value="${esc(c.id)}"${c.id===d?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${c.chiusa?" (chiusa)":""}</option>`).join("")}</select>${d&&c0&&d!==c0?` <span class="muted" style="font-size:12px">le righe di ${esc(codC(c0))} vengono aggiunte come requisiti nuovi</span>`:""}${fn in estere?`<label class="chk xl-azz"><input type="checkbox" data-xz="${esc(fn)}"${estere[fn]?" checked":""}> <span><b>Riparti da zero</b>: tutto «Da fare», senza scadenze né persone (restano struttura, testi e reparti). Togli la spunta per copiare anche stato, scadenze e persone.</span></label>`:""}</div>`}).join("")}
     ${avvisi.map(a=>`<div class="banner" style="margin:0"><span>⚠ ${esc(a)}</span></div>`).join("")}
     ${cattive.length?`<div class="banner" style="margin:0"><span>⚠ <b>Controllo: ${cattive.length} rig${cattive.length>1?"he":"a"} con problemi</b> (in rosso). Non si importa niente finché non le correggi: sistema il file in Excel e reimportalo.</span></div>`:buone.length?`<p class="xl-okb" style="margin:0">✓ <b>Controllo fatto: tutte le righe sono a posto.</b> ${buone.length} modific${buone.length>1?"he":"a"} pront${buone.length>1?"e":"a"}: premi «Importa» per salvarle.</p>`:""}
     <p style="margin:0">${buone.length?`<b>${buone.length} modific${buone.length>1?"he":"a"}</b> trovat${buone.length>1?"e":"a"}`:"Nessuna modifica rispetto ai dati attuali"}. <span class="muted">Fogli letti: ${esc(fogliOk.join(", ")||"nessuno")}.</span></p>
@@ -3452,7 +3456,8 @@ async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
     <div class="acts"><span><button type="button" class="btn ghost" id="xi-back">← Indietro</button></span><div><button type="button" class="btn ghost" id="xi-no">Annulla</button>${buone.length?`<button type="button" class="btn primary" id="xi-go"${cattive.length?' disabled title="Prima correggi le righe con problemi"':""}>Importa ${buone.length} modific${buone.length>1?"he":"a"}</button>`:""}</div></div>`;
   const rit=XOPT&&XOPT.ritorno;
   $("#xi-no").onclick=()=>rit?openReqTree(rit):rdlg.close();$("#xi-back").onclick=()=>rit?openReqTree(rit):openExcel(XOPT);
-  $("#rd").querySelectorAll("[data-xm]").forEach(x=>x.onchange=()=>{const m=Object.assign({},mappa,{[x.dataset.xm]:x.value||null});xAnteprima(nome,fogli,m)});
+  $("#rd").querySelectorAll("[data-xm]").forEach(x=>x.onchange=()=>{const m=Object.assign({},mappa,{[x.dataset.xm]:x.value||null});xAnteprima(nome,fogli,m,azzera)});
+  $("#rd").querySelectorAll("[data-xz]").forEach(x=>x.onchange=()=>{xAnteprima(nome,fogli,mappa,Object.assign({},azzera,{[x.dataset.xz]:x.checked}))});
   const go=$("#xi-go");if(go&&!cattive.length)go.onclick=async()=>{go.disabled=true;
     const tenere=new Set(buone.map(r=>r.foglio+"|"+r.riga));const sel=ops.filter(o=>tenere.has(o.foglio+"|"+o.riga));
     try{const j=await api("POST","/api/import",{ops:sel,area:nome});const ok=j.esiti.filter(x=>x.ok).length,ko=j.esiti.filter(x=>!x.ok);const pw=j.esiti.filter(x=>x.pw);
