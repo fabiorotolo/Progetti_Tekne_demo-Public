@@ -1250,25 +1250,44 @@ const strip=o=>{const{id,esempio,...r}=o;return r};
 
 /* ---------- render ---------- */
 let raf=0;
-function render(){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{const b=salvaBozze();renderNow();ripristinaBozze(b);if(mobSel||$("#mob-bar"))mobBarUpd()})}
+// mentre stai scrivendo in un campo della pagina (valore cambiato e non ancora salvato) la pagina non si ridisegna:
+// lo fa quando esci dal campo. Ridisegnare a meta' scrittura spostava il cursore e poteva salvare un valore a meta'
+// (es. 12 invece di 120 nella stima ore). Dopo Invio o un pulsante si ridisegna subito.
+let renderInAttesa=false,invioTasto=0;
+document.addEventListener("keydown",e=>{if(e.key==="Enter")invioTasto=Date.now()},true);
+function staScrivendo(){const a=document.activeElement;
+  return !!(a&&a.closest&&a.closest('section[id^="v-"]')&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&!/^(checkbox|radio|file|range)$/.test(a.type)&&a.value!==a.defaultValue
+    &&Date.now()-invioTasto>1500&&!(ultimoInvio.el&&Date.now()-ultimoInvio.t<1500&&ultimoInvio.el.contains(a)))}
+function render(){
+  if(staScrivendo()){if(!renderInAttesa){renderInAttesa=true;const a=document.activeElement;a.addEventListener("blur",()=>{renderInAttesa=false;setTimeout(render,0)},{once:true})}return}
+  cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{if(staScrivendo()){render();return}const b=salvaBozze();renderNow();ripristinaBozze(b);if(mobSel||$("#mob-bar"))mobBarUpd()})}
 /* bozze: quando arriva un aggiornamento (un collega salva, il controllo di ogni minuto...) la pagina si ridisegna;
    quello che stai scrivendo e non hai ancora salvato viene rimesso al suo posto, con il cursore */
 let ultimoInvio={el:null,t:0};
 document.addEventListener("submit",e=>{ultimoInvio={el:e.target,t:Date.now()}});
 document.addEventListener("click",e=>{const b=e.target.closest("button");if(b){const c=b.closest("form,.addrow");if(c)ultimoInvio={el:c,t:Date.now()}}},true);
+/* i campi si riconoscono dall'id oppure dai loro attributi data-… (es. le ore della stima: data-strep="r-meccanico",
+   le righe dei requisiti: data-rtxt="…"): prima solo i campi con id, e nella stima ore e nella finestra dei requisiti
+   quello che stavi scrivendo spariva quando la pagina si ridisegnava (un collega salva, il controllo di ogni minuto,
+   il salvataggio del campo prima) */
+const BOZZE_DOVE='section[id^="v-"], #rd';
+function chiaveCampo(el){if(el.id)return"#"+CSS.escape(el.id);
+  const at=[...el.attributes].filter(a=>a.name.startsWith("data-")&&!/^data-(calc|dp)$/.test(a.name)).map(a=>`[${a.name}="${CSS.escape(a.value)}"]`).sort().join("");
+  return at?el.tagName.toLowerCase()+at:null}
 function salvaBozze(){const out={campi:[],att:null};
   const appena=ultimoInvio.el&&Date.now()-ultimoInvio.t<4000?ultimoInvio.el:null;
-  document.querySelectorAll('section[id^="v-"] input[id],section[id^="v-"] textarea[id]').forEach(el=>{
+  document.querySelectorAll(BOZZE_DOVE).forEach(z=>z.querySelectorAll('input,textarea').forEach(el=>{
     if(appena&&appena.contains(el))return; // appena inviato: il campo deve tornare vuoto
-    if(el.type==="checkbox"||el.type==="radio"){if(el.checked!==el.defaultChecked)out.campi.push({id:el.id,chk:el.checked,def:el.defaultChecked})}
-    else if(el.type!=="file"&&el.value!==el.defaultValue)out.campi.push({id:el.id,val:el.value,def:el.defaultValue})});
-  const a=document.activeElement;if(a&&a.id&&a.closest&&a.closest('section[id^="v-"]')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){out.att={id:a.id};try{out.att.s=a.selectionStart;out.att.e=a.selectionEnd}catch(_){}}
+    const k=chiaveCampo(el);if(!k)return;
+    if(el.type==="checkbox"||el.type==="radio"){if(el.checked!==el.defaultChecked)out.campi.push({k,chk:el.checked,def:el.defaultChecked})}
+    else if(el.type!=="file"&&el.type!=="hidden"&&el.value!==el.defaultValue)out.campi.push({k,val:el.value,def:el.defaultValue})}));
+  const a=document.activeElement;if(a&&a.closest&&a.closest(BOZZE_DOVE)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){const k=chiaveCampo(a);if(k){out.att={k};try{out.att.s=a.selectionStart;out.att.e=a.selectionEnd}catch(_){}}}
   return out}
-function ripristinaBozze(b){if(!b)return;
-  for(const c of b.campi){const el=document.getElementById(c.id);if(!el)continue;
+function ripristinaBozze(b){if(!b)return;const trova=k=>{try{return document.querySelector(k)}catch(_){return null}};
+  for(const c of b.campi){const el=trova(c.k);if(!el)continue;
     // solo se il dato sotto non e' cambiato nel frattempo (altrimenti vale quello nuovo)
-    if("chk" in c){if(el.defaultChecked===c.def)el.checked=c.chk}else if(el.defaultValue===c.def)el.value=c.val}
-  if(b.att){const el=document.getElementById(b.att.id);if(el&&document.activeElement!==el){el.focus({preventScroll:true});try{if(b.att.s!=null)el.setSelectionRange(b.att.s,b.att.e)}catch(_){}}}}
+    if("chk" in c){if(el.defaultChecked===c.def)el.checked=c.chk}else if(el.defaultValue===c.def&&el.value!==c.val){el.value=c.val;if(el.classList.contains("rt-ta"))el.style.height="auto"}}
+  if(b.att){const el=trova(b.att.k);if(el&&document.activeElement!==el){el.focus({preventScroll:true});try{if(b.att.s!=null)el.setSelectionRange(b.att.s,b.att.e)}catch(_){}}}}
 function renderNow(){
   S.persone.sort((a,b)=>(a.ordine??999)-(b.ordine??999)||String(a.nome).localeCompare(b.nome));
   S.commesse.sort((a,b)=>String(a.codice).localeCompare(b.codice));
@@ -2041,7 +2060,8 @@ function openReqTree(cid,focus){
 async function rtApi(m,url,body){try{const j=await api(m,url,body);await doRefresh();if(RT)rtRender();return j}catch(e){handleErr(e);return null}}
 // schermo stretto (cellulare): il testo dei requisiti va a capo invece di essere tagliato
 let rtStretto=false;
-function rtRender(){
+function rtRender(){const b=salvaBozze();rtRenderNow();if(RT)ripristinaBozze(b)}
+function rtRenderNow(){
   if(!RT)return;rtStretto=innerWidth<=760;const cid=RT.cid,c=commById(cid);if(!c){rdlg.close();return}
   const ed=canReqC(cid),all=reqOf(cid),byId=Object.fromEntries(all.map(r=>[r.id,r]));
   const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
@@ -2174,7 +2194,7 @@ function rtRender(){
       if(e.key==="Escape"){e.preventDefault();e.stopPropagation();RT.nuovo=null;rtRender();return}
       if(e.key==="Tab"&&!e.shiftKey){e.preventDefault();const N=RT.nuovo;if(N.dopo&&byId[N.dopo]){const prev=byId[N.dopo];const ks=kids(prev.id);RT.nuovo={parentId:prev.id,dopo:ks.length?ks[ks.length-1].id:null,inFondo:true};RT.chiusi.delete(prev.id);const v=nu.value;rtRender();const n2=$("#rt-nuovo");if(n2){n2.value=v;n2.focus()}}return}
       if(e.key==="Tab"&&e.shiftKey){e.preventDefault();const N=RT.nuovo;if(N.parentId){const par=byId[N.parentId];RT.nuovo={parentId:par.parentId||null,dopo:par.id};const v=nu.value;rtRender();const n2=$("#rt-nuovo");if(n2){n2.value=v;n2.focus()}}return}
-      if(e.key==="Enter"){e.preventDefault();const t=nu.value.trim();if(!t){RT.nuovo=null;rtRender();return}const N=RT.nuovo;
+      if(e.key==="Enter"){e.preventDefault();const t=nu.value.trim();if(!t){RT.nuovo=null;rtRender();return}const N=RT.nuovo;nu.value="";
         rtApi("POST","/api/requisiti",{commessaId:cid,parentId:N.parentId,dopo:N.inFondo?null:N.dopo,testo:t}).then(j=>{if(!j||!RT)return;RT.nuovo={parentId:N.parentId,dopo:j.id};rtRender();const n2=$("#rt-nuovo");if(n2)n2.focus()})}};
     nu.onblur=()=>setTimeout(()=>{if(RT&&RT.nuovo&&document.activeElement!==$("#rt-nuovo")&&!$("#rt-nuovo").value.trim()){RT.nuovo=null;rtRender()}},150)}
   R$("[data-radd]").forEach(b=>b.onclick=()=>{const r=byId[b.dataset.radd];const ks=kids(r.id);RT.chiusi.delete(r.id);RT.nuovo={parentId:r.id,dopo:ks.length?ks[ks.length-1].id:null,inFondo:true};rtRender();const n=$("#rt-nuovo");if(n)n.focus()});
@@ -2196,7 +2216,8 @@ function rtRender(){
     R$("[data-rteam]").forEach(b=>b.onclick=()=>{const t=S.team.find(x=>x.id===b.dataset.rteam);salva([...new Set([...(r.assegnati||[]),...propR(r),...(t.membri||[])])])});
     R$("[data-rrep]").forEach(c=>c.onchange=()=>{const v=c.checked?c.dataset.rrep:null;rtApi("PATCH","/api/requisiti/"+r.id,{repartoId:v}).then(j=>{if(j&&v)toast("Requisito dato al reparto "+repNomeId(v)+": il coordinatore riceve la notifica.")})});
     $("#rt-ass-ok").onclick=()=>{RT.ass=null;rtRender()}}
-  const ro=$("#rt-root");if(ro){const add=()=>{const t=ro.value.trim();if(!t)return;ro.disabled=true;rtApi("POST","/api/requisiti",{commessaId:cid,parentId:null,testo:t}).then(j=>{const nw=j&&j.id&&$("#rd").querySelector(`[data-rid="${CSS.escape(j.id)}"]`);if(nw){nw.scrollIntoView({block:"nearest"});nw.classList.add("flash")}const r2=$("#rt-root");if(r2)r2.focus()})};
+  const ro=$("#rt-root");if(ro){const add=()=>{const t=ro.value.trim();if(!t)return;ro.value=""; // si svuota subito: intanto puoi scrivere il prossimo
+    rtApi("POST","/api/requisiti",{commessaId:cid,parentId:null,testo:t}).then(j=>{const nw=j&&j.id&&$("#rd").querySelector(`[data-rid="${CSS.escape(j.id)}"]`);if(nw){nw.scrollIntoView({block:"nearest"});nw.classList.add("flash")}const r2=$("#rt-root");if(r2)r2.focus()})};
     ro.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();add()}};$("#rt-root-ok").onclick=add}
   const cp=$("#rt-copy");if(cp)cp.onclick=()=>{const da=$("#rt-copy-da").value;if(!da){toast("Scegli da quale commessa copiare.");return}
     arm(cp,"Conferma copia",async()=>{const j=await rtApi("POST","/api/requisiti/copia",{da,a:cid});if(j)toast(`Copiati ${j.n} requisiti: ora assegnali e metti le scadenze.`)})};
