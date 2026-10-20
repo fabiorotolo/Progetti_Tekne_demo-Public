@@ -2630,7 +2630,7 @@ function openNewReq(pre){
   const repOk=S.reparti.filter(r=>r.responsabile);let dest=pre.repartoId&&repOk.some(r=>r.id===pre.repartoId)?"rep":"pm";
   box.innerHTML=`<h3>Nuova richiesta</h3>
     ${repOk.length?`<div class="f"><span class="seg" id="nr-dest"><button type="button" data-d="pm" aria-pressed="true">Domanda al PM della commessa</button><button type="button" data-d="rep" aria-pressed="false">Lavoro da fare a un reparto</button></span></div>
-    <label class="f" id="nr-rep-l" hidden>Reparto<select class="inp" id="nr-rep">${repOk.map(r=>`<option value="${esc(r.id)}"${r.id===pre.repartoId?" selected":""}>${esc(r.nome)} · responsabile ${esc(userName(r.responsabile))}</option>`).join("")}</select></label>`:""}
+    <label class="f" id="nr-rep-l" hidden>Reparto<select class="inp" id="nr-rep">${[...S.reparti].sort((x,y)=>x.nome.localeCompare(y.nome)).map(r=>r.responsabile?`<option value="${esc(r.id)}"${r.id===pre.repartoId?" selected":""}>${esc(r.nome)} · coordinatore ${esc(userName(r.responsabile))}</option>`:`<option value="" disabled title="Il reparto non ha un coordinatore: lo sceglie l'amministratore in Commesse e risorse › Reparti">${esc(r.nome)} · senza coordinatore (non può ricevere richieste)</option>`).join("")}</select></label>`:""}
     <label class="f">Commessa<select class="inp" id="nr-c"></select></label>
     <label class="f" id="nr-da-l" hidden>Richiesta dal reparto<select class="inp" id="nr-da"><option value="">— non indicato —</option>${S.reparti.map(r=>`<option value="${esc(r.id)}"${r.id===((persById(myPersona())||{}).repartoId||(S.utentiMini.find(x=>S.me&&x.id===S.me.id)||{}).repartoId)?" selected":""}>${esc(r.nome)}</option>`).join("")}</select></label>
     <div class="calc" id="nr-pm"></div>
