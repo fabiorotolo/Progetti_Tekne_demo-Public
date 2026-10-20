@@ -822,6 +822,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
       <select class="inp" id="filter" aria-label="Evidenzia commessa"></select>
       <button class="btn" id="mie" hidden title="Le attività degli altri restano trasparenti">Le mie in evidenza</button><button class="btn" id="solo" hidden title="Nasconde le righe che non ti riguardano: restano le tue, quelle collegate alle tue attività e le commesse in cui lavori">Solo le mie</button>
       <span class="grow"></span>
+      <button class="btn" id="esp-pian" title="Esporta in Excel per periodo o per commessa: attività, utilizzo risorse e commesse, ore giorno per giorno">⬇ Esporta</button>
       <button class="btn" id="undo" title="Annulla l'ultima modifica (Ctrl+Z)" disabled>↶ Annulla</button>
       <button class="btn primary" id="new-blk">+ Nuova attività</button>
     </div>
@@ -3913,6 +3914,7 @@ const GUIDA=[
  {cat:"Il mio lavoro",ic:"✓",t:"Segnare un task come fatto",dove:"Il mio lavoro › Task assegnati",k:"fatto smarcare spuntare completato finito chiudere requisito task",h:"«✓ Fatto» accanto al task: data, nota e allegati restano nella cronistoria e il PM riceve la notifica. 💬 per una nota senza chiuderlo.",ok:()=>!$("#tab-mio").hidden,go:()=>gVai("mio","h2:task")},
  {cat:"Il mio lavoro",ic:"%",t:"Segnare avanzamento o attività svolta",dove:"clic sull'attività",k:"avanzamento percentuale svolta completata finita segna ore effettive",h:"Clic sull'attività (in timeline o in Il mio lavoro): imposti la percentuale o la segni svolta.",ok:()=>true,go:()=>gVai(!$("#tab-mio").hidden?"mio":"plan")},
  {cat:"Ore e riepiloghi",ic:"🕘",t:"Confermare le ore nel foglio ore (copia il pianificato)",dove:"Foglio ore › Copia il pianificato",k:"foglio ore segnare segna confermare conferma copiare copia pianificato pianificate registrare inserire ore lavorate effettive svolte consuntivo giornata timbrare rendicontare rendiconto",h:"«Copia il pianificato» riempie le caselle vuote della settimana (fino a oggi) con le ore pianificate e le salva: le ore lavorate diventano uguali al piano. Dove hai lavorato diversamente, correggi la casella a mano; quelle già scritte non vengono toccate.",no:()=>S.foglioOre?"Il foglio ore lo compila chi ha attività pianificate (o chi segna le ore per gli altri).":"Il foglio ore non è attivo: lo attiva l'amministratore in Impostazioni › Generali.",chi:"admin",ok:()=>canFoglio(),go:()=>gVai("ore","#ow-fill")},
+ {cat:"Ore e riepiloghi",ic:"⬇",t:"Esportare la pianificazione in Excel (per periodo o per commessa)",dove:"Pianificazione › ⬇ Esporta",k:"esporta esportare excel pianificazione periodo commessa ms project pivot tabella pivot conteggi elaborare dati giorno settimana mese utilizzo risorse carico capacita ore libere",h:"In Pianificazione premi «⬇ Esporta»: scegli per periodo (dal/al) o per commessa (tutta), il reparto e le colonne per giorno, settimana o mese. Il file, come MS Project, ha i fogli Attività, Dati giornalieri (una riga per attività e giorno, per tabelle pivot), Utilizzo risorse (con capacità e ore libere) e Utilizzo commesse.",ok:()=>!$("#tab-plan").hidden,go:()=>gVai("plan","#esp-pian")},
  {cat:"Ore e riepiloghi",ic:"Σ",t:"Riepilogo delle ore",dove:"Riepilogo ore",k:"riepilogo ore totali mese mensile settimana settimanali periodo anno saturazione capacita report statistiche consuntivo budget quante ore",h:"Ore per commessa, risorsa e team su settimana, mese o periodo libero; slittamenti e richieste.",no:"Il riepilogo delle ore lo vedono PM, capi team, responsabili e coordinatori di reparto e direzione.",chi:"resp",ok:()=>can("report"),go:()=>gVai("rep")},
  {cat:"Commesse",ic:"⇅",t:"Task in Excel: scaricare, modificare e reimportare",usaComm:true,dove:"☑ sulla commessa › ⬇ Excel / ⬆ Importa Excel",k:"requisiti requisito excel esporta esportare importa importare scarica modifica livello livelli xlsx foglio struttura task",serve:/requisit/,h:"Nella finestra dei task «⬇ Excel» scarica il file; la colonna «Livello» dà la struttura (1 = voce principale, 2 = sotto la 1 sopra, 3 = sotto la 2…, es. 1, 2, 3, 2, 3, 4, 3, 4, 2). Modifichi, aggiungi righe (ID vuoto) o scrivi X in Elimina, poi «⬆ Importa Excel»: vedi le modifiche e confermi.",no:"Importare i task lo fa il PM della commessa (o il responsabile PM); tu puoi scaricarli con ⬇ Excel.",chi:"pm",ok:()=>!!S.me&&(S.me.admin||can("capo_pm")||can("gestione")||S.commesse.some(c=>isPmOf(c.id))),go:c=>{const x=gComm(c);if(x)openReqTree(x.id);else gVai("mgmt")}},
  {cat:"Ore e riepiloghi",ic:"⇅",t:"Esportare o importare da Excel",dove:"⇅ Excel in alto",k:"excel esporta esportare importa importare foglio xlsx scarica",h:"Scarichi commesse, persone, task… li modifichi in Excel e li reimporti: prima vedi l'elenco delle modifiche.",no:"Esportare e importare da Excel lo fanno chi pianifica, i PM e l'amministratore.",chi:"resp",ok:()=>!$("#xl-btn").hidden,go:()=>openExcel()},
@@ -4153,6 +4155,86 @@ function apEditor(b,cc){const fa=$("#f-app");if(!fa)return;if(!b||!cc||isAss(b))
   bindAppunti(fa,cc.id,{pre:"e",bloccoId:b.id,onAll:()=>{dlg.close();S.apTutti=cc.id;openScheda(cc.id);setTimeout(()=>{const p=$("#sch-ap");if(p)p.scrollIntoView({block:"start"})},50)}},()=>apEditor(b,commById(cc.id)))}
 function openScheda(cid){S.schedaC=cid;try{localStorage.setItem("cut-scheda",cid)}catch(_){}S.tab="comm";saveTab();render();window.scrollTo(0,0)}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-sch]");if(b){e.preventDefault();e.stopPropagation();openScheda(b.dataset.sch)}},true);
+/* ---------- esporta la pianificazione in Excel (come MS Project: foglio attività, utilizzo risorse e commesse
+   con le ore per giorno/settimana/mese, più un foglio "lungo" giorno per giorno per tabelle pivot e conteggi) ---------- */
+const GG_SETT=["dom","lun","mar","mer","gio","ven","sab"];
+const settIso=n=>{const d=dobj(n),w=(d.getUTCDay()+6)%7,g=n-w+3,y=dobj(g).getUTCFullYear(),g1=dnum(y+"-01-04"),m1=g1-((dow(g1)+6)%7);return{anno:y,sett:Math.floor((g-3-m1)/7)+1}};
+// ore svolte di un'attivita' in un giorno: foglio ore del giorno, altrimenti (svolta) in proporzione alle ore pianificate
+const svGiorno=(b,n)=>{if(isAss(b))return 0;if(hasCons(b)){const v=(b.consuntivo||{})[dstr(n)];return v!=null?Number(v)||0:0}if(b.stato!=="svolto")return 0;const t=bOre(b);return t>0?bSvolte(b)*hoursOn(b,n)/t:0};
+function pianDati(o){
+  const inRep=b=>{const p=persById(b.personaId);return !o.rep||(p&&p.repartoId===o.rep)};
+  let bl=S.blocchi.filter(inRep),a=o.a,z=o.z;
+  if(o.cid){bl=bl.filter(b=>b.commessaId===o.cid);const gg=bl.flatMap(b=>[bStart(b),bEnd(b),...Object.keys(b.consuntivo||{}).map(dnum)]);if(!gg.length)return{bl:[],a:todayN,z:todayN};a=Math.min(...gg);z=Math.max(...gg)}
+  // giorni con ore di ogni attivita' nel periodo (anche quelli del foglio ore fuori dalle date)
+  const righe=[];
+  for(const b of bl){const gg=new Set();for(let n=Math.max(a,bStart(b));n<=Math.min(z,bEnd(b));n++)gg.add(n);for(const k of Object.keys(b.consuntivo||{})){const n=dnum(k);if(n>=a&&n<=z)gg.add(n)}
+    for(const n of [...gg].sort((x,y)=>x-y)){const pl=hoursOn(b,n),sv=svGiorno(b,n);if(!pl&&!sv)continue;righe.push({b,n,pl,sv})}}
+  return{bl,a,z,righe}}
+function bucketsDi(a,z,g){const out=[];
+  if(g==="giorno"){for(let n=a;n<=z;n++)out.push({a:n,z:n,lab:`${GG_SETT[dow(n)]} ${fmtD(n)} ${dobj(n).getUTCFullYear()}`})}
+  else if(g==="settimana"){for(let m=mondayOf(a);m<=z;m+=7){const s=settIso(m);out.push({a:m,z:m+6,lab:`Sett. ${s.sett}/${s.anno} (${fmtD(m)})`})}}
+  else{let d=dobj(a);d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1));while(dnum(d.toISOString().slice(0,10))<=z){const m0=dnum(d.toISOString().slice(0,10)),d2=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1)),m1=dnum(d2.toISOString().slice(0,10))-1;out.push({a:m0,z:m1,lab:`${MESI[d.getUTCMonth()]} ${d.getUTCFullYear()}`});d=d2}}
+  return out}
+function esportaPianificazione(o){
+  const D=pianDati(o),{a,z}=D;if(!D.bl.length){toast(o.cid?"Questa commessa non ha attività"+(o.rep?" nel reparto scelto":"")+".":"Nessuna attività nel periodo.");return}
+  const B=bucketsDi(a,z,o.g);if(B.length>400){toast("Troppe colonne ("+B.length+"): scegli settimane o mesi.");return}
+  const bi=n=>{let lo=0,hi=B.length-1;while(lo<=hi){const m=(lo+hi)>>1;if(n<B[m].a)hi=m-1;else if(n>B[m].z)lo=m+1;else return m}return -1};
+  const xD=n=>n==null?"":{d:n};const repN=p=>p&&(S.reparti.find(r=>r.id===p.repartoId)||{}).nome||"";
+  const c0=b=>commById(b.commessaId),voceN=b=>{const c=c0(b),v=b.voceId&&c&&c.stima&&(c.stima.voci||[]).find(x=>x.id===b.voceId);return v?v.nome:""};
+  const idA=new Map();D.bl.filter(b=>!isAss(b)).sort((x,y)=>bStart(x)-bStart(y)||codC(x.commessaId).localeCompare(codC(y.commessaId))).forEach((b,i)=>idA.set(b.id,i+1));
+  // 1) Attivita' (come il foglio attivita' di MS Project)
+  const att=[["ID","Commessa","Tipo","Descrizione commessa","Cliente","PM","SE","SAL","Attività","Voce della stima","Risorsa","TK","Reparto","Inizio","Fine","Durata (gg lav.)","Ore/giorno","Lavoro totale h","Lavoro nel periodo h","Svolte h","Svolte nel periodo h","Rimanenti h","% completamento","Stato","Inizia dopo (ID)","Fine prevista","Slittamento (gg lav.)","Note"]];
+  for(const b of D.bl.filter(b=>!isAss(b)).sort((x,y)=>idA.get(x.id)-idA.get(y.id))){const c=c0(b),p=persById(b.personaId),tot=bOre(b),sv=bSvolte(b),dp=b.dopo&&idA.get(b.dopo);
+    att.push([idA.get(b.id),cv(c),isPT(c)?"PT":"Commessa",c?c.nome:"",c&&c.cliente||"",c?pmNomi(c.id):"",figN(c,"se"),figN(c,"sales"),b.attivita||"",voceN(b),pn(p),p&&p.tk||"",repN(p),xD(bStart(b)),xD(bEnd(b)),workDays(bStart(b),bEnd(b)),Number(b.oreGiorno)||0,tot,clipOre(b,a,z,"pl"),sv,clipOre(b,a,z,"sv"),b.stato==="svolto"?0:Math.max(0,tot-sv),avPct(b),b.stato==="svolto"?"Svolta":"Pianificata",dp||"",b.fineOriginale?xD(dnum(b.fineOriginale)):"",b.fineOriginale?workDays(dnum(b.fineOriginale)+1,bEnd(b)):"",b.note||""])}
+  // 2) Dati giorno per giorno (formato lungo: una riga per attivita' e giorno)
+  const lungo=[["Data","Anno","Mese","Settimana","Giorno","Risorsa","TK","Reparto","Team","Tipo riga","Commessa","Tipo","Descrizione commessa","Cliente","PM","SE","SAL","ID attività","Attività / assenza","Ore pianificate","Ore svolte","Giorno non lavorativo"]];
+  for(const r of D.righe.sort((x,y)=>x.n-y.n||pn(persById(x.b.personaId)).localeCompare(pn(persById(y.b.personaId))))){const b=r.b,p=persById(b.personaId),c=c0(b),s=settIso(r.n),ass=isAss(b);
+    lungo.push([{d:r.n},dobj(r.n).getUTCFullYear(),dobj(r.n).getUTCMonth()+1,s.sett,GG_SETT[dow(r.n)],pn(p),p&&p.tk||"",repN(p),teamsOf(b.personaId).map(t=>t.nome).join(", "),ass?"Assenza":"Lavoro",ass?"":cv(c),ass?"":isPT(c)?"PT":"Commessa",ass?"":c?c.nome:"",ass||!c?"":c.cliente||"",ass||!c?"":pmNomi(c.id),ass?"":figN(c,"se"),ass?"":figN(c,"sales"),ass?"":idA.get(b.id)||"",ass?assLab(b.assenza)+(b.attivita&&b.attivita!==assLab(b.assenza)?" · "+b.attivita:""):b.attivita||"",r.pl,ass?"":r.sv,isOff(r.n)?"Sì":""])}
+  // 3) Utilizzo risorse e 4) utilizzo commesse (ore pianificate per giorno/settimana/mese)
+  const vuoti=()=>B.map(()=>0),somma=(v,n,h)=>{const k=bi(n);if(k>=0)v[k]+=h};
+  const pers=[...new Set(D.bl.map(b=>b.personaId))].map(persById).filter(Boolean).sort((x,y)=>repN(x).localeCompare(repN(y))||pn(x).localeCompare(pn(y)));
+  const hdr=(...x)=>[...x,"Totale",...B.map(q=>q.lab)],riga=(pre,v,s)=>[...pre,v.reduce((t,x)=>t+x,0)||"",...v.map(x=>x?x:"")];
+  const ur=[hdr("Livello","Risorsa","Reparto","Commessa","Attività / assenza")];
+  for(const p of pers){const mie=D.righe.filter(r=>r.b.personaId===p.id),lav=vuoti(),ass=vuoti(),cap=vuoti();
+    for(const r of mie)somma(isAss(r.b)?ass:lav,r.n,r.pl);
+    if(!o.cid)for(let n=a;n<=z;n++)if(!isOff(n))somma(cap,n,Number(p.oreGiorno)||8);
+    ur.push(riga([{t:"Risorsa",s:11},{t:pn(p),s:11},repN(p),"",""],lav));
+    if(!o.cid){ur.push(riga(["Capacità",pn(p),repN(p),"","ore di lavoro meno le assenze"],cap.map((x,i)=>Math.max(0,x-ass[i]))));ur.push(riga(["Libere",pn(p),repN(p),"","capacità meno le ore pianificate (negativo = sovraccarico)"],cap.map((x,i)=>Math.round((Math.max(0,x-ass[i])-lav[i])*100)/100)).map((x,i)=>i>=6&&x===""?0:x))}
+    const perB=new Map();for(const r of mie){const v=perB.get(r.b.id)||vuoti();somma(v,r.n,r.pl);perB.set(r.b.id,v)}
+    for(const [id,v] of perB){const b=S.blocchi.find(x=>x.id===id),c=c0(b);ur.push(riga([{t:isAss(b)?"Assenza":"Attività",s:3},pn(p),repN(p),isAss(b)?"":cv(c),isAss(b)?assLab(b.assenza):b.attivita||""],v))}}
+  const uc=[hdr("Livello","Commessa","Tipo","Descrizione commessa","Attività","Risorsa","Budget h")];
+  const comm=[...new Set(D.bl.filter(b=>!isAss(b)).map(b=>b.commessaId))].map(commById).filter(Boolean).sort((x,y)=>isPT(x)-isPT(y)||String(x.codice).localeCompare(String(y.codice),"it",{numeric:true}));
+  for(const c of comm){const qui=D.righe.filter(r=>r.b.commessaId===c.id&&!isAss(r.b)),tot=vuoti();for(const r of qui)somma(tot,r.n,r.pl);
+    uc.push(riga([{t:"Commessa",s:11},{t:cv(c),s:11},isPT(c)?"PT":"Commessa",c.nome,"","",c.oreBudget??""],tot));
+    const perB=new Map();for(const r of qui){const v=perB.get(r.b.id)||vuoti();somma(v,r.n,r.pl);perB.set(r.b.id,v)}
+    for(const [id,v] of perB){const b=S.blocchi.find(x=>x.id===id);uc.push(riga([{t:"Attività",s:3},cv(c),isPT(c)?"PT":"Commessa",c.nome,b.attivita||"",pn(persById(b.personaId)),""],v))}}
+  const per=`${fmtD(a)} ${dobj(a).getUTCFullYear()} – ${fmtD(z)} ${dobj(z).getUTCFullYear()}`,cc=o.cid&&commById(o.cid),rp=o.rep&&S.reparti.find(r=>r.id===o.rep);
+  const leggimi=[["Tekne FloWork · esportazione della pianificazione"],[`${cc?"Commessa "+cv(cc)+" · "+cc.nome+" (tutta: "+per+")":"Periodo "+per}${rp?" · reparto "+rp.nome:" · tutti i reparti"} · colonne per ${o.g} · esportato il ${fmtTs(new Date().toISOString())}`],[],
+    ["Attività: una riga per attività (come il foglio attività di MS Project): commessa, figure, risorsa, date, ore totali e nel periodo, svolte, rimanenti, avanzamento, dipendenze, slittamenti. L'ID serve a «Inizia dopo»."],
+    ["Dati giornalieri: una riga per attività (o assenza) e giorno con le ore pianificate e svolte. È il foglio per tabelle pivot e conteggi (Inserisci › Tabella pivot): righe Risorsa o Commessa, colonne Mese o Settimana, valori Somma di Ore."],
+    ["Utilizzo risorse: come la vista Utilizzo risorse di MS Project. Per ogni risorsa il totale del lavoro"+(cc?"":", la capacità (ore di lavoro meno le assenze), le ore libere (negativo = sovraccarico)")+" e sotto le sue attività e assenze, per "+o.g+". Filtra la colonna Livello per tenere solo i totali."],
+    ["Utilizzo commesse: come la vista Utilizzo attività. Per ogni commessa il totale e sotto le attività con la risorsa."],[],
+    ["Ore svolte: foglio ore del giorno; senza foglio ore, per le attività svolte le ore svolte (effettive se scritte) in proporzione ai giorni. I giorni non lavorativi con ore sono straordinari."]];
+  const nome=cc?`Commessa_${nomeFile(cv(cc))}`:`${dstr(a)}_${dstr(z)}`;
+  scaricaXlsx(xlsx([{name:"Leggimi",rows:leggimi,widths:[140]},{name:"Attività",rows:att,widths:[6,12,10,30,18,18,14,14,32,20,18,9,14,11,11,9,9,10,11,9,11,10,10,11,9,11,10,30]},{name:"Dati giornalieri",rows:lungo,widths:[11,6,5,6,6,18,9,14,20,9,12,9,30,18,18,14,14,6,32,10,10,9]},{name:"Utilizzo risorse",rows:ur,widths:[10,18,14,12,32,9,...B.map(()=>o.g==="giorno"?12:14)]},{name:"Utilizzo commesse",rows:uc,widths:[10,12,9,30,32,18,9,9,...B.map(()=>o.g==="giorno"?12:14)]}]),`Tekne_FloWork_Pianificazione_${nome}.xlsx`);
+  toast("File scaricato: "+(att.length-1)+" attività, "+(lungo.length-1)+" righe giornaliere.")}
+function apriEsportaPian(){const v0=S.view0,v1=S.view0+daysInView()-1,st=S.espPian||{modo:"periodo",a:v0,z:v1,g:"settimana",rep:scopeRep()||"",cid:""};
+  const comm=[...S.commesse].sort((x,y)=>(!!x.chiusa-!!y.chiusa)||String(x.codice).localeCompare(String(y.codice),"it",{numeric:true}));
+  $("#okd").innerHTML=`<h3>⬇ Esporta la pianificazione in Excel</h3>
+    <p class="muted" style="margin:0;font-size:13px">Come MS Project: foglio delle attività, utilizzo risorse e commesse con le ore per giorno, settimana o mese, e un foglio giorno per giorno pronto per tabelle pivot e conteggi.</p>
+    <div class="f"><span class="seg" id="ep-modo"><button type="button" data-m="periodo" aria-pressed="${st.modo==="periodo"}">Per periodo</button><button type="button" data-m="commessa" aria-pressed="${st.modo==="commessa"}">Per commessa</button></span></div>
+    <div class="f" id="ep-per" ${st.modo==="periodo"?"":"hidden"} style="display:flex;gap:10px;flex-wrap:wrap"><label class="f">Dal<input class="inp" type="date" id="ep-a" value="${dstr(st.a)}"></label><label class="f">Al<input class="inp" type="date" id="ep-z" value="${dstr(st.z)}"></label></div>
+    <label class="f" id="ep-com" ${st.modo==="commessa"?"":"hidden"}>Commessa (tutta, dalla prima all'ultima attività)<select class="inp" id="ep-c">${optComm(comm,st.cid,c=>`${esc(cv(c))} · ${esc(c.nome)}${c.chiusa?" (chiusa)":""}`)}</select></label>
+    <label class="f">Reparto<select class="inp" id="ep-r"><option value="">Tutti i reparti</option>${S.reparti.map(r=>`<option value="${esc(r.id)}"${r.id===st.rep?" selected":""}>${esc(r.nome)}</option>`).join("")}</select></label>
+    <label class="f">Colonne di ore per<select class="inp" id="ep-g">${["giorno","settimana","mese"].map(g=>`<option value="${g}"${g===st.g?" selected":""}>${g}</option>`).join("")}</select></label>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" id="ep-no">Annulla</button><button type="button" class="btn primary" id="ep-ok">⬇ Esporta</button></div>`;
+  let modo=st.modo;
+  $("#okd").querySelectorAll("#ep-modo button").forEach(b=>b.onclick=()=>{modo=b.dataset.m;$("#okd").querySelectorAll("#ep-modo button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));$("#ep-per").hidden=modo!=="periodo";$("#ep-com").hidden=modo!=="commessa";if(modo==="commessa"&&$("#ep-g").value==="giorno")$("#ep-g").value="mese"});
+  $("#ep-no").onclick=()=>okdlg.close();
+  $("#ep-ok").onclick=()=>{const a=dnum($("#ep-a").value),z=dnum($("#ep-z").value);if(modo==="periodo"&&(isNaN(a)||isNaN(z)||z<a)){toast("Periodo non valido.");return}
+    const o={modo,a,z,g:$("#ep-g").value,rep:$("#ep-r").value,cid:modo==="commessa"?$("#ep-c").value:""};S.espPian=Object.assign({},o,{a:isNaN(a)?v0:a,z:isNaN(z)?v1:z});
+    try{esportaPianificazione(o);okdlg.close()}catch(e){console.error(e);toast("Esportazione non riuscita.")}};
+  if(typeof okdlg.showModal==="function")okdlg.showModal();else okdlg.setAttribute("open","")}
 /* ---------- programmi temporanei: collegamento con la commessa nata dalla gara ---------- */
 function convLink(c){const k=c.convertita&&commById(c.convertita.commessaId),o=c.origine&&commById(c.origine.pt);
   return k?`<a href="#" class="pill ptp sch-lnk" data-sch="${esc(k.id)}" title="Gara vinta: la commessa ha una scheda separata">→ commessa ${esc(cv(k))}</a>`:o?`<a href="#" class="pill ptp sch-lnk" data-sch="${esc(o.id)}" title="Nata dal programma temporaneo (le ore della gara restano lì)">← da ${esc(cv(o))}</a>`:""}
@@ -4175,6 +4257,7 @@ function apriConverti(cid){const c=commById(cid);if(!c||!isPT(c))return;
     try{const j=await api("POST",`/api/commesse/${encodeURIComponent(cid)}/converti`,{codice,nome:$("#cv-nome").value.trim(),pm,se:$("#cv-se").value||null,sales:$("#cv-sal").value||null});
       okdlg.close();await doRefresh();toast(`Commessa ${codice} creata (${j.task} task copiati): la trovi tra le «Da pianificare».`);openScheda(j.id)}catch(e){handleErr(e)}};
   if(typeof okdlg.showModal==="function")okdlg.showModal();else okdlg.setAttribute("open","")}
+document.addEventListener("click",e=>{if(e.target.closest("#esp-pian")){e.preventDefault();apriEsportaPian()}});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-conv]");if(b){e.preventDefault();e.stopPropagation();apriConverti(b.dataset.conv)}},true);
 // System Engineer e Sales: li cambia il PM della commessa, il responsabile PM o chi gestisce
 const canFig=c=>canAssegnaPM()||isPmOf(c.id);
