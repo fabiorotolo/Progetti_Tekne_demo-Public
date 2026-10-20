@@ -3153,8 +3153,10 @@ const xTxt=v=>v==null?"":typeof v==="object"&&"d" in v?dstr(v.d):typeof v==="boo
 const xNorm=s=>xTxt(s).toLowerCase().replace(/\s+/g," ").normalize("NFD").replace(/[̀-ͯ]/g,"");
 const xSi=v=>v===true||/^(s|si|sì|x|1|true|vero|yes|y)$/i.test(xTxt(v));
 function xData(v){if(v==null||v==="")return null;if(typeof v==="object"&&"d" in v)return dstr(v.d);if(typeof v==="number")return dstr(Math.floor(v)-25569);
-  const s=xTxt(v);if(!s)return null;let m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);if(m)return dstr(Math.round(Date.UTC(+m[1],+m[2]-1,+m[3])/DAY));
-  m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/.exec(s);if(m){const y=+m[3]<100?2000+ +m[3]:+m[3];return dstr(Math.round(Date.UTC(y,+m[2]-1,+m[1])/DAY))}
+  // 32/13/2026 non deve diventare 1 febbraio: il giorno e il mese devono esistere
+  const ok=(y,mo,d)=>{if(mo<1||mo>12||d<1)return undefined;const t=new Date(Date.UTC(y,mo-1,d));return t.getUTCMonth()===mo-1&&t.getUTCDate()===d?dstr(Math.round(t/DAY)):undefined};
+  const s=xTxt(v);if(!s)return null;let m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);if(m)return ok(+m[1],+m[2],+m[3]);
+  m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/.exec(s);if(m){const y=+m[3]<100?2000+ +m[3]:+m[3];return ok(y,+m[2],+m[1])}
   return undefined}
 const xNum=v=>{if(v===""||v==null)return null;const n=typeof v==="number"?v:Number(xTxt(v).replace(",","."));return isFinite(n)?n:undefined};
 // foglio -> righe come oggetti {colonna: valore, _riga: n}
@@ -3210,6 +3212,7 @@ const XREQ="Requisiti ";const XFOGLIO={commesse:"Commesse",progettisti:"Progetti
 /* foglio dei requisiti (uno per commessa), lo stesso per consultare e per modificare e reimportare:
    la struttura e' la colonna Livello (1 = voce principale, 2 = sotto la voce di livello 1 piu' vicina sopra, ...) con l'ordine delle righe;
    le colonne in fondo sono solo da leggere. Il testo e' rientrato in Excel secondo il livello (stile della cella, non spazi). */
+const cortoT=t=>{t=String(t||"");return t.length>40?t.slice(0,39)+"…":t};
 const XREQ_COL=["ID (non modificare)","Livello","Requisito","Reparto","Assegnato a (separati da virgola)","Scadenza","Stato","Motivo del blocco","Elimina","Fatto il","Fatto da","Nota di chiusura","Allegati","Cronistoria"];
 function xReqFoglio(cid){const c=commById(cid);const all=reqOf(cid);const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
   const rows=[XREQ_COL];const D=s=>s?{d:dnum(String(s).slice(0,10))}:"";
@@ -3330,9 +3333,21 @@ function xPiano(fogli,mappa){mappa=mappa||{};
     const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
     const prevCur={};const walk=par=>{let pv="";for(const r of kids(par)){prevCur[r.id]=pv;pv=r.id;walk(r.id)}};walk(null);
     const chiave={},ultimo={};let erroreStruttura=false;
+    // controlli su tutto il foglio prima di leggere le righe:
+    // - lo stesso ID in due righe (riga copiata e incollata): errore, la copia va lasciata con l'ID vuoto
+    // - le voci eliminate (X) dentro una voce anch'essa eliminata spariscono gia' con lei: nessuna operazione in piu'
+    // - i requisiti che non sono nel file restano come sono: lo si dice
+    const visti={},doppi=new Set(),conX=new Set();
+    for(const o of rr){const id=xTxt(xc(o,"id (non modificare)","id"));if(!id||!byId[id])continue;if(visti[id])doppi.add(id);visti[id]=1;if(xSi(xc(o,"elimina")))conX.add(id)}
+    const anteX=id=>{let x=byId[id]&&byId[id].parentId;while(x){if(conX.has(x))return true;x=byId[x]&&byId[x].parentId}return false};
+    const assenti=all.filter(r=>!visti[r.id]);
+    if(assenti.length&&rr.some(o=>byId[xTxt(xc(o,"id (non modificare)","id"))]))avvisi.push(`Nel foglio «${fn}» ${assenti.length>1?"mancano "+assenti.length+" requisiti che ci sono":"manca un requisito che c'è"} nel programma (${assenti.slice(0,3).map(r=>"«"+cortoT(r.testo)+"»").join(", ")}${assenti.length>3?"…":""}): ${assenti.length>1?"restano come sono. Per eliminarli":"resta com'è. Per eliminarlo"} scrivi X nella colonna Elimina.${all.some(r=>visti[r.id]&&r.parentId&&!visti[r.parentId])?" Attenzione: le sue sotto-voci rimaste nel file finiscono sotto la voce più vicina sopra (vedi «spostato sotto»).":""}`);
+    const giaDoppi=new Set();
     for(const o of rr){const id=xTxt(xc(o,"id (non modificare)","id")),r=id&&byId[id];const testo=xTxt(xc(o,"requisito"));const n=livMode?(o._n||""):xTxt(xc(o,"n.","n"));
       // ID di un'altra commessa (foglio copiato e rinominato) o di un requisito eliminato: diventa un requisito nuovo
       const copia=!!id&&!r;
+      if(r&&doppi.has(id)){if(giaDoppi.has(id)){err(fn,o._riga,testo||r.testo,"Questo ID c'è già in una riga più in alto (riga copiata?): per un requisito nuovo lascia vuota la colonna ID.");continue}giaDoppi.add(id)}
+      if(r&&conX.has(id)&&anteX(id)){righe.push({foglio:fn,riga:o._riga,cosa:"elimina",testo:testo||r.testo,dett:"insieme alla voce sopra"});continue}
       if(r&&xSi(xc(o,"elimina"))){add(fn,{M:"DELETE",p:"/api/requisiti/"+r.id},o._riga,"elimina",testo||r.testo,all.some(x=>x.parentId===r.id)?"con i suoi sotto-requisiti":"");continue}
       if(!testo){if(!r)continue;err(fn,o._riga,"","Il testo del requisito non può essere vuoto.");continue}
       if(n&&!/^\d+(\.\d+)*$/.test(n)){err(fn,o._riga,testo,"N. non valido: usa 1, 1.2, 1.2.3…");continue}
@@ -3357,7 +3372,7 @@ function xPiano(fogli,mappa){mappa=mappa||{};
       if(repCol!==undefined&&(r.repartoId||null)!==(repI||null)){ch.repartoId=repI||null;dif.push("reparto → "+(repN||"nessuno"))}
       if(!xEq([...(r.assegnati||[]),...propR(r)].sort(),[...ass].sort())){ch.assegnati=ass;dif.push("assegnati: "+(assT||"nessuno"))}
       if((r.scadenza||null)!==sc){ch.scadenza=sc;dif.push("scadenza "+(sc?fmtD(dnum(sc)):"tolta"))}
-      if((r.parentId||null)!==(par&&!String(par).startsWith("@")?par:par)||prevCur[r.id]!==dopo){ch.parentId=par;ch.dopo=dopo;if((r.parentId||null)!==par)dif.push(par?"spostato sotto "+parN:"portato al primo livello");else dif.push("ordine")}
+      if((r.parentId||null)!==(par&&!String(par).startsWith("@")?par:par)||prevCur[r.id]!==dopo){ch.parentId=par;ch.dopo=dopo;if((r.parentId||null)!==par)dif.push(par?"spostato sotto "+(livMode?"«"+cortoT(String(par).startsWith("@")?(rr.find(x=>x._n===parN)?xTxt(xc(rr.find(x=>x._n===parN),"requisito")):parN):(byId[par]||{}).testo||parN)+"»":parN):"portato al primo livello");else dif.push("ordine")}
       if(Object.keys(ch).length)ps.push({M:"PATCH",p:"/api/requisiti/"+r.id,body:ch});
       if(st!==r.stato||(st==="bloccato"&&mot!==(r.motivo||""))){ps.push(statoOp(r.id));dif.push("stato → "+(st==="fatto"?"fatto":st==="bloccato"?"bloccato: "+mot:"da fare"))}
       if(ps.length)add(fn,ps,o._riga,"modifica",(livMode&&o._l?"liv. "+o._l+" · ":n?n+" ":"")+testo,dif.join(" · "))}
@@ -3427,8 +3442,8 @@ async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
       const ops_=S.commesse.filter(c=>canReqC(c.id)&&(!c.chiusa||c.id===d||c.id===c0)).sort((a,b)=>a.codice.localeCompare(b.codice,"it",{numeric:true}));
       return`<div class="xl-dest"><span>Foglio <b>«${esc(fn)}»</b> → importa nella commessa</span> <select data-xm="${esc(fn)}"><option value="">— scegli —</option>${ops_.map(c=>`<option value="${esc(c.id)}"${c.id===d?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${c.chiusa?" (chiusa)":""}</option>`).join("")}</select>${d&&c0&&d!==c0?` <span class="muted" style="font-size:12px">le righe di ${esc(codC(c0))} vengono aggiunte come requisiti nuovi</span>`:""}</div>`}).join("")}
     ${avvisi.map(a=>`<div class="banner" style="margin:0"><span>⚠ ${esc(a)}</span></div>`).join("")}
-    ${cattive.length?`<div class="banner" style="margin:0"><span>⚠ <b>Controllo: ${cattive.length} rig${cattive.length>1?"he":"a"} con problemi</b> (in rosso). Non si importa niente finché non le correggi: sistema il file in Excel e reimportalo.</span></div>`:buone.length?`<p class="xl-okb" style="margin:0">✓ <b>Controllo fatto: tutte le righe sono a posto.</b> ${buone.length} modific${buone.length>1?"he":"a"} pronte: premi «Importa» per salvarle.</p>`:""}
-    <p style="margin:0">${buone.length?`<b>${buone.length} modific${buone.length>1?"he":"a"}</b> trovate`:"Nessuna modifica rispetto ai dati attuali"}. <span class="muted">Fogli letti: ${esc(fogliOk.join(", ")||"nessuno")}.</span></p>
+    ${cattive.length?`<div class="banner" style="margin:0"><span>⚠ <b>Controllo: ${cattive.length} rig${cattive.length>1?"he":"a"} con problemi</b> (in rosso). Non si importa niente finché non le correggi: sistema il file in Excel e reimportalo.</span></div>`:buone.length?`<p class="xl-okb" style="margin:0">✓ <b>Controllo fatto: tutte le righe sono a posto.</b> ${buone.length} modific${buone.length>1?"he":"a"} pront${buone.length>1?"e":"a"}: premi «Importa» per salvarle.</p>`:""}
+    <p style="margin:0">${buone.length?`<b>${buone.length} modific${buone.length>1?"he":"a"}</b> trovat${buone.length>1?"e":"a"}`:"Nessuna modifica rispetto ai dati attuali"}. <span class="muted">Fogli letti: ${esc(fogliOk.join(", ")||"nessuno")}.</span></p>
     ${righe.length?`<div class="tbl-wrap" style="max-height:52vh;overflow:auto"><table><thead><tr><th>Foglio</th><th class="n">Riga</th><th>Cosa</th><th>Elemento</th><th>Dettaglio</th></tr></thead><tbody>
       ${[...cattive,...buone].map(r=>`<tr${r.cosa==="errore"||r.err?' class="xl-bad"':""}><td>${esc(r.foglio)}</td><td class="n">${esc(String(r.riga))}</td><td><span class="pill xl-${r.err?"errore":r.cosa}">${LAB[r.err?"errore":r.cosa]}</span></td><td>${esc(r.testo||"")}</td><td>${esc(r.err||r.dett||"")}</td></tr>`).join("")}
     </tbody></table></div>`:""}
