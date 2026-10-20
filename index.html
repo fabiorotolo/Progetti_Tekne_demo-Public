@@ -3108,7 +3108,7 @@ const LEGGIMI_REQ=[["Requisiti: come usare questo file"],[""],
   ["1. Il foglio «Requisiti …» si legge così com'è (rientri = livelli) e si può anche modificare e reimportare da Tekne FloWork: finestra Requisiti → «⬆ Importa Excel»."],
   ["2. Livello: 1 = voce principale; 2 = sotto la voce di livello 1 più vicina sopra; 3 = sotto la 2 più vicina sopra… (es. 1, 2, 3, 2, 3, 4, 3, 4, 2). Si scende di un livello alla volta; livello vuoto = come la riga sopra. L'ordine delle righe è l'ordine dei requisiti."],
   ["3. Nuovo requisito: inserisci una riga dove serve, con ID vuoto, livello e testo. Eliminare: X nella colonna Elimina (le righe cancellate dal file NON vengono eliminate)."],
-  ["4. Non toccare la colonna ID. «N.» e le colonne Fatto il, Fatto da, Nota di chiusura, Allegati, Cronistoria sono solo da leggere."],
+  ["4. Non toccare la colonna ID. Le colonne Fatto il, Fatto da, Nota di chiusura, Allegati, Cronistoria sono solo da leggere."],
   ["5. Stato: Da fare, Fatto, Bloccato (con il motivo). Date nel formato gg/mm/aaaa. Prima di salvare vedi l'elenco delle modifiche."],
   ["6. Il file di una commessa si può importare anche in un'altra (nell'anteprima scegli la commessa): le righe diventano requisiti nuovi."]];
 function esportaRequisiti(cid){const c=commById(cid);try{scaricaXlsx(xlsx([xReqFoglio(cid),{name:"Leggimi",rows:LEGGIMI_REQ,widths:[120]}]),`Tekne_FloWork_Requisiti_${nomeFile(c.codice)}_${dstr(todayN)}.xlsx`)}catch(e){console.error(e);toast("Esportazione non riuscita.")}}
@@ -3209,22 +3209,22 @@ const XA={
 const XREQ="Requisiti ";const XFOGLIO={commesse:"Commesse",progettisti:"Progettisti",utenti:"Utenti",team:"Team",eventi:"Eventi",ruoli:"Ruoli e permessi",calendario:"Calendario"};
 /* foglio dei requisiti (uno per commessa), lo stesso per consultare e per modificare e reimportare:
    la struttura e' la colonna Livello (1 = voce principale, 2 = sotto la voce di livello 1 piu' vicina sopra, ...) con l'ordine delle righe;
-   N. e le colonne in fondo sono solo da leggere. Il testo e' rientrato in Excel secondo il livello (stile della cella, non spazi). */
-const XREQ_COL=["ID (non modificare)","Livello","N. (solo da leggere)","Requisito","Reparto","Assegnato a (separati da virgola)","Scadenza","Stato","Motivo del blocco","Elimina","Fatto il","Fatto da","Nota di chiusura","Allegati","Cronistoria"];
+   le colonne in fondo sono solo da leggere. Il testo e' rientrato in Excel secondo il livello (stile della cella, non spazi). */
+const XREQ_COL=["ID (non modificare)","Livello","Requisito","Reparto","Assegnato a (separati da virgola)","Scadenza","Stato","Motivo del blocco","Elimina","Fatto il","Fatto da","Nota di chiusura","Allegati","Cronistoria"];
 function xReqFoglio(cid){const c=commById(cid);const all=reqOf(cid);const kids=par=>all.filter(r=>(r.parentId||null)===par).sort((a,b)=>a.ordine-b.ordine);
   const rows=[XREQ_COL];const D=s=>s?{d:dnum(String(s).slice(0,10))}:"";
   const walk=(par,pre,l)=>kids(par).forEach((r,i)=>{const n=pre?pre+"."+(i+1):String(i+1);
     const al=(r.storia||[]).flatMap(e=>e.allegati||[]).map(id=>(allegInfo(id)||{}).nome).filter(Boolean).join(", ");
     const cr=(r.storia||[]).map(e=>`${fmtTs(e.t)} ${STORIA_LAB[e.azione]||e.azione} (${userName(e.azione==="fatto"?e.chi:e.da)})${e.nota?": "+e.nota:""}`).join(" | ");
-    rows.push([r.id,l+1,n,{t:r.testo,s:l?2+Math.min(l,8):11},repNomeId(r.repartoId),[...(r.assegnati||[]),...propR(r)].map(nomeP).join(", "),r.scadenza?{d:dnum(r.scadenza)}:"",r.stato==="fatto"?"Fatto":r.stato==="bloccato"?"Bloccato":"Da fare",r.stato==="bloccato"?r.motivo||"":"","",
+    rows.push([r.id,l+1,{t:r.testo,s:l?2+Math.min(l,8):11},repNomeId(r.repartoId),[...(r.assegnati||[]),...propR(r)].map(nomeP).join(", "),r.scadenza?{d:dnum(r.scadenza)}:"",r.stato==="fatto"?"Fatto":r.stato==="bloccato"?"Bloccato":"Da fare",r.stato==="bloccato"?r.motivo||"":"","",
       D(r.chiusoIl),r.chiusoDa?userName(r.chiusoDa):"",r.stato==="fatto"?r.notaFatto||"":"",al,cr]);walk(r.id,n,l+1)});
-  walk(null,"",0);return{name:XREQ+c.codice,rows,widths:[22,8,9,70,14,30,11,10,30,8,11,14,30,30,60]}}
+  walk(null,"",0);return{name:XREQ+c.codice,rows,widths:[22,8,70,14,30,11,10,30,8,11,14,30,30,60]}}
 const LEGGIMI=[["Come usare questo file"],[""],
   ["1. Modifica le celle che vuoi (nomi, date, assegnati, spunte X…). Non toccare la colonna ID: serve a riconoscere le righe."],
   ["2. Per aggiungere: scrivi una riga nuova lasciando vuoto l'ID."],
   ["3. Per eliminare (dove c'è la colonna Elimina): scrivi X nella colonna Elimina. Le righe che cancelli dal file NON vengono eliminate."],
   ["4. Requisiti: la colonna Livello decide la struttura, l'ordine delle righe decide l'ordine. 1 = voce principale; 2 = sotto la voce di livello 1 più vicina sopra; 3 = sotto la 2 più vicina sopra, e così via (es. 1, 2, 3, 2, 3, 4, 3, 4, 2). Si scende di un livello alla volta. Livello vuoto = come la riga sopra."],
-  ["4a. Per spostare una voce: sposta la riga (con le sue sotto-voci) e/o cambia il suo livello. «N.» e le colonne in fondo (Fatto il, Fatto da, Nota di chiusura, Allegati, Cronistoria) sono solo da leggere."],
+  ["4a. Per spostare una voce: sposta la riga (con le sue sotto-voci) e/o cambia il suo livello. Le colonne in fondo (Fatto il, Fatto da, Nota di chiusura, Allegati, Cronistoria) sono solo da leggere."],
   ["4b. Requisiti su un'altra commessa (anche senza requisiti): importa il file e, nella finestra di importazione, scegli in quale commessa metterli (oppure rinomina il foglio con il codice di destinazione, es. «Requisiti 24-005»). Le righe vengono create come nuove."],
   ["5. Stato dei requisiti: Da fare, Fatto, Bloccato (con il motivo). Date nel formato gg/mm/aaaa."],
   ["6. Salva e reimporta da Tekne FloWork (pulsante Excel → Importa): prima vedi l'elenco delle modifiche, poi confermi. Valgono gli stessi permessi dell'applicazione."],
@@ -3350,7 +3350,7 @@ function xPiano(fogli,mappa){mappa=mappa||{};
       const statoOp=k=>({M:"PATCH",p:"/api/requisiti/"+k,body:st==="fatto"?{stato:"fatto",nota:"Segnato fatto da Excel"}:st==="bloccato"?{stato:"bloccato",motivo:mot}:{stato:"aperto",nota:"Riaperto da Excel"}});
       if(!r){const k=ref();chiave[n||("__"+k)]="@"+k;ultimo[pk]="@"+k;
         const ps=[{M:"POST",p:"/api/requisiti",body:{commessaId:cid,testo,parentId:par,dopo,assegnati:ass,scadenza:sc,repartoId:repI||null},ref:k}];if(st!=="aperto")ps.push(statoOp("@"+k));
-        add(fn,ps,o._riga,"nuovo",(n?n+" ":"")+testo,[copia?((S.requisiti||[]).some(x=>x.id===id)?"copiato da "+codC((S.requisiti||[]).find(x=>x.id===id).commessaId):"ID sconosciuto: aggiunto come nuovo"):"",repI?"reparto "+repN:"",assT,sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
+        add(fn,ps,o._riga,"nuovo",(livMode&&o._l?"liv. "+o._l+" · ":n?n+" ":"")+testo,[copia?((S.requisiti||[]).some(x=>x.id===id)?"copiato da "+codC((S.requisiti||[]).find(x=>x.id===id).commessaId):"ID sconosciuto: aggiunto come nuovo"):"",repI?"reparto "+repN:"",assT,sc?"scadenza "+fmtD(dnum(sc)):"",st!=="aperto"?st:""].filter(Boolean).join(" · "));continue}
       if(n)chiave[n]=r.id;ultimo[pk]=r.id;
       const ch={},dif=[],ps=[];
       if(testo!==r.testo){ch.testo=testo;dif.push("testo")}
@@ -3360,7 +3360,7 @@ function xPiano(fogli,mappa){mappa=mappa||{};
       if((r.parentId||null)!==(par&&!String(par).startsWith("@")?par:par)||prevCur[r.id]!==dopo){ch.parentId=par;ch.dopo=dopo;if((r.parentId||null)!==par)dif.push(par?"spostato sotto "+parN:"portato al primo livello");else dif.push("ordine")}
       if(Object.keys(ch).length)ps.push({M:"PATCH",p:"/api/requisiti/"+r.id,body:ch});
       if(st!==r.stato||(st==="bloccato"&&mot!==(r.motivo||""))){ps.push(statoOp(r.id));dif.push("stato → "+(st==="fatto"?"fatto":st==="bloccato"?"bloccato: "+mot:"da fare"))}
-      if(ps.length)add(fn,ps,o._riga,"modifica",(n?n+" ":"")+testo,dif.join(" · "))}
+      if(ps.length)add(fn,ps,o._riga,"modifica",(livMode&&o._l?"liv. "+o._l+" · ":n?n+" ":"")+testo,dif.join(" · "))}
     if(erroreStruttura)righe.push({foglio:fn,riga:"",cosa:"errore",testo:"",dett:livMode?"Controlla la colonna Livello: ogni sotto-voce deve stare sotto la sua voce superiore.":"Controlla la colonna N.: ogni sotto-voce deve stare sotto la sua voce superiore."})}
   // RUOLI E PERMESSI
   f=trova("Ruoli e permessi");
@@ -3428,7 +3428,7 @@ async function xAnteprima(nome,fogli,mappa){mappa=mappa||xMappaReq(fogli);
       return`<div class="xl-dest"><span>Foglio <b>«${esc(fn)}»</b> → importa nella commessa</span> <select data-xm="${esc(fn)}"><option value="">— scegli —</option>${ops_.map(c=>`<option value="${esc(c.id)}"${c.id===d?" selected":""}>${esc(c.codice)} · ${esc(c.nome)}${c.chiusa?" (chiusa)":""}</option>`).join("")}</select>${d&&c0&&d!==c0?` <span class="muted" style="font-size:12px">le righe di ${esc(codC(c0))} vengono aggiunte come requisiti nuovi</span>`:""}</div>`}).join("")}
     ${avvisi.map(a=>`<div class="banner" style="margin:0"><span>⚠ ${esc(a)}</span></div>`).join("")}
     ${cattive.length?`<div class="banner" style="margin:0"><span>⚠ <b>Controllo: ${cattive.length} rig${cattive.length>1?"he":"a"} con problemi</b> (in rosso). Non si importa niente finché non le correggi: sistema il file in Excel e reimportalo.</span></div>`:buone.length?`<p class="xl-okb" style="margin:0">✓ <b>Controllo fatto: tutte le righe sono a posto.</b> ${buone.length} modific${buone.length>1?"he":"a"} pronte: premi «Importa» per salvarle.</p>`:""}
-    <p style="margin:0">${buone.length?`<b>${buone.length} modific${buone.length>1?"he":"a"}</b> trovate`:"Nessuna modifica rispetto ai dati attuali."}. <span class="muted">Fogli letti: ${esc(fogliOk.join(", ")||"nessuno")}.</span></p>
+    <p style="margin:0">${buone.length?`<b>${buone.length} modific${buone.length>1?"he":"a"}</b> trovate`:"Nessuna modifica rispetto ai dati attuali"}. <span class="muted">Fogli letti: ${esc(fogliOk.join(", ")||"nessuno")}.</span></p>
     ${righe.length?`<div class="tbl-wrap" style="max-height:52vh;overflow:auto"><table><thead><tr><th>Foglio</th><th class="n">Riga</th><th>Cosa</th><th>Elemento</th><th>Dettaglio</th></tr></thead><tbody>
       ${[...cattive,...buone].map(r=>`<tr${r.cosa==="errore"||r.err?' class="xl-bad"':""}><td>${esc(r.foglio)}</td><td class="n">${esc(String(r.riga))}</td><td><span class="pill xl-${r.err?"errore":r.cosa}">${LAB[r.err?"errore":r.cosa]}</span></td><td>${esc(r.testo||"")}</td><td>${esc(r.err||r.dett||"")}</td></tr>`).join("")}
     </tbody></table></div>`:""}
