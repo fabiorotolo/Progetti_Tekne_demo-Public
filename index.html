@@ -330,7 +330,7 @@ a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:cente
 .dc-tit{width:100%;min-width:280px}.dc-old td{background:color-mix(in srgb,var(--muted) 6%,transparent);font-size:12.5px}.dc-new td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
 .btn.apri{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600}.btn.apri:hover{background:color-mix(in srgb,var(--ok) 82%,#000);border-color:color-mix(in srgb,var(--ok) 82%,#000)}
 .capo-warn{color:var(--warn);font-weight:700;cursor:help;margin-left:4px}
-#rdlg.org-w{width:min(1400px,calc(100vw - 24px))}
+
 .org-bar{display:flex;gap:14px;align-items:center;padding-right:30px;flex-wrap:wrap}
 .org{display:flex;flex-direction:column;gap:18px;overflow-x:auto;padding-bottom:6px}
 .og-tags{display:flex;flex-wrap:wrap;gap:2px 3px;margin-top:3px;max-width:190px}.og-tags em{font-style:normal;font-size:10px;line-height:1.35;padding:0 5px;border-radius:7px;background:color-mix(in srgb,var(--c) 14%,transparent);color:color-mix(in srgb,var(--c) 75%,var(--fg));white-space:nowrap}
@@ -387,6 +387,8 @@ button.al-chip:hover{border-color:var(--accent);color:var(--accent)}.al-chip.off
 .rt-sub.rt-hist{flex-direction:column;align-items:stretch;gap:6px;font-size:13px}.rt-hist>b{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .rt-ht{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}.rt-ha.fatto{color:var(--ok)}.rt-ha.bloccato{color:var(--over)}.rt-hn{margin:2px 0 0 0;padding:4px 8px;border-left:3px solid var(--line);white-space:pre-wrap}
 #rdlg.wide{width:min(1100px,calc(100vw - 32px))}
+/* organigramma: largo almeno 5 colonne (reparti) prima di scorrere; dopo .wide, altrimenti vince 1100px */
+#rdlg.wide.org-w,#rdlg.org-w{width:min(1720px,calc(100vw - 24px))}
 .rqchip{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:1px 6px;font-family:var(--f-mono);font-size:11px;cursor:pointer;white-space:nowrap;color:var(--fg);line-height:1.5}
 .rqchip:hover{border-color:var(--accent)}.rqchip.vuoto{color:var(--muted);border-style:dashed}.rqchip.done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
 .rqchip.late,.rqchip.blk{color:var(--over);border-color:color-mix(in srgb,var(--over) 50%,var(--line))}.rqchip b{background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:10px}
