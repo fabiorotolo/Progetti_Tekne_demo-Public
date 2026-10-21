@@ -1482,10 +1482,13 @@ function renderFilter(){
   if(S.commF==="mie"&&!miePM)S.commF="tutte";if(S.commF==="rep"&&!scopeRep())S.commF="tutte";
   cf.value=S.commF;cf.hidden=!comm;
   // mostra/nascondi commesse e programmi temporanei (come le commesse)
-  const tp=$("#tipof"),T=tipiVis();tp.hidden=!comm||!S.commesse.some(isPT);
+  const tp=$("#tipof"),T=tipiVis();tp.hidden=!FILTRO_PT||!comm||!S.commesse.some(isPT);
   tp.querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",String(T[b.dataset.t]));b.onclick=()=>{const t=tipiVis();t[b.dataset.t]=!t[b.dataset.t];if(!t.c&&!t.pt)t[b.dataset.t==="c"?"pt":"c"]=true;S.tipiVis=t;try{localStorage.setItem("tk-tipiVis",JSON.stringify(t))}catch(_){}render()}});
 }
-const tipiVis=()=>{if(!S.tipiVis){try{S.tipiVis=JSON.parse(localStorage.getItem("tk-tipiVis")||"null")}catch(_){}if(!S.tipiVis||typeof S.tipiVis!=="object")S.tipiVis={c:true,pt:true}}return S.tipiVis};
+/* filtro «Commesse / Programmi temp.» in Pianificazione: spento per scelta di Fabio (21/10/2026, i PT sono pochi):
+   si vedono sempre tutti insieme. Per riattivarlo basta mettere true. */
+const FILTRO_PT=false;
+const tipiVis=()=>{if(!FILTRO_PT)return{c:true,pt:true};if(!S.tipiVis){try{S.tipiVis=JSON.parse(localStorage.getItem("tk-tipiVis")||"null")}catch(_){}if(!S.tipiVis||typeof S.tipiVis!=="object")S.tipiVis={c:true,pt:true}}return S.tipiVis};
 
 function lanesFor(blocks){
   const sorted=[...blocks].sort((a,b)=>bStart(a)-bStart(b)||bEnd(b)-bEnd(a));
