@@ -3170,12 +3170,14 @@ function esportaExcel(){
   const req=[["Commessa","Titolo","Stato","Bloccante","Giorni di blocco","Aperta da","Aperta il","PM","Messaggi"]];
   for(const r of S.richieste)req.push([codC(r.commessaId),r.titolo,STATO_LAB[r.stato]||r.stato,r.bloccante?"Sì":"No",r.bloccante?Math.round(giorniBlocco(r)*10)/10:"",userName(r.autore),r.creata?D(Math.floor(Date.parse(r.creata)/DAY)):"",pmNomi(r.commessaId),(r.messaggi||[]).length]);
   const fest=[["Data","Giorno non lavorativo"]];for(const[k,v]of Object.entries(S.festivi||{}).sort())if(!isWE(dnum(k)))fest.push([D(dnum(k)),v]);
+  // «Pian. per reparto»: niente fogli e colonne con i nomi delle risorse
+  const pr=pianRep();
   const blob=xlsx([
     {name:"Commesse",rows:comm,widths:[10,34,18,9,22,12,13,12,10,12,10,13,40]},
-    {name:"Attività",rows:att,widths:[10,30,36,14,12,12,12,10,13,11,11,13,34,13,40]},
-    {name:"Ore per risorsa",rows:[...ore,[],[`Periodo: ${per} · ${scopeNome()}`]],widths:[16,14,30,11,10,13,13,10,13]},
+    {name:"Attività",rows:pr?att.map(r=>r.filter((_,i)=>i!==3)):att,widths:pr?[10,30,36,12,12,12,10,13,11,11,13,34,13,40]:[10,30,36,14,12,12,12,10,13,11,11,13,34,13,40]},
+    ...(pr?[]:[{name:"Ore per risorsa",rows:[...ore,[],[`Periodo: ${per} · ${scopeNome()}`]],widths:[16,14,30,11,10,13,13,10,13]},
     {name:"Chi lavora su cosa",rows:[...cuc,[],[`Ore pianificate · ${per}`]],widths:[16,...aperte().map(()=>10),10]},
-    {name:"Assenze",rows:ass,widths:[14,11,22,12,12,10,15,11,30]},
+    {name:"Assenze",rows:ass,widths:[14,11,22,12,12,10,15,11,30]}]),
     {name:"Richieste",rows:req,widths:[10,40,15,10,14,14,12,22,10]},
     {name:"Calendario",rows:fest,widths:[12,34]}]);
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`Tekne_FloWork_${dstr(todayN)}.xlsx`;document.body.appendChild(a);a.click();
@@ -3673,8 +3675,8 @@ function slipPanel(){
   const dot=id=>{if(String(id).startsWith("ex:")){const q=S.richieste.find(x=>x.id===id.slice(3));return`<span class="asspill xtra-p" title="Richiesta di lavoro extra">EXTRA ${esc(q?"«"+q.titolo+"»":"")}</span>`}if(String(id).startsWith("ass:"))return`<span class="asspill">${esc(assLab(id.slice(4)))}</span>`;if(String(id).startsWith("cal:"))return`<span class="asspill">${esc(id.slice(4))}</span>`;const c=commById(id);return c?`<i class="dot" style="--h:${c.colore}"></i>${esc(cv(c))}`:"—"};
   return`<div class="grid2">
    <div class="panel"><h2>Slittamenti per urgenze e assenze<small>${esc(scopeNome())} · ${fmtH(oreTot)} h spostate · ${ggTot} g di ritardo</small></h2>
-    <div class="tbl-wrap"><table><thead><tr><th>Commessa slittata</th><th>Attività</th><th>Risorsa</th><th class="n">Ore spostate</th><th class="n">Ritardo</th><th>Fine prevista → attuale</th><th>Causata da</th></tr></thead><tbody>
-    ${rows.map(x=>`<tr><td class="code">${dot(x.b.commessaId)}</td><td>${esc(x.b.attivita||"(senza titolo)")}</td><td>${esc(nomeP(x.b.personaId))}</td><td class="n">${fmtH(x.ore)}</td><td class="n" style="color:var(--over);font-weight:600">${x.gg?"+"+x.gg+" g":"—"}</td><td style="white-space:nowrap">${x.b.fineOriginale?fmtD(dnum(x.b.fineOriginale)):"—"} → ${fmtD(bEnd(x.b))}</td><td>${x.cs.map(dot).join(" ")||"—"}</td></tr>`).join("")}
+    <div class="tbl-wrap"><table><thead><tr><th>Commessa slittata</th><th>Attività</th><th>${pianRep()?"Reparto":"Risorsa"}</th><th class="n">Ore spostate</th><th class="n">Ritardo</th><th>Fine prevista → attuale</th><th>Causata da</th></tr></thead><tbody>
+    ${rows.map(x=>`<tr><td class="code">${dot(x.b.commessaId)}</td><td>${esc(x.b.attivita||"(senza titolo)")}</td><td>${esc(pianRep()?((S.reparti.find(r=>r.id===(persById(x.b.personaId)||{}).repartoId)||{}).nome||"—"):nomeP(x.b.personaId))}</td><td class="n">${fmtH(x.ore)}</td><td class="n" style="color:var(--over);font-weight:600">${x.gg?"+"+x.gg+" g":"—"}</td><td style="white-space:nowrap">${x.b.fineOriginale?fmtD(dnum(x.b.fineOriginale)):"—"} → ${fmtD(bEnd(x.b))}</td><td>${x.cs.map(dot).join(" ")||"—"}</td></tr>`).join("")}
     </tbody></table></div></div>
    <div class="panel"><h2>Cause degli slittamenti<small>commesse urgenti e assenze che hanno tolto ore</small></h2>
     <div class="tbl-wrap"><table><thead><tr><th>Commessa</th><th class="n">Ore assorbite</th></tr></thead><tbody>
@@ -3737,25 +3739,25 @@ function renderRep(){
     <div class="kpi"><span>Capacità ${esc(scopeRep()?"reparto":"ufficio")}</span><b>${fmtH(capTot)}</b></div>
     <div class="kpi"><span>Saturazione</span><b style="color:${capTot&&totPl/capTot>1?"var(--over)":"inherit"}">${capTot?Math.round(totPl/capTot*100):0}%</b></div>
   </div>
-  <div class="grid2">
+  <div class="${pianRep()?"":"grid2"}">
     <div class="panel"><h2>Ore per commessa<small>${esc(lbl)}</small></h2>
       <div class="tbl-wrap"><table><thead><tr><th>Codice</th><th>Commessa</th><th>Consegna</th><th class="n">Pianif.</th><th class="n" title="Ore pianificate nate da richieste di lavoro extra (comprese nelle pianificate)">di cui extra</th><th class="n">Svolte</th><th>Avanzamento</th><th class="n">Budget</th><th>Ore vs budget</th></tr></thead><tbody>
       ${perC.map(x=>{const a=avComm(x.c.id);return`<tr><td class="code"><i class="dot" style="--h:${x.c.colore}"></i>${schedaVis()?`<a href="#" class="sch-lnk" data-sch="${esc(x.c.id)}" title="Scheda della commessa">${esc(cv(x.c))}</a>`:esc(cv(x.c))}</td><td>${esc(x.c.nome)}<br><span class="muted" style="font-size:12px">${esc(x.c.cliente||"")}${x.c.cliente?" · ":""}${esc(figTxt(x.c))}</span></td><td style="white-space:nowrap">${x.c.consegna?fmtD(consegnaN(x.c)):'<span class="muted">—</span>'}${ritardoComm(x.c)?`<br><b style="color:var(--over);font-size:12px">⚠ +${ritardoComm(x.c)} g (fine ${fmtD(fineComm(x.c.id))})</b>`:""}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${x.ex?`<b style="color:hsl(300 45% 40%)">${fmtH(x.ex)}</b>`:'<span class="muted">—</span>'}</td><td class="n">${fmtH(x.sv)}</td><td>${a==null?'<span class="muted">—</span>':`<div style="display:flex;gap:8px;align-items:center"><div class="prog" style="flex:1"><i class="sv" style="width:${a}%"></i></div><span class="n" style="font-family:var(--f-mono);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right">${a}%</span></div>`}</td><td class="n">${x.c.oreBudget?fmtH(x.c.oreBudget):"—"}</td><td>${prog(x)}</td></tr>`}).join("")||'<tr><td colspan="8" class="muted">Nessuna commessa.</td></tr>'}
       <tr class="tot"><td></td><td>Totale</td><td></td><td class="n">${fmtH(totPl)}</td><td class="n">${fmtH(perC.reduce((q,x)=>q+x.ex,0))||"—"}</td><td class="n">${fmtH(totSv)}</td><td class="muted" style="font-size:12px">media delle attività pesata sulle ore</td><td></td><td class="muted" style="font-size:12px">piena = svolte, chiara = pianificate</td></tr>
       </tbody></table></div></div>
-    <div class="panel"><h2>Ore per risorsa<small>${esc(lbl)}</small></h2>
+    ${pianRep()?"":`<div class="panel"><h2>Ore per risorsa<small>${esc(lbl)}</small></h2>
       <div class="tbl-wrap"><table><thead><tr><th>Risorsa</th><th class="n">Capacità</th><th class="n">Assenze</th><th class="n">Straord.</th><th class="n">Pianif.</th><th class="n">Svolte</th><th class="n">Saturaz.</th></tr></thead><tbody>
       ${perP.map(x=>{const s=x.cap?Math.round(x.pl/x.cap*100):0;return`<tr><td>${esc(pn(x.p))}<br><span class="muted" style="font-size:12px">${esc(x.p.ruolo||"")}</span></td><td class="n">${fmtH(x.cap)}</td><td class="n">${x.as?fmtH(x.as):"—"}</td><td class="n">${x.st?fmtH(x.st):"—"}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${fmtH(x.sv)}</td><td class="n" style="color:${s>100?"var(--over)":s<60?"var(--muted)":"inherit"};font-weight:600">${s}%</td></tr>`}).join("")||'<tr><td colspan="7" class="muted">Nessuna risorsa.</td></tr>'}
-      </tbody></table></div></div>
+      </tbody></table></div></div>`}
   </div>
   ${teamPanel}
   ${slipPanel()}
   ${reqPanel()}
-  <div class="panel"><h2>Chi lavora su cosa<small>ore pianificate · ${esc(lbl).toLowerCase()}</small></h2>
+  ${pianRep()?"":`<div class="panel"><h2>Chi lavora su cosa<small>ore pianificate · ${esc(lbl).toLowerCase()}</small></h2>
     <div class="tbl-wrap"><table><thead><tr><th>Risorsa</th>${usedC.map(c=>`<th class="n" title="${esc(c.nome)}"><i class="dot" style="--h:${c.colore}"></i>${esc(cv(c))}</th>`).join("")}<th class="n">Totale</th></tr></thead><tbody>
     ${perP.map(x=>`<tr><td>${esc(pn(x.p))}</td>${usedC.map(c=>{const v=x.byC[c.id]||0;return`<td class="heat ${v?"":"z"}">${v?fmtH(v):"·"}</td>`}).join("")}<td class="n"><b>${fmtH(x.pl)}</b></td></tr>`).join("")}
     ${usedC.length?"":`<tr><td class="muted">Nessuna attività nel periodo.</td></tr>`}
-    </tbody></table></div></div>
+    </tbody></table></div></div>`}
   </div>`;
   el.querySelector("#per").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.period=b.dataset.k;S.perOff=0;render()};
   const sposta=dir=>{if(S.period==="libero"){const len=r1-r0+1;S.perDa=r0+dir*len;S.perA=r1+dir*len}else S.perOff=(S.perOff||0)+dir;render()};
