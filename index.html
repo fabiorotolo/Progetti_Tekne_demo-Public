@@ -1246,9 +1246,10 @@ function diffB(a,o){
 function log(){} // il registro lo scrive il server
 function fmtTs(iso){const d=new Date(iso);if(isNaN(d))return"";return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+String(d.getFullYear()).slice(2)+" "+pad(d.getHours())+":"+pad(d.getMinutes())}
 // giorni mostrati: almeno 12/6/4 settimane, e comunque abbastanza da riempire lo schermo
-const tlLargo=()=>{const tl=document.getElementById("tl");const nw=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nameW"))||184;return tl&&tl.clientWidth?tl.clientWidth-nw-2:0};
-// larghezza del giorno: le settimane scelte riempiono lo spazio (minimo 12 px, sul cellulare si scorre)
-function adattaZoom(){const base=(S.zoomW||6)*7,w=tlLargo();S.dw=w>0?Math.max(12,Math.min(96,Math.floor(w/base))):({12:22,6:34,4:52})[S.zoomW]||34}
+const tlLargo=()=>{const tl=document.getElementById("tl");const nw=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nameW"))||184;return tl&&tl.clientWidth?tl.clientWidth-nw-20:0};
+// larghezza del giorno: quella di sempre (12 sett. 22 px, 6 sett. 34, 4 sett. 52); si stringe (minimo 12 px) solo se
+// le settimane scelte non entrano nello schermo, così non si scorre di lato; non si allarga mai (sul cellulare si scorre)
+function adattaZoom(){const base=(S.zoomW||6)*7,w=tlLargo(),norm=({12:22,6:34,4:52})[S.zoomW]||34;S.dw=w>0?Math.max(12,Math.min(norm,Math.floor(w/base))):norm}
 const daysInView=()=>{const base=(S.zoomW||6)*7,w=tlLargo();return Math.max(base,w>0?Math.floor(w/S.dw):base)};
 window.addEventListener("resize",()=>{if(S.tab==="plan")render()});
 
