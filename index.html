@@ -1315,6 +1315,7 @@ let toastT;
 function toast(msg){let t=$(".toast");if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,4200)}
 async function api(method,url,body,quiet){
   let r;
+  if(method!=="GET")S._firma=null; // dopo una tua modifica il prossimo aggiornamento ridisegna sempre
   try{r=await fetch(url,{method,headers:{"Content-Type":"application/json","X-CUT":"1"},body:body?JSON.stringify(body):undefined,credentials:"same-origin",cache:"no-store"})}
   catch(e){throw{code:"net",msg:"Il server non risponde: controlla che il programma sia avviato."}}
   let j=null;try{j=await r.json()}catch(e){}
@@ -5187,6 +5188,9 @@ let refreshT=null;
 function refresh(){clearTimeout(refreshT);refreshT=setTimeout(doRefresh,80)}
 async function doRefresh(){
   try{const j=await api("GET","/api/state");
+    // impronta dei dati (senza il numero di versione): se non è cambiato niente di quello che questa pagina mostra,
+    // non si ridisegna (niente «sfarfallio» per il controllo di ogni minuto o per modifiche che non ti riguardano)
+    const firma=JSON.stringify(Object.assign({},j,{rev:0})),uguale=S._firma===firma&&S._giornoFirma===todayN;S._firma=firma;S._giornoFirma=todayN;
     // dati cambiati (spunte applicate a un ruolo, import, un altro amministratore): l'elenco Utenti si ricarica
     if(S.utentiLoaded&&S.rev!=null&&j.rev!==S.rev){if(S.tab==="perm")loadUtenti();else S.utentiLoaded=false}
     S.rev=j.rev;S.tipiDoc=j.tipiDoc||null;S.persone=j.persone;S.commesse=(j.commesse||[]).filter(c=>!c.riservata);S.riservata=(j.commesse||[]).find(c=>c.riservata)||null;S.blocchi=j.blocchi;S.team=j.team;S.me=j.me;S.isOwner=!!j.me.admin;
@@ -5205,7 +5209,7 @@ async function doRefresh(){
     if(rdlg.open&&RT){if(!(document.activeElement&&$("#rd").contains(document.activeElement)&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)))rtRender();return}
     if(rdlg.open&&convAperta){aggiornaConv();renderBell();return}
     if(rdlg.open){if(rdId&&S.richieste.some(x=>x.id===rdId))openReq(rdId);const n=S.richieste.filter(attendeMe).length;$("#req-cnt").textContent=n;$("#req-cnt").hidden=!n;return}
-    render();
+    if(!uguale)render();
   }catch(e){if(e&&e.code==="force")showAuth("force")}
 }
 function openEvents(){
