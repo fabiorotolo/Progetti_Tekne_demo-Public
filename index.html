@@ -127,7 +127,7 @@ select.inp,input.inp{border:1px solid var(--line);background:var(--panel);border
 .blk>span{position:relative}
 .repbar{position:absolute;height:26px;border-radius:5px;display:flex;align-items:center;gap:8px;padding:0 9px;z-index:2;overflow:hidden;white-space:nowrap;font-size:12px;color:var(--fg);cursor:default;
   background:hsl(var(--h) var(--blk-s) var(--blk-l));border:1px solid hsl(var(--h) 45% var(--blk-b))}.repbar span{margin-left:auto;font-family:var(--f-mono);font-size:11.5px}
-.rep-tot{font-size:11.5px;color:var(--muted)}
+.rep-tot{font-size:11.5px;color:var(--muted)}.st-np{display:block;font-size:11px;color:var(--over);font-weight:600;white-space:nowrap}
 .foglio tr.alt-h td{background:color-mix(in srgb,var(--accent) 6%,transparent);font-size:12.5px;padding-top:8px}.alt-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.alt-add .inp{flex:1 1 260px;min-width:0;max-width:460px}.alt-add select.inp{flex:0 1 240px}a.alt-t{color:inherit}.foglio .alt-nota{display:block;width:100%;max-width:340px;margin-top:4px;padding:3px 6px;font-size:12.5px;height:auto;min-height:0}.foglio .alt-nota:not(:focus){border-color:transparent;background:color-mix(in srgb,var(--fg) 4%,transparent)}.alt-nt{font-size:12px;color:var(--muted);margin-top:3px;max-width:340px}.rep-tot b{color:var(--fg);font-weight:600}
 .blk .pg{position:absolute;left:0;top:0;bottom:0;background:hsl(var(--h) calc(var(--blk-s) + 10%) calc(var(--blk-l) - 14%));opacity:.6;pointer-events:none;border-right:2px solid hsl(var(--h) 50% var(--blk-b))}
 .blk .pc{font-family:var(--f-mono);font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -3028,6 +3028,9 @@ function totGiornoFoglio(pid,g,blkId,blkV,altId,altV){let t=0;for(const b of S.b
 // il server toglie le ore in più alle altre attività del giorno (quella con più ore): qui si dice cosa è cambiato
 function avvisaAdattate(j){const f=j&&j.adattate;if(!f||!f.length)return;const n=dnum(f[0].g);
   toast(`Il ${fmtD(n)} saresti andato oltre le ${fmtH(limiteGiorno(f[0].p||S.oreP,n))} h del giorno: ${f.map(x=>`${x.cosa} ${fmtH(x.da)} → ${fmtH(x.a)} h`).join(", ")}.${f.some(x=>x.limitato)?" Per fare ore in più chiedi lo straordinario al coordinatore.":""}`)}
+// ore «altre attività» scritte su una commessa (non pianificate): totale e per reparto della persona
+function npComm(cid){const perR=new Map(),pers=new Set();let tot=0;for(const a of S.altre||[]){if(a.commessaId!==cid)continue;const h=Object.values(a.ore||{}).reduce((t,x)=>t+(Number(x)||0),0);if(!h)continue;
+  const p=persById(a.personaId);const rk=p&&p.repartoId||"";tot+=h;pers.add(a.personaId);perR.set(rk,(perR.get(rk)||0)+h)}return{tot:Math.round(tot*100)/100,perR,pers}}
 const altCommLab=a=>{const c=altComm(a);return!c?"":c.riservata?"commessa riservata":cv(c)};
 // finestra per cambiare testo, commessa e nota di una riga «altre attività»
 function apriAltra(id){const a=(S.altre||[]).find(x=>x.id===id);if(!a)return;const ok=canOreOn({personaId:a.personaId});const c=altComm(a);
@@ -4428,7 +4431,9 @@ function stimaDati(c,bl){const st=c.stima||{},voci=st.voci||[],vById=Object.from
     const sv=bSvolte(b),tl=b.stato==="svolto"?sv:bOre(b);r.tl+=tl;r.sv+=sv;const x=v?r.voci.find(y=>y.v.id===v.id):r.nc;x.tl+=tl;x.sv+=sv;x.n++;(x.att=x.att||[]).push({b,tl,sv})}
   return[...R.values()].sort((a,b)=>{const na=(S.reparti.find(r=>r.id===a.rep)||{}).nome||"~",nb=(S.reparti.find(r=>r.id===b.rep)||{}).nome||"~";return na.localeCompare(nb)})}
 function stimaHtml(c,bl){if(!stimaVede(c.id))return"";const cid=c.id,pmOk=stimaPMok(cid);
-  const D=stimaDati(c,bl);
+  const D=stimaDati(c,bl);const NPs=npComm(c.id);
+  for(const k of NPs.perR.keys())if(k&&!D.some(x=>x.rep===k))D.push({rep:k,stima:null,voci:[],nc:{tl:0,sv:0,n:0},tl:0,sv:0,vuoto:true});
+  const npTxt=h=>h?` <small class="st-np" title="Ore non pianificate (foglio ore, altre attività): spese ma fuori dalla timeline">+${fmtH(h)} non pian.</small>`:"";
   if(pmOk)for(const r of S.reparti)if(!D.some(x=>x.rep===r.id))D.push({rep:r.id,stima:null,voci:[],nc:{tl:0,sv:0,n:0},tl:0,sv:0,vuoto:true});
   const nomeR=id=>id?((S.reparti.find(r=>r.id===id)||{}).nome||"reparto eliminato"):"Senza reparto",colR=id=>(S.reparti.find(r=>r.id===id)||{}).colore;
   // il totale non è mai inferiore alla somma dei reparti: è il budget della commessa, se più alto
@@ -4449,7 +4454,7 @@ function stimaHtml(c,bl){if(!stimaVede(c.id))return"";const cid=c.id,pmOk=stimaP
     const vOltre=hasV&&r.stima!=null&&sumV>r.stima+0.05;
     righe+=`<tr class="st-rep${vOltre?" st-err":""}" style="--h:${colR(r.rep)??200}"><td>${nAtt?`<button type="button" class="rt-mini st-tg" data-sttg="${esc(r.rep)}" aria-expanded="${aperto}" title="${aperto?"Nascondi":"Mostra"} le attività">${aperto?"▾":"▸"}</button>`:""}<i class="dot" style="--h:${colR(r.rep)??200}"></i><b>${esc(nomeR(r.rep))}</b>${nAtt?` <span class="muted st-n">· ${nAtt} attività</span>`:""}${hasV&&r.stima!=null&&Math.abs(sumV-r.stima)>0.05?(sumV<r.stima?`<div class="muted st-nota">voci ${fmtH(sumV)} h su ${fmtH(r.stima)} · ${fmtH(r.stima-sumV)} h da distribuire</div>`:`<div class="st-nota st-su">⚠ le voci (${fmtH(sumV)} h) superano di ${fmtH(sumV-r.stima)} h la stima del PM</div>`):""}</td>
       <td class="n">${pmOk&&r.rep?inp(`data-strep="${esc(r.rep)}"`,r.stima,"h"):r.stima!=null?`<b>${fmtH(r.stima)}</b>`:'<span class="muted">—</span>'}</td>
-      <td class="n">${fmtH(r.tl)}</td><td class="n">${fmtH(r.sv)}</td><td class="n">${diff(r.tl,stRif)}</td><td>${barra(r.tl,r.sv,stRif)}</td></tr>`;
+      <td class="n">${fmtH(r.tl)}</td><td class="n">${fmtH(r.sv)}${npTxt(NPs.perR.get(r.rep||"")||0)}</td><td class="n">${diff(r.tl,stRif)}</td><td>${barra(r.tl,r.sv,stRif)}</td></tr>`;
     for(const x of r.voci)righe+=`<tr class="st-voce"><td>${vOk?`<span class="st-vn">${inp(`data-stvn="${esc(x.v.id)}"`,x.v.nome,"Nome della voce",260)}<button type="button" class="rt-mini st-del" data-stvdel="${esc(x.v.id)}" title="Elimina la voce (le attività restano, senza voce)" aria-label="Elimina la voce">Elimina</button></span>`:esc(x.v.nome)}<span class="muted st-n"> · ${x.n} attivit${x.n===1?"à":"à"}</span></td>
       <td class="n">${vOk?inp(`data-stvo="${esc(x.v.id)}"`,x.v.ore,"h"):x.v.ore!=null?fmtH(x.v.ore):'<span class="muted">—</span>'}</td><td class="n">${fmtH(x.tl)}</td><td class="n">${fmtH(x.sv)}</td><td class="n">${diff(x.tl,x.v.ore)}</td><td>${barra(x.tl,x.sv,x.v.ore)}</td></tr>`+(aperto?attR(x.att,48):"");
     if(hasV&&r.nc.n)righe+=`<tr class="st-voce st-nc"><td><span class="muted">Senza voce</span><span class="muted st-n"> · ${r.nc.n} attività</span></td><td class="n"></td><td class="n">${fmtH(r.nc.tl)}</td><td class="n">${fmtH(r.nc.sv)}</td><td></td><td>${barra(r.nc.tl,r.nc.sv,null)}</td></tr>`+(aperto?attR(r.nc.att,48):"");
@@ -4458,7 +4463,7 @@ function stimaHtml(c,bl){if(!stimaVede(c.id))return"";const cid=c.id,pmOk=stimaP
   return`<div class="panel st-pan"><h2>Stima ore<small>il PM stima per reparto · il coordinatore divide in voci · visibile a PM, direzione, responsabili e coordinatori</small></h2>
     <div class="tbl-wrap"><table class="st-tb"><thead><tr><th>Reparto / voce</th><th class="n">Stima</th><th class="n">In timeline</th><th class="n">Svolte</th><th class="n">Rispetto alla stima</th><th data-nosort style="min-width:160px">▮ svolte · ▯ in timeline · | stima</th></tr></thead><tbody>
     ${righe||`<tr><td colspan="6" class="muted">Nessuna stima ancora.</td></tr>`}
-    <tr class="tot"><td>Totale${!sumRep&&bud?' <span class="muted" style="font-weight:400">(budget della commessa)</span>':budBasso?` <span class="st-su">⚠ il budget della commessa (${fmtH(bud)} h) è ${fmtH(budBasso)} h sotto la somma dei reparti</span>`:nonAss?` <span class="muted" style="font-weight:400">(budget ${fmtH(bud)} h: ${fmtH(nonAss)} h non ancora date a un reparto)</span>`:""}</td><td class="n"${budBasso?' style="color:var(--over)"':""}>${totSt?fmtH(totSt):"—"}</td><td class="n">${fmtH(totTl)}</td><td class="n">${fmtH(totSv)}</td><td class="n">${diff(totTl,totSt||null)}</td><td>${barra(totTl,totSv,totSt||null)}</td></tr>
+    <tr class="tot"><td>Totale${!sumRep&&bud?' <span class="muted" style="font-weight:400">(budget della commessa)</span>':budBasso?` <span class="st-su">⚠ il budget della commessa (${fmtH(bud)} h) è ${fmtH(budBasso)} h sotto la somma dei reparti</span>`:nonAss?` <span class="muted" style="font-weight:400">(budget ${fmtH(bud)} h: ${fmtH(nonAss)} h non ancora date a un reparto)</span>`:""}</td><td class="n"${budBasso?' style="color:var(--over)"':""}>${totSt?fmtH(totSt):"—"}</td><td class="n">${fmtH(totTl)}</td><td class="n">${fmtH(totSv)}${npTxt(NPs.tot)}</td><td class="n">${diff(totTl,totSt||null)}</td><td>${barra(totTl,totSv,totSt||null)}</td></tr>
     </tbody></table></div>
     <p class="muted" style="margin:6px 0 0;font-size:12.5px">«In timeline» = ore delle attività pianificate (per quelle svolte, le ore effettive). «Ancora libere» = ore della stima non ancora pianificate; «oltre» = la timeline supera la stima. Le attività si collegano a una voce nella loro scheda («Voce della stima ore»); quelle senza voce restano nel reparto della risorsa.</p></div>`}
 // piccola calcolatrice per i campi delle ore: «20*8», «150+40+50», «(3+2)*8», «12,5*4» (solo numeri e + - * / ( ))
@@ -4501,6 +4506,8 @@ function renderComm(){
     const R=perR.get(rk)||{r,pl:0,sv:0,ex:0,pers:new Set(),n:0};R.pl+=o;R.sv+=s;if(b.extra)R.ex+=o;R.pers.add(b.personaId);R.n++;perR.set(rk,R);
     const P=perP.get(b.personaId)||{p,r,pl:0,sv:0,ex:0,n:0,w:0,wo:0,svolte:0};P.pl+=o;P.sv+=s;if(b.extra)P.ex+=o;P.n++;if(b.stato==="svolto")P.svolte++;P.w+=(o||1)*avPct(b);P.wo+=(o||1);perP.set(b.personaId,P)}
   const bud=Number(c.oreBudget)||0,av=avComm(cid),atteso=pl?Math.round(aOggi/pl*100):null;
+  const NP=npComm(cid); // ore non pianificate (foglio ore, altre attività legate alla commessa)
+  for(const k of NP.perR.keys())if(!perR.has(k))perR.set(k,{r:S.reparti.find(r=>r.id===k)||null,pl:0,sv:0,ex:0,pers:new Set(),n:0});
   const kN=consegnaN(c),fine=fineComm(cid),rit=ritardoComm(c);
   // ---- task e richieste
   const rq=reqOf(cid),rqS=reqStats(cid),rqB=rq.filter(r=>r.stato==="bloccato"),rqL=rq.filter(reqLate).filter(r=>r.stato!=="bloccato");
@@ -4531,19 +4538,20 @@ function renderComm(){
       <span class="sch-chips">${c.cartella?`<button type="button" class="rqchip" data-fold="${esc(cid)}" title="Cartella della commessa">📁 Cartella</button>`:""}${reqChip(cid,1)}${docChip(cid,1)}${evChip(cid,1)}</span></div>
   </div>
   <div class="kpis">
-    <div class="kpi"><span>Budget</span><b>${bud?fmtH(bud)+" h":"—"}</b></div>
+    <div class="kpi"><span>Budget</span><b>${bud?fmtH(bud)+" h":"—"}</b>${NP.tot?`<small class="${bud&&sv+NP.tot>bud?"late-txt":"muted"}" title="Ore spese davvero: svolte delle attività + ore non pianificate">spese ${fmtH(sv+NP.tot)} h${bud?" ("+pct(sv+NP.tot,bud)+"%)":""}</small>`:""}</div>
     <div class="kpi"><span>Pianificate</span><b style="${bud&&pl>bud?"color:var(--over)":""}">${fmtH(pl)} h</b><small class="muted">${bud?pct(pl,bud)+"% del budget":"nessun budget"}</small></div>
     <div class="kpi"><span>Svolte</span><b>${fmtH(sv)} h</b><small class="muted">${pl?pct(sv,pl)+"% delle pianificate":""}</small></div>
     <div class="kpi"><span>Di cui extra</span><b style="${ex?"color:hsl(300 45% 40%)":""}">${ex?fmtH(ex)+" h":"—"}</b><small class="muted">${lavori.length?lavori.length+(lavori.length>1?" richieste":" richiesta")+" di lavoro":""}</small></div>
+    <div class="kpi"><span>Non pianificate</span><b style="${NP.tot?"color:var(--over)":""}">${NP.tot?fmtH(NP.tot)+" h":"—"}</b><small class="muted">${NP.tot?[...NP.perR.keys()].map(k=>(S.reparti.find(r=>r.id===k)||{}).nome||"senza reparto").join(", ")+" · "+NP.pers.size+(NP.pers.size>1?" persone":" persona"):"ore fuori dal pianificato"}</small></div>
     <div class="kpi"><span>Avanzamento</span><b>${av==null?"—":av+"%"}</b><small class="${av!=null&&atteso!=null&&av+5<atteso?"late-txt":"muted"}">${atteso==null?"":"a oggi previsto "+atteso+"%"}</small></div>
     <div class="kpi"><span>Problemi aperti</span><b style="${nProb?"color:var(--over)":""}">${nProb}</b><small class="muted">${[ricBl.length?ricBl.length+(ricBl.length>1?" blocchi":" blocco"):"",rqB.length+rqL.length?(rqB.length+rqL.length)+(rqB.length+rqL.length>1?" task":" task"):"",scad.length?scad.length+(scad.length>1?" attività scadute":" attività scaduta"):"",ricAtt.length?ricAtt.length+(ricAtt.length>1?" domande in attesa":" domanda in attesa"):""].filter(Boolean).join(" · ")}</small></div>
   </div>
   ${stimaHtml(c,bl)}
   <div class="grid2">
     <div class="panel"><h2>Ore per reparto<small>${fmtH(pl)} h pianificate · ${fmtH(sv)} h svolte</small></h2>
-      <div class="tbl-wrap"><table><thead><tr><th>Reparto</th><th class="n">Persone</th><th class="n">Attività</th><th class="n">Pianif.</th><th class="n">di cui extra</th><th class="n">Svolte</th><th class="n">Quota</th><th data-nosort>Peso sulla commessa</th></tr></thead><tbody>
-      ${[...perR.values()].sort((a,b)=>b.pl-a.pl).map(x=>`<tr><td style="white-space:nowrap">${x.r?`<i class="dot" style="--h:${x.r.colore}"></i>${esc(x.r.nome)}`:'<span class="muted">Senza reparto</span>'}</td><td class="n">${x.pers.size}</td><td class="n">${x.n}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${x.ex?fmtH(x.ex):"—"}</td><td class="n">${fmtH(x.sv)}</td><td class="n">${pct(x.pl,pl)}%</td><td>${barra(x.pl,pl)}</td></tr>`).join("")||vuoto(8,"Ancora nessuna attività pianificata.")}
-      ${perR.size?`<tr class="tot"><td>Totale</td><td class="n">${perP.size}</td><td class="n">${bl.length}</td><td class="n">${fmtH(pl)}</td><td class="n">${ex?fmtH(ex):"—"}</td><td class="n">${fmtH(sv)}</td><td class="n">100%</td><td>${bud?`<span class="muted" style="font-size:12px">budget ${fmtH(bud)} h: ${pl>bud?"superato di "+fmtH(pl-bud)+" h":"restano "+fmtH(bud-pl)+" h"}</span>`:""}</td></tr>`:""}
+      <div class="tbl-wrap"><table><thead><tr><th>Reparto</th><th class="n">Persone</th><th class="n">Attività</th><th class="n">Pianif.</th><th class="n">di cui extra</th><th class="n">Svolte</th>${NP.tot?'<th class="n" title="Ore scritte nel foglio ore come altre attività su questa commessa (non pianificate)">Non pianif.</th>':""}<th class="n">Quota</th><th data-nosort>Peso sulla commessa</th></tr></thead><tbody>
+      ${[...perR.values()].sort((a,b)=>b.pl-a.pl).map(x=>`<tr><td style="white-space:nowrap">${x.r?`<i class="dot" style="--h:${x.r.colore}"></i>${esc(x.r.nome)}`:'<span class="muted">Senza reparto</span>'}</td><td class="n">${x.pers.size}</td><td class="n">${x.n}</td><td class="n">${fmtH(x.pl)}</td><td class="n">${x.ex?fmtH(x.ex):"—"}</td><td class="n">${fmtH(x.sv)}</td>${NP.tot?`<td class="n">${NP.perR.get(x.r?x.r.id:"")?fmtH(NP.perR.get(x.r?x.r.id:"")):"—"}</td>`:""}<td class="n">${pct(x.pl,pl)}%</td><td>${barra(x.pl,pl)}</td></tr>`).join("")||vuoto(8,"Ancora nessuna attività pianificata.")}
+      ${perR.size?`<tr class="tot"><td>Totale</td><td class="n">${perP.size}</td><td class="n">${bl.length}</td><td class="n">${fmtH(pl)}</td><td class="n">${ex?fmtH(ex):"—"}</td><td class="n">${fmtH(sv)}</td>${NP.tot?`<td class="n">${fmtH(NP.tot)}</td>`:""}<td class="n">100%</td><td>${bud?`<span class="muted" style="font-size:12px">budget ${fmtH(bud)} h: ${pl>bud?"superato di "+fmtH(pl-bud)+" h":"restano "+fmtH(bud-pl)+" h"}</span>`:""}</td></tr>`:""}
       </tbody></table></div></div>
     <div class="panel"><h2>Ore per risorsa<small>chi ci lavora e quanto</small></h2>
       <div class="tbl-wrap"><table><thead><tr><th>Risorsa</th><th>Reparto</th><th class="n">Attività</th><th class="n">Pianif.</th><th class="n">di cui extra</th><th class="n">Svolte</th><th class="n">Avanz.</th></tr></thead><tbody>
