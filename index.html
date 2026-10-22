@@ -127,7 +127,7 @@ select.inp,input.inp{border:1px solid var(--line);background:var(--panel);border
 .blk>span{position:relative}
 .repbar{position:absolute;height:26px;border-radius:5px;display:flex;align-items:center;gap:8px;padding:0 9px;z-index:2;overflow:hidden;white-space:nowrap;font-size:12px;color:var(--fg);cursor:default;
   background:hsl(var(--h) var(--blk-s) var(--blk-l));border:1px solid hsl(var(--h) 45% var(--blk-b))}.repbar span{margin-left:auto;font-family:var(--f-mono);font-size:11.5px}
-.rep-tot{font-size:11.5px;color:var(--muted)}.st-np{display:block;font-size:11px;color:var(--over);font-weight:600;white-space:nowrap}
+.rep-tot{font-size:11.5px;color:var(--muted)}.f-fig{font-size:13px;color:var(--fg);margin-top:-6px;display:flex;flex-wrap:wrap;gap:2px 16px;align-items:baseline}.f-fig span{white-space:nowrap}.f-fig b{font-size:11px;letter-spacing:.04em;color:var(--muted);margin-right:3px}.st-np{display:block;font-size:11px;color:var(--over);font-weight:600;white-space:nowrap}
 .foglio tr.alt-h td{background:color-mix(in srgb,var(--accent) 6%,transparent);font-size:12.5px;padding-top:8px}.alt-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.alt-add .inp{flex:1 1 260px;min-width:0;max-width:460px}.alt-add select.inp{flex:0 1 240px}a.alt-t{color:inherit}.foglio .alt-nota{display:block;width:100%;max-width:340px;margin-top:4px;padding:3px 6px;font-size:12.5px;height:auto;min-height:0}.foglio .alt-nota:not(:focus){border-color:transparent;background:color-mix(in srgb,var(--fg) 4%,transparent)}.alt-nt{font-size:12px;color:var(--muted);margin-top:3px;max-width:340px}.rep-tot b{color:var(--fg);font-weight:600}
 .blk .pg{position:absolute;left:0;top:0;bottom:0;background:hsl(var(--h) calc(var(--blk-s) + 10%) calc(var(--blk-l) - 14%));opacity:.6;pointer-events:none;border-right:2px solid hsl(var(--h) 50% var(--blk-b))}
 .blk .pc{font-family:var(--f-mono);font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -885,6 +885,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
     <div id="ed-ro" class="ed-ro" hidden></div>
     <div class="f">
       <label class="w">Commessa o assenza<select class="inp" id="f-comm"></select></label>
+      <div class="w f-fig" id="f-fig" hidden></div>
       <label class="w noass" id="f-voce-l" hidden>Voce della stima ore (facoltativo)<select class="inp" id="f-voce"></select></label>
       <label class="w">Attività<input class="inp" id="f-att" placeholder="es. Tavole esecutive strutture" autocomplete="off"></label>
       <label class="o-pers">Risorsa<select class="inp" id="f-pers"></select></label>
@@ -1902,7 +1903,7 @@ function schedaLettura(b,cc){
   const av=avPct(b),prev=b.dopo&&S.blocchi.find(x=>x.id===b.dopo),ev=b.dopoEvento&&evById(b.dopoEvento),rit=cc&&ritardoComm(cc);
   const riga=(l,v)=>v?`<div class="ro-r"><span>${l}</span><div>${v}</div></div>`:"";
   const ass=isAss(b);
-  return`${ass?`<div class="ro-c">${esc(assLab(b.assenza))}</div>`:cc?`<div class="ro-c"><span class="code" style="--h:${cc.colore}">${esc(cv(cc))}</span> ${esc(cc.nome)}</div>`:""}
+  return`${ass?`<div class="ro-c">${esc(assLab(b.assenza))}</div>`:cc?`<div class="ro-c"><span class="code" style="--h:${cc.colore}">${esc(cv(cc))}</span> ${esc(cc.nome)}</div>${cc.riservata?"":`<div class="f-fig"><span><b>PM</b> ${esc(pmNomi(cc.id)||"—")}</span><span><b>SE</b> ${esc(figN(cc,"se")||"—")}</span><span><b>SAL</b> ${esc(figN(cc,"sales")||"—")}</span></div>`}`:""}
     <div class="ro-t">${esc(b.attivita||(ass?assLab(b.assenza):"senza titolo"))}</div>
     ${riga("Risorsa",esc(nomeP(b.personaId)))}
     ${riga("Periodo",`<b>${fmtD(s)} → ${fmtD(e)}</b> <span class="muted">· ${lav} giorn${lav===1?"o":"i"} lavorativ${lav===1?"o":"i"}</span>`)}
@@ -1927,7 +1928,10 @@ function fillDopo(cur){const cid=$("#f-comm").value;const me=edId;const l=S.bloc
 // scegliendo la voce della stima con il nome dell'attività ancora vuoto, il nome diventa quello della voce
 $("#f-voce").addEventListener("change",()=>{const c=commById($("#f-comm").value),v=c&&c.stima&&(c.stima.voci||[]).find(x=>x.id===$("#f-voce").value);if(v&&!$("#f-att").value.trim())$("#f-att").value=v.nome});
 // consegna e cartella della commessa scelta (si aggiorna anche cambiando commessa)
-function fillFold(cc){$("#f-fold").innerHTML=cc&&(cc.cartella||cc.consegna)?`${cc.consegna?`Consegna ${esc(cv(cc))}: <b>${fmtD(consegnaN(cc))}</b>${ritardoComm(cc)?` · <b style="color:var(--over)">fine prevista ${fmtD(fineComm(cc.id))}, +${ritardoComm(cc)} g</b>`:""}`:""}${cc.cartella?`${cc.consegna?" · ":""}<a href="#" data-fold="${esc(cc.id)}">📁 Cartella della commessa</a>`:""}`:"";}
+function fillFold(cc){
+  // in alto, sotto la commessa: le sue figure (PM, SE, SAL)
+  const ff=$("#f-fig");ff.hidden=!(cc&&!cc.riservata);ff.innerHTML=ff.hidden?"":`<span><b>PM</b> ${esc(pmNomi(cc.id)||"—")}</span><span><b>SE</b> ${esc(figN(cc,"se")||"—")}</span><span><b>SAL</b> ${esc(figN(cc,"sales")||"—")}</span>`;
+  $("#f-fold").innerHTML=(cc&&(cc.cartella||cc.consegna)?`${cc.consegna?`Consegna ${esc(cv(cc))}: <b>${fmtD(consegnaN(cc))}</b>${ritardoComm(cc)?` · <b style="color:var(--over)">fine prevista ${fmtD(fineComm(cc.id))}, +${ritardoComm(cc)} g</b>`:""}`:""}${cc.cartella?`${cc.consegna?" · ":""}<a href="#" data-fold="${esc(cc.id)}">📁 Cartella della commessa</a>`:""}`:"");}
 function fillVoce(cur){const c=commById($("#f-comm").value),l=(c&&c.stima&&c.stima.voci)||[],sel=$("#f-voce"),lab=$("#f-voce-l");
   lab.hidden=!l.length;if(!l.length){sel.innerHTML="";return}
   const rp=(persById($("#f-pers").value)||{}).repartoId,nomeR=id=>(S.reparti.find(r=>r.id===id)||{}).nome||"";
