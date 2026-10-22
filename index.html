@@ -1429,8 +1429,8 @@ function renderMio(){
   // PM: le mie commesse
   // il responsabile PM (che non è PM di commesse sue) vede tutte le commesse aperte
   // tutte le commesse aperte: responsabile PM (se non è PM di nessuna) e sempre responsabili e coordinatori di reparto
-  const respRep=myReparti().length>0||mySup().length>0;
-  const capoTutte=io&&((can("capo_pm")&&!S.commesse.some(c=>!c.chiusa&&isPmOf(c.id)))||respRep);
+  const guidaRep=myReparti().length>0||mySup().length>0; // (non chiamarla respRep: è già una funzione)
+  const capoTutte=io&&((can("capo_pm")&&!S.commesse.some(c=>!c.chiusa&&isPmOf(c.id)))||guidaRep);
   const mieC=io?S.commesse.filter(c=>!c.chiusa&&(capoTutte||isPmOf(c.id))):[];
   const giorno=dobj(oggi).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
   const tile=(n,l,cls)=>`<div class="mio-t${cls?" "+cls:""}"><b>${n}</b><span>${l}</span></div>`;
