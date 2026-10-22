@@ -5043,6 +5043,8 @@ let refreshT=null;
 function refresh(){clearTimeout(refreshT);refreshT=setTimeout(doRefresh,80)}
 async function doRefresh(){
   try{const j=await api("GET","/api/state");
+    // dati cambiati (spunte applicate a un ruolo, import, un altro amministratore): l'elenco Utenti si ricarica
+    if(S.utentiLoaded&&S.rev!=null&&j.rev!==S.rev){if(S.tab==="perm")loadUtenti();else S.utentiLoaded=false}
     S.rev=j.rev;S.tipiDoc=j.tipiDoc||null;S.persone=j.persone;S.commesse=(j.commesse||[]).filter(c=>!c.riservata);S.riservata=(j.commesse||[]).find(c=>c.riservata)||null;S.blocchi=j.blocchi;S.team=j.team;S.me=j.me;S.isOwner=!!j.me.admin;
     S.oreStd=j.oreStd||8;S.giorniLav=j.giorniLavoro||[1,2,3,4,5];S.reparti=j.reparti||[];S.richieste=(j.richieste||[]).filter(r=>!r.eliminata);S.richiesteRit=(j.richieste||[]).filter(r=>r.eliminata);S.utentiMini=j.utenti||[];S.ruoli=j.ruoli||{};S.tipiAssenza=j.tipiAssenza||ASS;S.festivi=j.festivi||{};S.foglioOre=!!j.foglioOre;S.allegatiCfg=j.allegatiCfg||{maxMB:20,riduciFoto:true};S.annulla=j.annulla||null;
     {const prima=new Set((S.notifiche||[]).map(n=>n.id));S.notifiche=j.notifiche||[];S.nonLette=j.nonLette;S.requisiti=j.requisiti||[];S.appunti=j.appunti||[];setTimeout(chiediMotivoOltre,400);S.eventi=j.eventi||[];try{$("#xl-btn").hidden=!(xAree().length||S.commesse.some(c=>canReqC(c.id)))}catch(_){}S.allegati=j.allegati||{};const nuove=S.notifiche.filter(n=>!n.letta&&!prima.has(n.id));if(S.notInit&&nuove.length&&!(convAperta&&nuove.every(n=>n.conv===convAperta)))toast(`🔔 ${nuove[0].daNome} ${nuove[0].msg||"ti ha menzionato"}`);S.notInit=true}
