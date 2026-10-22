@@ -15,7 +15,7 @@
   --f-disp:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"Roboto Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --nameW:184px;
+  --nameW:206px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#10151b; --panel:#161d25; --fg:#e3e8ee; --muted:#93a0ae; --line:#2b3542; --line-soft:#1e2731;
@@ -368,7 +368,7 @@ a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:cente
 .dc-up{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--accent) 3%,transparent)}.dc-up-r{display:flex;gap:10px;flex-wrap:wrap}
 .cm-ch{display:flex;gap:4px;margin:2px 0}
 /* riga della commessa in timeline, compatta (3 righe): codice e pulsanti · nome · figure, consegna, ore */
-.name.cmr{padding:5px 10px;gap:1px;justify-content:flex-start}.name.cmr .cm-top{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;white-space:nowrap}.name.cmr .cm{flex:none}.name.cmr .cm-ch{margin:1px 0 2px;flex-wrap:wrap;gap:3px}.name.cmr .cm-ch .rqchip{padding:0 5px;font-size:10.5px;line-height:16px}
+.name.cmr{padding:4px 10px;gap:0;justify-content:flex-start}.name.cmr .cm-top .rqchip.ico{padding:0 5px;font-size:10.5px;line-height:16px;flex:none}.name.cmr .cm-top{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;white-space:nowrap}.name.cmr .cm{flex:none}.name.cmr .cm-ch{margin:1px 0 2px;flex-wrap:wrap;gap:3px}.name.cmr .cm-ch .rqchip{padding:0 5px;font-size:10.5px;line-height:16px}
 .name.cmr>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;line-height:1.3}
 .name.cmr .cm-meta{display:flex;flex-wrap:nowrap;gap:0 8px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}.name.cmr .cm-meta>span{flex:none}.name.cmr .cm-meta>span:first-child{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}.name.cmr .pill.dp{font-size:10px;padding:0 5px}.name.cmr .cm-k>span{flex:none!important}.name.cmr .cm-k>.sat{flex:0 1 auto!important;overflow:hidden;text-overflow:ellipsis}
 .rt-docs{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}.rt-docs .al-chips{margin:0}
@@ -1541,7 +1541,7 @@ function rowsCommesse(v0,v1,dw,W,tdl){
     }
     const kN=consegnaN(c),rit=ritardoComm(c);
     const kLine=kN!=null&&kN>=v0&&kN<=v1?`<i class="cons-line${rit?" late":""}" style="left:${(kN-v0+1)*dw-1}px" title="Consegna ${esc(cv(c))}: ${fmtD(kN)}${rit?" · fine prevista "+fmtD(fineComm(c.id))+" (+"+rit+" g lavorativi)":""}"><b>${fmtD(kN)}</b></i>`:"";
-    html+=`<div class="row${isPT(c)?" pt":""}" data-c="${esc(c.id)}"><div class="name cmr" style="--h:${c.colore}"><div class="cm-top"><span class="cm">${esc(cv(c))}${c.cartella?` <button class="fold" data-fold="${esc(c.id)}" title="Cartella della commessa" aria-label="Apri la cartella della commessa">📁</button>`:""}</span>${c.daPianificare?'<span class="pill dp">da pian.</span>':""}</div>${reqChip(c.id)||docChip(c.id)||evChip(c.id)?`<span class="cm-ch">${reqChip(c.id)}${docChip(c.id)}${evChip(c.id)}</span>`:""}<b title="${esc(c.nome)}${schedaVis()?" · clic: scheda della commessa":""}"${schedaVis()?` data-sch="${esc(c.id)}" class="sch-lnk"`:""}>${esc(c.nome)}</b><div class="cm-meta" title="${esc(`Project Manager: ${pmNomi(c.id)||"—"}\nSystem Engineer: ${figN(c,"se")||"—"}\nSales: ${figN(c,"sales")||"—"}${kN!=null?"\nConsegna "+fmtD(kN)+(rit?" · fine prevista "+fmtD(fineComm(c.id))+" (+"+rit+" g lavorativi)":""):""}\n${fmtH(ore)} h${av!=null?" · avanzamento "+av+"%":""}`)}"><span>${esc(figTxt(c))}</span></div><div class="cm-meta cm-k">${kN!=null?`<span class="${rit?"late-txt":""}">cons. ${fmtD(kN)}${rit?` ⚠+${rit}g`:""}</span>`:""}<span class="sat">${fmtH(ore)} h${av!=null?" · "+av+"%":""}${nBl?` · <b style="color:var(--over)">⛔ ${nBl}</b>`:""}</span></div>${RA&&RA.tot.length?`<div class="cm-meta rep-tot" title="Ore totali dei reparti sulla commessa">${RA.tot.map(x=>`<span>${esc(x.nome)} <b>${fmtH(x.h)} h</b></span>`).join("")}</div>`:""}</div><div class="track" style="width:${W}px;height:${h}px">${tdl}${kLine}${blks}</div></div>`;
+    html+=`<div class="row${isPT(c)?" pt":""}" data-c="${esc(c.id)}"><div class="name cmr" style="--h:${c.colore}"><div class="cm-top"><span class="cm">${esc(cv(c))}${c.cartella?` <button class="fold" data-fold="${esc(c.id)}" title="Cartella della commessa" aria-label="Apri la cartella della commessa">📁</button>`:""}</span>${docChip(c.id,"ico")}${evChip(c.id,"ico")}${c.daPianificare?'<span class="pill dp">da pian.</span>':""}</div>${reqChip(c.id)?`<span class="cm-ch">${reqChip(c.id)}</span>`:""}<b title="${esc(c.nome)}${schedaVis()?" · clic: scheda della commessa":""}"${schedaVis()?` data-sch="${esc(c.id)}" class="sch-lnk"`:""}>${esc(c.nome)}</b><div class="cm-meta" title="${esc(`Project Manager: ${pmNomi(c.id)||"—"}\nSystem Engineer: ${figN(c,"se")||"—"}\nSales: ${figN(c,"sales")||"—"}${kN!=null?"\nConsegna "+fmtD(kN)+(rit?" · fine prevista "+fmtD(fineComm(c.id))+" (+"+rit+" g lavorativi)":""):""}\n${fmtH(ore)} h${av!=null?" · avanzamento "+av+"%":""}`)}"><span>${esc(figTxt(c))}</span></div><div class="cm-meta cm-k">${kN!=null?`<span class="${rit?"late-txt":""}">cons. ${fmtD(kN)}${rit?` ⚠+${rit}g`:""}</span>`:""}<span class="sat">${fmtH(ore)} h${av!=null?" · "+av+"%":""}${nBl?` · <b style="color:var(--over)">⛔ ${nBl}</b>`:""}</span></div>${RA&&RA.tot.length?`<div class="cm-meta rep-tot" title="Ore totali dei reparti sulla commessa">${RA.tot.map(x=>`<span>${esc(x.nome)} <b>${fmtH(x.h)} h</b></span>`).join("")}</div>`:""}</div><div class="track" style="width:${W}px;height:${h}px">${tdl}${kLine}${blks}</div></div>`;
   }
   return html;
 }
@@ -2416,6 +2416,7 @@ const lavTra=(a,b)=>{let n=0;const s0=Math.min(a,b),z=Math.max(a,b);for(let x=s0
 const evRinvio=e=>{const st=e.storia||[];if(!st.length)return null;const d0=dnum(e.creato&&e.creato.data||st[0].da);return{n:st.length,gg:lavTra(d0,dnum(e.data)),d0}};
 const sg=n=>(n>0?"+":"")+n;
 function evChip(cid,lab){const n=eventiDi(cid).length;if(!n&&!canEvC(cid))return"";
+  if(lab==="ico")return`<button class="rqchip ico${n?"":" vuoto"}" data-evc="${esc(cid)}" title="Eventi della commessa${n?": "+n:""} (arrivo veicolo, approvazione cliente…): le attività agganciate li aspettano">◆${n?" "+n:""}</button>`;
   return`<button class="rqchip${n?"":" vuoto"}" data-evc="${esc(cid)}" title="Eventi della commessa (arrivo veicolo, approvazione cliente…): le attività agganciate li aspettano">◆ ${lab&&n?"Eventi ":""}${n||"Eventi"}</button>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-evc]");if(b){e.preventDefault();e.stopPropagation();openEventi(b.dataset.evc)}},true);
 const EV_NOMI=["Arrivo veicolo","Arrivo telaio","Arrivo autobus","Approvazione disegni del cliente","Consegna componenti","Collaudo","Sopralluogo dal cliente"];
@@ -2492,6 +2493,7 @@ function openEvento(id,opt){opt=opt||{};const e=evById(id);if(!e){toast("L'event
   showRdlg();
 }
 function docChip(cid,lab){const n=docsOf(cid).length,a=appuntiDi(cid).length;if(!n&&!a&&!canReqC(cid))return"";
+  if(lab==="ico")return`<button class="rqchip ico${n||a?"":" vuoto"}" data-docc="${esc(cid)}" title="Documenti della commessa${n?": "+n:""}${a?" · appunti: "+a:""} (capitolato, proposta tecnica…)">📎${n?" "+n:""}${a?" 📌 "+a:""}</button>`;
   return`<button class="rqchip${n||a?"":" vuoto"}" data-docc="${esc(cid)}" title="Documenti della commessa (capitolato, proposta tecnica…) e appunti">${lab?[n||!a?`📎 Documenti${n?" "+n:""}`:"",a?`📌 Appunti ${a}`:""].filter(Boolean).join(" · "):`📎 ${n||(a?"":"Documenti")}${a?` · 📌 ${a}`:""}`}</button>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-docc]");if(b){e.preventDefault();e.stopPropagation();openDocs(b.dataset.docc)}},true);
 function openDocs(cid,aperto){const c=commById(cid);if(!c)return;RT=null;rdId=null;rdlg.classList.add("wide");
