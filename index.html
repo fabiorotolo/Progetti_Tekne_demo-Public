@@ -367,6 +367,10 @@ a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:cente
 .dc-r{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--line-soft);font-size:13px}.dc-r .al-chips{margin:0}.dc-n{font-size:13px}
 .dc-up{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--accent) 3%,transparent)}.dc-up-r{display:flex;gap:10px;flex-wrap:wrap}
 .cm-ch{display:flex;gap:4px;margin:2px 0}
+/* riga della commessa in timeline, compatta (3 righe): codice e pulsanti · nome · figure, consegna, ore */
+.name.cmr{padding:5px 10px;gap:1px;justify-content:flex-start}.name.cmr .cm-top{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;white-space:nowrap}.name.cmr .cm{flex:none}.name.cmr .cm-ch{margin:0;flex-wrap:nowrap;overflow:hidden;min-width:0}.name.cmr .cm-ch .rqchip{padding:0 5px;font-size:10.5px;line-height:16px}
+.name.cmr>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;line-height:1.3}
+.name.cmr .cm-meta{display:flex;flex-wrap:nowrap;gap:0 8px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}.name.cmr .cm-meta>span{flex:none}.name.cmr .cm-meta>span:first-child{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}.name.cmr .pill.dp{font-size:10px;padding:0 5px}.name.cmr .cm-k>span{flex:none!important}.name.cmr .cm-k>.sat{flex:0 1 auto!important;overflow:hidden;text-overflow:ellipsis}
 .rt-docs{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}.rt-docs .al-chips{margin:0}
 #vdlg{width:min(1200px,calc(100vw - 24px));height:min(92vh,1000px);padding:0}
 .vd{display:flex;flex-direction:column;height:100%}.vd-h{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -512,7 +516,7 @@ svg.dip path.hit{cursor:pointer}
 .mio-t.over b{color:var(--over)}.mio-t.warn{border-color:color-mix(in srgb,var(--today) 50%,var(--line))}
 .mio-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:14px;align-items:start}
 @media (max-width:640px){.mio-g{grid-template-columns:1fr}}
-.mio-tb{width:100%;border-collapse:collapse;font-size:13.5px}.mio-tb td,.mio-tb th{padding:6px 6px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.mio-tb{width:100%;border-collapse:collapse;font-size:13.5px}.mio-scroll{max-height:min(460px,60vh);overflow:auto}.mio-tb td,.mio-tb th{padding:6px 6px;border-bottom:1px solid var(--line-soft);vertical-align:top}
 .mio-tb th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}.mio-tb tr.mio-r{cursor:pointer}.mio-tb tr.mio-r:hover td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
 @media (max-width:760px){.mio-task,.mio-task tbody{display:block}.mio-task tr{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:8px 0;border-bottom:1px solid var(--line-soft)}.mio-task td{display:block;padding:0;border:0;text-align:left!important}.mio-task td:nth-child(3),.mio-task td:nth-child(4){grid-column:2}.mio-task td:nth-child(4){display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mio-task td:nth-child(4):empty{display:none}}
 .mio-tb .mio-oggi{background:color-mix(in srgb,var(--today) 9%,transparent)}.mio-tb tr.tot td{font-weight:600;border-bottom:none}
@@ -821,9 +825,9 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
       <button class="btn" id="next" aria-label="Settimana successiva">▶</button>
       <span class="range" id="range"></span>
       <span class="seg" id="zoom">
-        <button data-z="22" aria-pressed="false">12 sett.</button>
-        <button data-z="34" aria-pressed="true">6 sett.</button>
-        <button data-z="52" aria-pressed="false">4 sett.</button>
+        <button data-w="12" aria-pressed="false">12 sett.</button>
+        <button data-w="6" aria-pressed="true">6 sett.</button>
+        <button data-w="4" aria-pressed="false">4 sett.</button>
       </span>
       <span class="seg" id="vista"><button data-v="persone" aria-pressed="true">Risorse</button><button data-v="commesse" aria-pressed="false">Commesse</button></span>
       <span class="seg" id="tipof" hidden title="Mostra o nascondi commesse e programmi temporanei"><button data-t="c">Commesse</button><button data-t="pt">Programmi temp.</button></span>
@@ -1072,7 +1076,8 @@ function workDays(a,b){let c=0;for(let n=a;n<=b;n++)if(!isOff(n))c++;return c}
 const S={persone:[],commesse:[],blocchi:[],team:[],teamF:"",view0:mondayOf(todayN)-7,dw:34,tab:"plan",filtro:"",canWrite:true,loaded:{persone:false,commesse:false,blocchi:false,team:false},period:"mese",
   me:null,isOwner:false,utenti:[],registro:[],regFilt:"",rev:0,es:null,
   reparti:[],richieste:[],utentiMini:[],ruoli:{},reqFilt:"todo",scope:null,vista:null,commF:null};
-try{const z=Number(localStorage.getItem("cut-zoom"));if([22,34,52].includes(z))S.dw=z}catch(e){}
+// zoom: quante settimane si vedono (12, 6, 4); la larghezza del giorno si adatta allo schermo (niente scorrimento di lato)
+S.zoomW=6;try{const w=Number(localStorage.getItem("cut-zoomw")),z=Number(localStorage.getItem("cut-zoom"));if([12,6,4].includes(w))S.zoomW=w;else if(z)S.zoomW=z<=22?12:z>=52?4:6}catch(e){}
 try{S.teamF=localStorage.getItem("cut-team")||""}catch(e){}
 S.soloMie=true; // "Le mie in evidenza": scelta di ogni utente, di base accesa (vedi initScope)
 try{S.msgG=localStorage.getItem("cut-msgG")||"comm"}catch(e){}
@@ -1241,8 +1246,10 @@ function diffB(a,o){
 function log(){} // il registro lo scrive il server
 function fmtTs(iso){const d=new Date(iso);if(isNaN(d))return"";return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+String(d.getFullYear()).slice(2)+" "+pad(d.getHours())+":"+pad(d.getMinutes())}
 // giorni mostrati: almeno 12/6/4 settimane, e comunque abbastanza da riempire lo schermo
-const daysInView=()=>{const base=S.dw<=22?84:S.dw>=52?28:42;const tl=document.getElementById("tl");const nw=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nameW"))||184;
-  const w=tl&&tl.clientWidth?tl.clientWidth-nw:0;return Math.max(base,Math.ceil(w/S.dw/7)*7)};
+const tlLargo=()=>{const tl=document.getElementById("tl");const nw=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nameW"))||184;return tl&&tl.clientWidth?tl.clientWidth-nw-2:0};
+// larghezza del giorno: le settimane scelte riempiono lo spazio (minimo 12 px, sul cellulare si scorre)
+function adattaZoom(){const base=(S.zoomW||6)*7,w=tlLargo();S.dw=w>0?Math.max(12,Math.min(96,Math.floor(w/base))):({12:22,6:34,4:52})[S.zoomW]||34}
+const daysInView=()=>{const base=(S.zoomW||6)*7,w=tlLargo();return Math.max(base,w>0?Math.floor(w/S.dw):base)};
 window.addEventListener("resize",()=>{if(S.tab==="plan")render()});
 
 const commById=id=>S.commesse.find(c=>c.id===id)||(S.riservata&&S.riservata.id===id?S.riservata:undefined);
@@ -1453,8 +1460,8 @@ function renderMio(){
     ${p&&inAtt.length?`<div class="panel"><h2>In attesa<small>attività che aspettano qualcos'altro</small></h2><table class="mio-tb"><tbody>${inAtt.map(b=>riga(b,`<td class="muted" style="white-space:nowrap">${fmtD(bStart(b))} – ${fmtD(bEnd(b))}</td>`)).join("")}</tbody></table></div>`:""}
     ${p?`<div class="panel"><h2>Prossime due settimane</h2>${pross.length?`<table class="mio-tb"><tbody>${pross.map(b=>riga(b,`<td class="muted" style="white-space:nowrap">dal ${fmtD(bStart(b))} al ${fmtD(bEnd(b))}</td><td class="n">${fmtH(bOre(b))} h</td>`)).join("")}</tbody></table>`:`<p class="muted" style="margin:0">Nessuna nuova attività in arrivo.</p>`}</div>`:""}
     ${assP.length?`<div class="panel"><h2>Ferie e assenze</h2><table class="mio-tb"><tbody>${assP.map(b=>`<tr><td>🌴 ${esc(b.attivita||assLab(b.assenza))}</td><td class="muted">${fmtD(bStart(b))}${bEnd(b)!==bStart(b)?" – "+fmtD(bEnd(b)):""}</td><td class="n">${fmtH(b.oreGiorno)} h/g</td></tr>`).join("")}</tbody></table></div>`:""}
-    ${mieC.length?`<div class="panel"><h2>${capoTutte?"Commesse aperte<small>"+(S.me.admin?"panoramica":"sei il responsabile PM")+"</small>":"Le tue commesse<small>sei il PM</small>"}</h2><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
-      return`<tr><td><span class="code" style="--h:${c.colore}">${esc(cv(c))}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} task aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div>`:""}
+    ${mieC.length?`<div class="panel"><h2>${capoTutte?"Commesse aperte<small>"+(S.me.admin?"panoramica":"sei il responsabile PM")+"</small>":"Le tue commesse<small>sei il PM</small>"}<small>${mieC.length} commess${mieC.length>1?"e":"a"}</small></h2><div class="mio-scroll"><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
+      return`<tr><td><span class="code" style="--h:${c.colore}">${esc(cv(c))}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b><div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} task aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div></div>`:""}
     </div>${apMioHtml(p)}</div>`;
   bindApMio();bindOltre($("#mio-olt"));
   const sp=$("#mio-p");if(sp)sp.onchange=()=>{S.mioP=sp.value||null;render()};
@@ -1533,7 +1540,7 @@ function rowsCommesse(v0,v1,dw,W,tdl){
     }
     const kN=consegnaN(c),rit=ritardoComm(c);
     const kLine=kN!=null&&kN>=v0&&kN<=v1?`<i class="cons-line${rit?" late":""}" style="left:${(kN-v0+1)*dw-1}px" title="Consegna ${esc(cv(c))}: ${fmtD(kN)}${rit?" · fine prevista "+fmtD(fineComm(c.id))+" (+"+rit+" g lavorativi)":""}"><b>${fmtD(kN)}</b></i>`:"";
-    html+=`<div class="row${isPT(c)?" pt":""}" data-c="${esc(c.id)}"><div class="name" style="--h:${c.colore}"><span class="cm">${esc(cv(c))}${c.cartella?` <button class="fold" data-fold="${esc(c.id)}" title="Cartella della commessa" aria-label="Apri la cartella della commessa">📁</button>`:""}</span>${reqChip(c.id)||docChip(c.id)||evChip(c.id)?`<span class="cm-ch">${reqChip(c.id)}${docChip(c.id)}${evChip(c.id)}</span>`:""}<b title="${esc(c.nome)}${schedaVis()?" · clic: scheda della commessa":""}"${schedaVis()?` data-sch="${esc(c.id)}" class="sch-lnk"`:""}>${esc(c.nome)}</b><span title="${esc(`Project Manager: ${pmNomi(c.id)||"—"}\nSystem Engineer: ${figN(c,"se")||"—"}\nSales: ${figN(c,"sales")||"—"}`)}">${esc(figTxt(c))}</span>${c.daPianificare?'<span class="pill dp">da pianificare</span>':""}${kN!=null?`<span class="${rit?"late-txt":""}" title="${rit?"Fine prevista "+fmtD(fineComm(c.id))+": "+rit+" giorni lavorativi dopo la consegna":""}">Consegna ${fmtD(kN)}${rit?` ⚠ +${rit} g`:""}</span>`:""}<span class="sat">${fmtH(ore)} h${av!=null?" · "+av+"%":""}${nBl?` · <b style="color:var(--over)">⛔ ${nBl}</b>`:""}</span>${RA&&RA.tot.length?RA.tot.map(x=>`<span class="rep-tot" title="Ore totali del reparto ${esc(x.nome)} sulla commessa">${esc(x.nome)} <b>${fmtH(x.h)} h</b></span>`).join(""):""}</div><div class="track" style="width:${W}px;height:${h}px">${tdl}${kLine}${blks}</div></div>`;
+    html+=`<div class="row${isPT(c)?" pt":""}" data-c="${esc(c.id)}"><div class="name cmr" style="--h:${c.colore}"><div class="cm-top"><span class="cm">${esc(cv(c))}${c.cartella?` <button class="fold" data-fold="${esc(c.id)}" title="Cartella della commessa" aria-label="Apri la cartella della commessa">📁</button>`:""}</span>${reqChip(c.id)||docChip(c.id)||evChip(c.id)?`<span class="cm-ch">${reqChip(c.id)}${docChip(c.id)}${evChip(c.id)}</span>`:""}${c.daPianificare?'<span class="pill dp">da pian.</span>':""}</div><b title="${esc(c.nome)}${schedaVis()?" · clic: scheda della commessa":""}"${schedaVis()?` data-sch="${esc(c.id)}" class="sch-lnk"`:""}>${esc(c.nome)}</b><div class="cm-meta" title="${esc(`Project Manager: ${pmNomi(c.id)||"—"}\nSystem Engineer: ${figN(c,"se")||"—"}\nSales: ${figN(c,"sales")||"—"}${kN!=null?"\nConsegna "+fmtD(kN)+(rit?" · fine prevista "+fmtD(fineComm(c.id))+" (+"+rit+" g lavorativi)":""):""}\n${fmtH(ore)} h${av!=null?" · avanzamento "+av+"%":""}`)}"><span>${esc(figTxt(c))}</span></div><div class="cm-meta cm-k">${kN!=null?`<span class="${rit?"late-txt":""}">cons. ${fmtD(kN)}${rit?` ⚠+${rit}g`:""}</span>`:""}<span class="sat">${fmtH(ore)} h${av!=null?" · "+av+"%":""}${nBl?` · <b style="color:var(--over)">⛔ ${nBl}</b>`:""}</span></div>${RA&&RA.tot.length?`<div class="cm-meta rep-tot" title="Ore totali dei reparti sulla commessa">${RA.tot.map(x=>`<span>${esc(x.nome)} <b>${fmtH(x.h)} h</b></span>`).join("")}</div>`:""}</div><div class="track" style="width:${W}px;height:${h}px">${tdl}${kLine}${blks}</div></div>`;
   }
   return html;
 }
@@ -1541,9 +1548,10 @@ function rowsCommesse(v0,v1,dw,W,tdl){
 let firstPlan=true;
 function renderPlan(){
   renderFilter();
+  adattaZoom();
   const dw=S.dw,N=daysInView(),v0=S.view0,v1=v0+N-1;
   $("#range").textContent=fmtD(v0)+" – "+fmtD(v1)+" "+dobj(v1).getUTCFullYear();
-  document.querySelectorAll("#zoom button").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.z)===dw?"true":"false"));
+  document.querySelectorAll("#zoom button").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.w)===S.zoomW?"true":"false"));
   $("#new-blk").hidden=!canPlanAny();
   // per reparto: vista Commesse (con una risorsa propria resta anche la sua riga in Risorse); niente Esporta con i nomi
   {const pr=pianRep();if(pr&&!myPersona())S.vista="commesse";const rb=$('#vista [data-v="persone"]');if(rb)rb.hidden=pr&&!myPersona();$("#esp-pian").hidden=pr}
@@ -1827,7 +1835,7 @@ $("#next").onclick=()=>{S.view0+=7;render()};
 // quanti giorni prima di oggi si vedono aprendo la Pianificazione (Impostazioni › Ruoli e permessi, per ruolo; di base 2)
 const gpMe=()=>S.me&&S.me.giorniPrima!=null?S.me.giorniPrima:2;
 $("#today").onclick=()=>{S.view0=todayN-gpMe();firstPlan=true;render()};
-$("#zoom").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.dw=Number(b.dataset.z);try{localStorage.setItem("cut-zoom",S.dw)}catch(_){}firstPlan=true;render()};
+$("#zoom").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.zoomW=Number(b.dataset.w);try{localStorage.setItem("cut-zoomw",S.zoomW)}catch(_){}firstPlan=true;render()};
 $("#filter").onchange=e=>{S.filtro=e.target.value;render()};
 $("#solo").onclick=()=>{S.soloRighe=!S.soloRighe;try{localStorage.setItem("cut-solo-"+(S.me?S.me.id:""),S.soloRighe?"1":"0")}catch(e){}firstPlan=true;render()};
 $("#mie").onclick=()=>{S.soloMie=!S.soloMie;try{localStorage.setItem("cut-mie-"+(S.me?S.me.id:""),S.soloMie?"1":"0")}catch(e){}render()};
