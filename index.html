@@ -150,7 +150,7 @@ select.inp,input.inp{border:1px solid var(--line);background:var(--panel);border
 .pill.dp{background:color-mix(in srgb,var(--warn,#c80) 15%,transparent);color:var(--fg);font-size:11px}
 .pill.ptp{font-size:11px;border:1.5px solid hsl(var(--h,205) 75% 55%);box-shadow:0 0 5px hsl(var(--h,205) 85% 55% / .47)}
 .blk.altri{opacity:.32;filter:saturate(.45)}.load.altri{opacity:.3;filter:saturate(.3)}.blk.altri:hover,.blk.altri:focus-visible{opacity:.9;filter:none}
-#mie[aria-pressed="true"],#solo[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+#mie[aria-pressed="true"],#solo[aria-pressed="true"],#soloc[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .blk.dragging{z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.22);cursor:grabbing;opacity:.92}
 .ro .blk,.blk.lock{cursor:pointer}.ro .blk .h,.blk.lock .h{display:none}
 .tchips{display:flex;flex-wrap:wrap;gap:3px;white-space:normal!important}
@@ -838,7 +838,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
       <select class="inp" id="teamf" aria-label="Mostra team"></select>
       <select class="inp" id="commf" aria-label="Quali commesse" hidden></select>
       <select class="inp" id="filter" aria-label="Evidenzia commessa"></select>
-      <button class="btn" id="mie" hidden title="Le attività degli altri restano trasparenti">Le mie in evidenza</button><button class="btn" id="soloc" hidden title="Restano solo le persone che lavorano sulle commesse di cui sei PM, System Engineer o Sales; le attività di altre commesse diventano trasparenti">Solo le mie commesse</button><button class="btn" id="solo" hidden title="Nasconde le righe che non ti riguardano: restano le tue, quelle collegate alle tue attività e le commesse in cui lavori">Solo le mie</button>
+      <button class="btn" id="mie" hidden title="Le attività degli altri restano trasparenti">Le mie in evidenza</button><button class="btn" id="soloc" hidden title="Restano solo le persone che lavorano sulle commesse di cui sei PM, System Engineer o Sales. Per rendere trasparenti le attività delle altre commesse scegli «Le mie commesse in evidenza» nel menu accanto">Solo le mie commesse</button><button class="btn" id="solo" hidden title="Nasconde le righe che non ti riguardano: restano le tue, quelle collegate alle tue attività e le commesse in cui lavori">Solo le mie</button>
       <span class="grow"></span>
       <button class="btn" id="esp-pian" title="Esporta in Excel per periodo o per commessa: attività, utilizzo risorse e commesse, ore giorno per giorno">⬇ Esporta</button>
       <button class="btn" id="undo" title="Annulla l'ultima modifica (Ctrl+Z)" disabled>↶ Annulla</button>
@@ -1635,7 +1635,7 @@ function renderPlan(){
       const c=commById(b.commessaId);const hue=c?c.colore:0;
       const s=Math.max(bStart(b),v0),e=Math.min(bEnd(b),v1);
       const kN=consegnaN(c),late=kN!=null&&bEnd(b)>kN&&b.stato!=="svolto";
-      const fl=S.filtro||(soloC?"__mie":""),dim=fl&&(fl==="__mie"?!isMiaC(b.commessaId):b.commessaId!==fl)?" dim":"";
+      const fl=S.filtro,dim=fl&&(fl==="__mie"?!isMiaC(b.commessaId):b.commessaId!==fl)?" dim":"";
       const blq=reqDiBlocco(b.id).filter(bloccaOra);const gBlq=blq.length?Math.max(...blq.map(giorniBlocco)):0;
       const lab=esc(b.attivita||"(senza titolo)");
       blks+=`<div class="blk ${b.stato==="svolto"?"svolto":"pianificato"}${isPT(c)?" pt":""}${dim}${fadeAltri(b)}${canPlanB(b)?"":" lock"}${blq.length?" bloc":""}" tabindex="0" data-id="${esc(b.id)}" style="left:${(s-v0)*dw+1}px;width:${(e-s+1)*dw-3}px;top:${4+map.get(b.id)*LH}px;--h:${hue}" title="${esc(c?cv(c)+" · "+c.nome:"Commessa eliminata")} — ${lab} · ${fmtD(bStart(b))}–${fmtD(bEnd(b))} · ${fmtH(bOre(b))} h${b.stato==="svolto"?" · svolta":""}${esc(extTitle(b))}${late?" · ⚠ OLTRE LA CONSEGNA del "+fmtD(kN):""}${blq.length?" · BLOCCATA da "+fmtGG(gBlq)+" ("+blq.length+" richiest"+(blq.length>1?"e":"a")+")":""}">${(()=>{const av=avPct(b);if(!av||b.stato==="svolto")return"";const full=(bEnd(b)-bStart(b)+1)*dw,off=(s-bStart(b))*dw,w=full*av/100-off;return w>0?`<i class="pg" style="width:${Math.min(w,(e-s+1)*dw)}px"></i>`:""})()}${extHtml(b,s,e,dw)}${bStart(b)>=v0?'<i class="h l" data-h="l"></i>':""}<span class="lead">${b.extra?'<span class="xtra" title="Attività extra nata da una richiesta di lavoro">EXTRA</span>':""}${depIcon(b)}${b.stato==="svolto"?'<span class="ck">✓</span>':""}${blq.length?`<span class="bk">⛔ ${fmtGG(gBlq)}</span>`:""}${oltreIc(b)}<span class="code">${esc(cv(c))}</span><span class="t">${lab}</span></span>${late?'<span class="lt" title="Finisce dopo la consegna">⚠</span>':""}${avPct(b)&&b.stato!=="svolto"?`<span class="pc">${avPct(b)}%</span>`:""}<span class="o">${fmtH(bOre(b))}h</span>${bEnd(b)<=v1?'<i class="h r" data-h="r"></i>':""}</div>`;
