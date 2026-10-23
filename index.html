@@ -221,7 +221,7 @@ tr.tot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0}
 dialog{border:1px solid var(--line);border-radius:12px;padding:0;background:var(--panel);color:var(--fg);width:min(520px,calc(100vw - 32px));box-shadow:0 20px 60px rgba(0,0,0,.3)}
 dialog::backdrop{background:rgba(10,20,30,.45)}
 .ed{display:flex;flex-direction:column;gap:12px;padding:18px}
-.ed h3{margin:0;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;font-size:20px}
+.ed h3:focus{outline:none}.ed h3{margin:0;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;font-size:20px}
 .ed .f{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ed label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted);font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.06em;font-weight:600;min-width:0}
 .ed label.w{grid-column:1/-1}
@@ -1927,6 +1927,8 @@ function openEditor(id,pre){
   // cellulare, solo lettura: al posto dei campi grigi una scheda da leggere
   const ro=!!b&&!full&&!oreOk&&touchUI();dlg.classList.toggle("ro",ro);$("#ed-ro").hidden=!ro;$("#ed-cancel").textContent=ro?"Chiudi":"Annulla";
   if(ro)$("#ed-ro").innerHTML=schedaLettura(b,cc);
+  // dal telefono il primo campo (menu della commessa) non deve ricevere il cursore all'apertura: su iPhone il menu si aprirebbe da solo
+  {const h=dlg.querySelector("h3");if(h){if(matchMedia("(pointer:coarse)").matches){h.tabIndex=-1;h.setAttribute("autofocus","")}else h.removeAttribute("autofocus")}}
   if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
   if(full&&!b)setTimeout(()=>$("#f-att").focus(),30);
 }
