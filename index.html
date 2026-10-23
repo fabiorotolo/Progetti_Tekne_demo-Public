@@ -5378,7 +5378,13 @@ function dpApri(i,btn){
     if(!Z){applica(n);return}
     if(fase===0){s=n;fase=1;hov=null;draw();return}
     if(n<s)applica(n,s);else applica(s,n)};
-  dd.onmouseover=ev=>{if(!Z||fase!==1)return;const c=ev.target.closest("[data-dpn]");const n=c?Number(c.dataset.dpn):null;if(n!==hov){hov=n;draw()}};
+  // anteprima del periodo al passaggio: solo con il mouse vero e senza ridisegnare i pulsanti (cambiano solo le classi).
+  // Su iPhone/iPad (Safari) un tocco che cambia la pagina «al passaggio» non diventa un clic: prima il giorno di fine
+  // e «Chiudi» non rispondevano.
+  const anteprima=()=>{const a1=fase===1?(hov!=null&&hov>=s?hov:s):e;dd.querySelectorAll(".dp-d[data-dpn]").forEach(x=>{const n=Number(x.dataset.dpn);
+    const fin=a1!=null&&n===a1,ini=s!=null&&n===s;x.classList.toggle("fin",fin);x.classList.toggle("sel",ini||fin);x.classList.toggle("in",s!=null&&a1!=null&&n>s&&n<a1)})};
+  dd.onmouseover=null;
+  dd.onpointerover=ev=>{if(ev.pointerType!=="mouse"||!Z||fase!==1)return;const c=ev.target.closest("[data-dpn]");const n=c?Number(c.dataset.dpn):null;if(n!==hov){hov=n;anteprima()}};
   dd.oncancel=ev=>{ev.preventDefault();chiudi()};
   draw();
   if(typeof dd.showModal==="function")dd.showModal();else dd.setAttribute("open","");
