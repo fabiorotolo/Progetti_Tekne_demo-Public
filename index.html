@@ -1114,7 +1114,9 @@ const myPersona=()=>S.me&&S.me.personaId||null;
 function myTeamPersone(){const p=myPersona();const set=new Set();const mix=can("team"),me=S.me&&S.me.id;for(const t of S.team)if((p&&(t.membri||[]).includes(p))||(mix&&!t.repartoId)||(me&&t.capoU===me))(t.membri||[]).forEach(x=>set.add(x));return set}
 const myReparti=()=>S.me?S.reparti.filter(r=>r.responsabile===S.me.id):[];
 // reparti di cui sono RESPONSABILE (supervisore: vede e propone, non modifica); "responsabile" nei dati = coordinatore
-const mySup=()=>S.me?S.reparti.filter(r=>r.supervisore===S.me.id):[];const supRep=rep=>!!rep&&mySup().some(x=>x.id===rep);
+const mySup=()=>S.me?S.reparti.filter(r=>r.supervisore===S.me.id):[];
+// reparti che guido: come coordinatore o come responsabile (per «Il mio reparto in evidenza» / «Solo il mio reparto»)
+const guidoRep=()=>S.me?S.reparti.filter(r=>r.responsabile===S.me.id||r.supervisore===S.me.id):[];const supRep=rep=>!!rep&&mySup().some(x=>x.id===rep);
 const respRepartoDi=pid=>{const p=persById(pid);return !!p&&myReparti().some(r=>r.id===p.repartoId)};
 // gli impegni «riservati» (commesse che il ruolo non vede) non si modificano
 const canPlanB=b=>!!b&&b.commessaId!=="_riservata"&&canPlanOn(b.personaId);
@@ -1215,9 +1217,9 @@ function mieRighe(){const ev=evidPersone(),mieB=S.blocchi.filter(b=>ev.has(b.per
   return{pers,comm}}
 function evidPersone(){const p=myPersona(),set=new Set([p]);const gu=guidaU()||[];for(const t of gu)(t.membri||[]).forEach(x=>set.add(x));
   // il coordinatore di reparto ha sempre in evidenza tutte le persone del suo reparto
-  const mr=myReparti().map(r=>r.id);if(mr.length)for(const x of S.persone)if(mr.includes(x.repartoId))set.add(x.id);if(!p||!can("pianifica_team"))return set;
+  const mr=guidoRep().map(r=>r.id);if(mr.length)for(const x of S.persone)if(mr.includes(x.repartoId))set.add(x.id);if(!p||!can("pianifica_team"))return set;
   const guida=S.team.filter(t=>t.capo===p).concat(gu),src=guida.length?guida:S.team.filter(t=>(t.membri||[]).includes(p));for(const t of src)(t.membri||[]).forEach(x=>set.add(x));return set}
-const fadeDisp=()=>!!S.me&&(!!myPersona()||guidaU().length>0||myReparti().length>0); // il pulsante c'è per chiunque sia in timeline
+const fadeDisp=()=>!!S.me&&(!!myPersona()||guidaU().length>0||guidoRep().length>0); // il pulsante c'è per chiunque sia in timeline
 const fadeAltri=b=>fadeDisp()&&S.soloMie&&!evidPersone().has(b.personaId)?" altri":"";
 const canOreOn=b=>!!b&&(canPlanB(b)||can("ore_tutte")||(can("ore_proprie")&&myPersona()===b.personaId));
 function roleLabel(){
@@ -1533,7 +1535,7 @@ function rowsCommesse(v0,v1,dw,W,tdl){
   {const T=tipiVis();list=list.filter(c=>isPT(c)?T.pt:T.c);list.sort((a,b)=>isPT(a)-isPT(b))}
   if(S.commF==="mie")list=list.filter(c=>isMiaC(c.id));
   else if(S.commF==="rep"&&r)list=list.filter(c=>S.blocchi.some(b=>b.commessaId===c.id&&inScope(persById(b.personaId))));
-  if(!list.length)return`<div class="empty"><strong>Nessuna commessa</strong><span>${S.commF==="mie"?"Non sei PM di nessuna commessa: il responsabile PM le assegna nella scheda Commesse e risorse.":"Non ci sono commesse da mostrare con questo filtro."}</span></div>`;
+  if(!list.length)return`<div class="empty"><strong>Nessuna commessa</strong><span>${S.commF==="mie"?"Non sei PM, System Engineer o Sales di nessuna commessa aperta: le figure si assegnano nella scheda Commesse e risorse. Scegli «Tutte le commesse» nel menu.":"Non ci sono commesse da mostrare con questo filtro."}</span></div>`;
   let html="";
   for(const c of list){
     const RA=pianRep()?repAgg(c,v0,v1,dw):null;
@@ -1569,8 +1571,8 @@ function renderPlan(){
   $("#new-blk").hidden=!canPlanAny();
   // per reparto: vista Commesse (con una risorsa propria resta anche la sua riga in Risorse); niente Esporta con i nomi
   {const pr=pianRep();if(pr&&!myPersona())S.vista="commesse";const rb=$('#vista [data-v="persone"]');if(rb)rb.hidden=pr&&!myPersona();$("#esp-pian").hidden=pr}
-  $("#mie").hidden=!fadeDisp();$("#mie").textContent=myReparti().length?"Il mio reparto in evidenza":"Le mie in evidenza";$("#mie").setAttribute("aria-pressed",S.soloMie?"true":"false");
-  $("#solo").hidden=!fadeDisp();$("#solo").textContent=myReparti().length?"Solo il mio reparto":"Solo le mie";$("#solo").setAttribute("aria-pressed",S.soloRighe&&fadeDisp()?"true":"false");
+  $("#mie").hidden=!fadeDisp();$("#mie").textContent=guidoRep().length?"Il mio reparto in evidenza":"Le mie in evidenza";$("#mie").setAttribute("aria-pressed",S.soloMie?"true":"false");
+  $("#solo").hidden=!fadeDisp();$("#solo").textContent=guidoRep().length?"Solo il mio reparto":"Solo le mie";$("#solo").setAttribute("aria-pressed",S.soloRighe&&fadeDisp()?"true":"false");
   const tl=$("#tl");
   tl.classList.toggle("ro",!canPlanAny());
   $("#hint").textContent=canPlanAny()?"Trascina per spostare (anche su un'altra risorsa) · tira i bordi per allungare · clic per modificare o dividere · doppio clic su uno spazio vuoto per creare (su sabato, domenica o festivo: straordinario) · clic sul numero rosso per ridurre una giornata in sovraccarico · trascina i pallini ai lati di un'attività per agganciarla a un'altra o a un evento ◆ (clic sulla linea per staccarla) · ◆ eventi: clic per aprire, trascina per spostare la data":(can("ore_proprie")||can("ore_tutte"))?"Clic su una tua attività per segnarla svolta e inserire le ore effettive":"Vista in sola lettura · clic su un'attività per i dettagli";
@@ -1607,7 +1609,7 @@ function renderPlan(){
   const MR=S.soloRighe&&fadeDisp()?mieRighe():null;
   const soloC=S.soloComm&&!$("#soloc").hidden,PC=soloC?new Set(S.blocchi.filter(b=>!isAss(b)&&b.commessaId&&isMiaC(b.commessaId)).map(b=>b.personaId)):null;
   const shown=S.persone.filter(p=>(tSel&&!tSel.repartoId?true:inScope(p))&&(!tSel||(tSel.membri||[]).includes(p.id))&&(!MR||MR.pers.has(p.id))&&(!PC||PC.has(p.id))&&(!pianRep()||p.id===myPersona()));
-  if(!shown.length&&PC)html+=`<div class="empty"><strong>Nessuna attività sulle tue commesse</strong><span>In questo reparto nessuno lavora alle commesse di cui sei PM, System Engineer o Sales. Prova «Tutti i reparti» o togli «Solo le mie commesse».</span></div>`;
+  if(!shown.length&&PC)html+=`<div class="empty"><strong>Nessuna attività sulle tue commesse</strong><span>${tSel?"In questo team":"In questo reparto"} nessuno lavora alle commesse di cui sei PM, System Engineer o Sales. Prova «Tutti i reparti» o togli «Solo le mie commesse».</span></div>`;
   else if(!shown.length)html+=`<div class="empty"><strong>${tSel?"Team":"Reparto"} senza risorse</strong><span>${tSel?"Aggiungi membri al team "+esc(tSel.nome):"Aggiungi risorse al reparto "+esc(scopeNome())} in “Commesse e risorse”${canUtenti()?" o nella scheda Utenti":""}.</span></div>`;
   for(const p of shown){
     const pb=S.blocchi.filter(b=>b.personaId===p.id);
