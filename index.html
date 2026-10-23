@@ -574,6 +574,7 @@ input.dp-nat{display:none!important}
 .dp-d.sel{background:var(--accent);color:#fff;font-weight:700}.dp-d.ini{border-radius:6px 0 0 6px}.dp-d.fin{border-radius:0 6px 6px 0}.dp-d.ini.fin{border-radius:6px}
 .dp-d.oggi{box-shadow:inset 0 0 0 2px var(--over);font-weight:700}.dp-d.oggi::after{content:"oggi";position:absolute;left:0;right:0;bottom:1px;font-size:8px;line-height:1;font-weight:700;color:var(--over);text-transform:uppercase}
 .dp-d.oggi.sel::after{color:#fff}.dp-d:disabled{opacity:.3;cursor:default}
+.dp-gg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--line-soft);font-size:13px}.dp-gg label{display:flex;align-items:center;gap:6px;font-weight:600}.dp-gg .inp{width:70px;text-align:right;padding:4px 6px}.dp-ggf{flex:1;color:var(--muted)}.dp-ggf b{color:var(--fg)}
 .dp-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;font-size:12.5px}.dp-p{flex:1 1 100%}.dp-leg{color:var(--muted);display:flex;align-items:center;gap:4px}
 .dp-leg i{display:inline-block;width:12px;height:12px;border-radius:3px}.dp-leg i.oggi{box-shadow:inset 0 0 0 2px var(--over)}.dp-leg i.off{background:var(--line-soft);margin-left:6px}
 @media (max-width:700px){.dpdlg{left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:100%;border-radius:14px 14px 0 0;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}.dp-m{width:100%}.dp-d{height:44px;font-size:16px}
@@ -5359,12 +5360,17 @@ function dpApri(i,btn){
       const dis=fuori(n);
       h+=`<button type="button" class="${c.join(" ")}" data-dpn="${n}"${dis?" disabled":""} title="${DP_GS[dobj(n).getUTCDay()]} ${d} ${DP_MESI[m]} ${y}${n===todayN?" · oggi":""}${fest[k]?" · "+esc(fest[k]):""}">${d}</button>`}
     return h+"</div></div>"};
+  // «Inizio + N gg lavorativi»: la fine è l'N-esimo giorno lavorativo contando l'inizio (salta sabati, domeniche, festivi, chiusure)
+  let gg=null;const fineGG=()=>{if(s==null||!gg)return null;let n=s,k=isOff(s)?0:1;while(k<gg&&n-s<3660){n++;if(!isOff(n))k++}return n};
+  const ggUpd=()=>{const f=dd.querySelector("#dp-ggf");if(!f)return;const n=fineGG();
+    f.innerHTML=s==null?"prima tocca il giorno di inizio":n==null?"":`fine <b>${DP_GS[dobj(n).getUTCDay()]} ${fmtD(n)} ${dobj(n).getUTCFullYear()}</b>`;anteprima()};
   const testoP=()=>Z?(fase===0?`<b>Clicca il giorno di inizio</b>, poi quello di fine`:`Inizio <b>${fmtD(s)}</b> · ora <b>clicca il giorno di fine</b>`):"Clicca il giorno";
-  const draw=()=>{let y2=vy,m2=vm+1;if(m2>11){m2=0;y2++}
+  let draw=()=>{let y2=vy,m2=vm+1;if(m2>11){m2=0;y2++}
     dd.innerHTML=`<div class="dp-h"><button type="button" class="btn ghost" data-dpm="-12" title="Anno prima" aria-label="Anno prima">«</button><button type="button" class="btn ghost" data-dpm="-1" title="Mese prima" aria-label="Mese prima">‹</button>
       <button type="button" class="btn ghost dp-oggi" data-dpm="oggi">Oggi ${fmtD(todayN)}</button>
       <button type="button" class="btn ghost" data-dpm="1" title="Mese dopo" aria-label="Mese dopo">›</button><button type="button" class="btn ghost" data-dpm="12" title="Anno dopo" aria-label="Anno dopo">»</button><button type="button" class="btn ghost dp-x" data-dpm="x" aria-label="Chiudi">✕</button></div>
       <div class="dp-ms">${mese(vy,vm)}${due()?mese(y2,m2):""}</div>
+      ${Z?`<div class="dp-gg"><label>Inizio + <input class="inp" type="number" id="dp-gg" min="1" max="999" step="1" inputmode="numeric" value="${gg||""}" aria-label="Giorni lavorativi dall'inizio"> gg lavorativi</label><span class="dp-ggf" id="dp-ggf"></span><button type="button" class="btn primary" data-dpm="gg">OK</button></div>`:""}
       <div class="dp-f"><span class="dp-p">${testoP()}</span><span class="dp-leg"><i class="oggi"></i> oggi <i class="off"></i> non lavorativo</span>
         <span class="grow"></span>${!Z&&!A.required&&A.value?`<button type="button" class="btn ghost" data-dpm="togli">Togli la data</button>`:""}${Z&&fase===1?`<button type="button" class="btn" data-dpm="soloini">Tieni solo l'inizio</button>`:""}</div>`};
   const chiudi=()=>{if(dd.open)dd.close();btn.focus()};
@@ -5373,7 +5379,8 @@ function dpApri(i,btn){
     for(const [inp,c] of [[A,c1],[Z,c2]])if(inp&&c){inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}))}};
   dd.onclick=ev=>{if(ev.target===dd){const r=dd.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)chiudi();return}
     const x=ev.target.closest("[data-dpm]");if(x){const k=x.dataset.dpm;
-      if(k==="x"){chiudi();return}if(k==="togli"){applica(null,null);return}if(k==="soloini"){applica(s,e!=null&&e>=s?e:s);return}
+      if(k==="x"){chiudi();return}
+      if(k==="gg"){const n=fineGG();if(s==null){toast("Tocca prima il giorno di inizio.");return}if(n==null){dd.querySelector("#dp-gg").focus();toast("Scrivi quanti giorni lavorativi servono.");return}if(fuori(n)){toast("La fine andrebbe oltre il limite consentito.");return}applica(s,n);return}if(k==="togli"){applica(null,null);return}if(k==="soloini"){applica(s,e!=null&&e>=s?e:s);return}
       if(k==="oggi"){const t=dobj(todayN);vy=t.getUTCFullYear();vm=t.getUTCMonth()}else{const t=new Date(Date.UTC(vy,vm+Number(k),1));vy=t.getUTCFullYear();vm=t.getUTCMonth()}
       draw();return}
     const c=ev.target.closest("[data-dpn]");if(!c||c.disabled)return;const n=Number(c.dataset.dpn);
@@ -5383,11 +5390,16 @@ function dpApri(i,btn){
   // anteprima del periodo al passaggio: solo con il mouse vero e senza ridisegnare i pulsanti (cambiano solo le classi).
   // Su iPhone/iPad (Safari) un tocco che cambia la pagina «al passaggio» non diventa un clic: prima il giorno di fine
   // e «Chiudi» non rispondevano.
-  const anteprima=()=>{const a1=fase===1?(hov!=null&&hov>=s?hov:s):e;dd.querySelectorAll(".dp-d[data-dpn]").forEach(x=>{const n=Number(x.dataset.dpn);
+  const anteprima=()=>{const fg=fineGG(),a1=fg!=null?fg:fase===1?(hov!=null&&hov>=s?hov:s):e;dd.querySelectorAll(".dp-d[data-dpn]").forEach(x=>{const n=Number(x.dataset.dpn);
     const fin=a1!=null&&n===a1,ini=s!=null&&n===s;x.classList.toggle("fin",fin);x.classList.toggle("sel",ini||fin);x.classList.toggle("in",s!=null&&a1!=null&&n>s&&n<a1)})};
   dd.onmouseover=null;
   dd.onpointerover=ev=>{if(ev.pointerType!=="mouse"||!Z||fase!==1)return;const c=ev.target.closest("[data-dpn]");const n=c?Number(c.dataset.dpn):null;if(n!==hov){hov=n;anteprima()}};
   dd.oncancel=ev=>{ev.preventDefault();chiudi()};
+  // il campo dei giorni: ogni volta che il calendario si ridisegna (cambio mese, giorno di inizio) si ricollega
+  const drawGG=()=>{const i=dd.querySelector("#dp-gg");if(!i)return;
+    i.oninput=()=>{const v=parseInt(i.value,10);gg=v>0&&v<1000?v:null;ggUpd()};
+    i.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();dd.querySelector('[data-dpm="gg"]').click()}};ggUpd()};
+  const draw0=draw;draw=()=>{draw0();drawGG()};
   draw();
   if(typeof dd.showModal==="function")dd.showModal();else dd.setAttribute("open","");
   // vicino al campo sul PC; sul cellulare in basso a tutta larghezza
