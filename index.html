@@ -1817,7 +1817,7 @@ tl.addEventListener("pointermove",e=>{
   const dw=S.dw,dd=Math.round(dx/dw),b=drag.b,len=bEnd(b)-bStart(b)+1;
   if(drag.mode==="move"){
     drag.el.style.transform=`translate(${dd*dw}px,${dy}px)`;
-    const row=rowAt(e.clientX,e.clientY);
+    const row=rowAt(e.clientX,e.clientY,drag.el);
     if(row!==drag.row){drag.row&&drag.row.classList.remove("drop");drag.row=row;row&&row.dataset.p&&row.dataset.p!==b.personaId&&row.classList.add("drop")}
   }else if(drag.mode==="r"){
     const d=Math.max(dd,1-len);drag.el.style.width=Math.max(dw-3,drag.width+d*dw)+"px";
@@ -1825,7 +1825,9 @@ tl.addEventListener("pointermove",e=>{
     const d=Math.min(dd,len-1);drag.el.style.left=(drag.left+d*dw)+"px";drag.el.style.width=(drag.width-d*dw)+"px";
   }
 });
-function rowAt(x,y){for(const el of document.elementsFromPoint(x,y)){const r=el.closest&&el.closest(".row");if(r)return r}return null}
+// riga sotto il puntatore. «salta» = l'attività che si sta trascinando: segue il mouse e sta sempre sopra, ma appartiene
+// ancora alla riga di partenza (prima si trovava sempre lei e lo spostamento su un'altra risorsa non riusciva mai)
+function rowAt(x,y,salta){for(const el of document.elementsFromPoint(x,y)){if(salta&&salta.contains(el))continue;const r=el.closest&&el.closest(".row");if(r)return r}return null}
 function endDrag(e,cancel){
   if(!drag||e.pointerId!==drag.pid)return;
   const d=drag;drag=null;d.row&&d.row.classList.remove("drop");
@@ -1839,7 +1841,7 @@ function endDrag(e,cancel){
   const dd=Math.round((e.clientX-d.x0)/S.dw),b=d.b,s=bStart(b),en=bEnd(b),len=en-s+1;
   let patch=null;
   if(d.mode==="move"){
-    const row=rowAt(e.clientX,e.clientY);const pid=(row&&row.dataset.p)||b.personaId;
+    const row=rowAt(e.clientX,e.clientY,d.el);const pid=(row&&row.dataset.p)||b.personaId;
     if(pid!==b.personaId&&!canPlanOn(pid)){toast("Puoi assegnare attività solo ai membri dei tuoi team.");render();return}
     if(dd||pid!==b.personaId){
       // a giorni lavorativi: se cade di sabato/domenica parte dal primo giorno lavorativo dopo (il server ricalcola la fine)
