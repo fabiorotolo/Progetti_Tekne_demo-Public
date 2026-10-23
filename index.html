@@ -5276,7 +5276,7 @@ document.addEventListener("scroll",e=>{const w=e.target;if(innerWidth<=700||!w.m
    Al posto del calendario del browser: un clic sulla data apre il calendario con OGGI segnato,
    sabati, domeniche e festivi in grigio. Per i periodi (dal / al) il primo clic è l'inizio, il secondo la fine.
    Il campo vero (input type=date) resta nascosto e tiene il valore: il resto del programma non cambia. */
-const DP_COPPIE={"f-ini":"f-fin","per-da":"per-a","fa-d":"fa-a"};
+const DP_COPPIE={"f-ini":"f-fin","per-da":"per-a","fa-d":"fa-a","ep-a":"ep-z"};
 const DP_INV=Object.fromEntries(Object.entries(DP_COPPIE).map(([a,b])=>[b,a]));
 const DP_V=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value"),DP_D=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"disabled"),DP_H=Object.getOwnPropertyDescriptor(HTMLElement.prototype,"hidden");
 const DP_GS=["dom","lun","mar","mer","gio","ven","sab"],DP_MESI=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -5286,11 +5286,29 @@ function dpEnh(i){if(i.dataset.dp||i.type!=="date")return;i.dataset.dp="1";
   b.setAttribute("aria-label",(i.getAttribute("aria-label")||i.title||"Data")+": apri il calendario");if(i.title)b.title=i.title;
   i.after(b);i.classList.add("dp-nat");
   const corto=i.classList.contains("rt-d"); // nelle righe dei task: data corta, su una riga
-  const upd=()=>{const v=DP_V.get.call(i);b.innerHTML=(v?`<span>${corto?fmtD(dnum(v))+" "+String(dobj(dnum(v)).getUTCFullYear()).slice(2):dpTesto(v)}</span>`:`<span class="dp-vuoto">scegli…</span>`)+'<i aria-hidden="true">📅</i>';b.disabled=DP_D.get.call(i);DP_H.set.call(b,DP_H.get.call(i))};
+  // periodi (dal / al): un solo campo «Periodo» sull'inizio che mostra «lun 12 ott → ven 30 ott 2026»; il campo della fine resta
+  // nascosto (tiene il valore) e il calendario sceglie tutti e due. Se la fine è nascosta (es. un giorno solo) resta la data sola.
+  const fineDi=DP_INV[i.id],iniDi=DP_COPPIE[i.id];
+  const capt=el=>{if(!el)return null;const t=[...el.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());return t||null};
+  const lab=i.closest("label")||document.querySelector(`label[for="${i.id}"]`),t0=capt(lab),cap0=t0?t0.textContent:"";
+  const upd=()=>{const v=DP_V.get.call(i);
+    if(fineDi){b.style.display="none";const l=i.closest("label");if(l)l.style.display="none";const lf=document.querySelector(`label[for="${i.id}"]`);if(lf)lf.style.display="none";
+      const a=document.getElementById(fineDi);if(a&&a._dpUpd)a._dpUpd();return}
+    const z=iniDi&&document.getElementById(iniDi),zOn=!!z&&!DP_H.get.call(z)&&!DP_D.get.call(z),zv=zOn?DP_V.get.call(z):"";
+    let txt;
+    if(zOn&&(v||zv)){const a=v?dnum(v):null,e=zv?dnum(zv):null,y=n=>dobj(n).getUTCFullYear(),g=n=>DP_GS[dobj(n).getUTCDay()]+" "+fmtD(n);
+      txt=a!=null&&e!=null?(a===e?dpTesto(v):g(a)+(y(a)!==y(e)?" "+y(a):"")+" → "+g(e)+" "+y(e)):a!=null?g(a)+" "+y(a)+" → …":"… → "+dpTesto(zv)}
+    else txt=v?(corto?fmtD(dnum(v))+" "+String(dobj(dnum(v)).getUTCFullYear()).slice(2):dpTesto(v)):"";
+    b.innerHTML=(txt?`<span>${txt}</span>`:`<span class="dp-vuoto">${zOn?"scegli dal… al…":"scegli…"}</span>`)+'<i aria-hidden="true">📅</i>';
+    b.disabled=DP_D.get.call(i);DP_H.set.call(b,DP_H.get.call(i));
+    if(t0)t0.textContent=zOn?cap0.replace(/^(\s*)(dal|da)\b/i,(m,sp,w)=>sp+(w[0]===w[0].toUpperCase()?"Periodo":"periodo")):cap0;
+    if(lab&&lab.closest(".f")&&getComputedStyle(lab.parentElement).display==="grid")lab.style.gridColumn=zOn?"1/-1":""};
+  i._dpUpd=upd;
   Object.defineProperty(i,"value",{configurable:true,get(){return DP_V.get.call(this)},set(v){DP_V.set.call(this,v);upd()}});
   Object.defineProperty(i,"disabled",{configurable:true,get(){return DP_D.get.call(this)},set(v){DP_D.set.call(this,v);upd()}});
   Object.defineProperty(i,"hidden",{configurable:true,get(){return DP_H.get.call(this)},set(v){DP_H.set.call(this,v);upd()}});
-  i.focus=()=>b.focus();upd();b.addEventListener("click",()=>dpApri(i,b))}
+  i.focus=()=>{const a=fineDi&&document.getElementById(fineDi);if(a)a.focus();else b.focus()};upd();
+  b.addEventListener("click",()=>dpApri(i,b))}
 /* Calcoli nei campi delle ore: in tutti i campi delle ore (riconosciuti dal passo di mezz'ora, più il budget delle commesse)
    si può scrivere un calcolo, es. 25*8, 150+40, (3+2)*8, 7,5; con Invio (o uscendo dal campo) diventa il risultato.
    Il campo diventa di testo (un campo "number" non accetta * e +); prima che il resto del programma legga il valore
