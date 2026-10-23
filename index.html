@@ -226,6 +226,8 @@ dialog::backdrop{background:rgba(10,20,30,.45)}
 /* scheda attività dal PC: Periodo, Ore al giorno e Ore totali sulla stessa riga (griglia a 12 colonne; l'ordine porta l'avanzamento sotto) */
 @media (min-width:701px){#dlg .f{grid-template-columns:repeat(12,minmax(0,1fr))}#dlg .f>*{grid-column:span 6;order:2}#dlg .f>.w{grid-column:1/-1}
   #dlg .f>:nth-child(-n+6){order:0}#dlg .f>.o-dal{grid-column:span 5!important;order:1}#dlg .f>.o-ore{grid-column:span 3;order:1}#dlg .f>#f-tot-l{grid-column:span 4;order:1}
+  /* Ore al giorno e Ore totali: stessa larghezza, su misura per «7,5» o «25*8» */
+  #dlg .o-ore,#dlg #f-tot-l{white-space:nowrap}#dlg #f-ore,#dlg #f-tot{width:84px;flex:none;text-align:right}#dlg #f-tot-l .withment{justify-content:flex-start}#dlg #f-tot-da{width:auto}
   /* assenza: Risorsa, Periodo e Ore al giorno su una riga */
   #dlg #ed.isass .f>.o-pers{grid-column:span 4}#dlg #ed.isass .f>.o-dal{order:3;grid-column:span 5!important}#dlg #ed.isass .f>.o-ore{order:4;grid-column:span 3}}
 /* il campo data (un pulsante) alto come gli altri campi */
