@@ -231,6 +231,11 @@ dialog::backdrop{background:rgba(10,20,30,.45)}
 .ed .split label{flex:1 1 130px}
 .ed .acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
 .ed .acts div{display:flex;gap:8px;flex-wrap:wrap}
+/* pulsanti finali sempre visibili: se la finestra è più alta dello schermo il contenuto scorre sotto e la fila resta in fondo */
+.ed>.acts{position:sticky;bottom:0;z-index:3;background:var(--panel);margin:0 -18px -18px;padding:10px 18px 14px;border-top:1px solid var(--line)}
+/* una sola fila: a sinistra le azioni sull'attività, a destra Annulla / Salva */
+@media (min-width:701px){.ed>.acts{flex-wrap:nowrap;align-items:center}.ed>.acts div{flex-wrap:nowrap}.ed>.acts .btn{padding:6px 11px;font-size:13.5px;white-space:nowrap}
+  #dlg{width:min(640px,calc(100vw - 32px))}}
 .err{color:var(--over);font-size:13px;min-height:1em}
 
 .perm th.c,.perm td.c{text-align:center}
@@ -446,6 +451,7 @@ span.rt-t{padding:4px 6px}
 .xcl:hover,.xcl:focus-visible{background:var(--line-soft);color:var(--fg);outline:none;border-color:var(--line)}
 .rd h3{padding-right:40px}
 .rd{display:flex;flex-direction:column;gap:14px;padding:22px 24px;font-size:15px}
+.rd>.acts:last-child{position:sticky;bottom:0;z-index:3;background:var(--panel);margin:0 -24px -22px;padding:10px 24px 16px;border-top:1px solid var(--line)}
 .rd h3{margin:0;font-family:var(--f-disp);font-size:21px;letter-spacing:.02em}
 .rd .meta{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14.5px}
 .rd .meta dt{color:var(--muted);font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;font-weight:600;padding-top:2px}
@@ -761,6 +767,7 @@ th.sortable[aria-sort="ascending"]::after{content:" ▲";font-size:9px}th.sortab
   .panel{padding:12px}
   dialog:not(#okdlg):not(#dpdlg){width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;margin:0;border:0;border-radius:0}
   .rd{padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px));font-size:14.5px}
+  .rd>.acts:last-child{margin:0 -14px calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px))}
   /* task sul cellulare: titolo e barra in alto fissi, elenco che scorre, «Aggiungi» fisso in basso; copia e spiegazione lunga tolte (spiegazione con ⓘ) */
   #rdlg:has(.rt-list){overflow:hidden}#rdlg:has(.rt-list) #rd{height:100%;box-sizing:border-box;gap:10px}
   #rdlg:has(.rt-list) #rd>*{flex:none}#rd .rt-list{flex:1 1 auto!important;min-height:0;max-height:none}
