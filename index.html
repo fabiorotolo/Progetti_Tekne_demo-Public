@@ -223,13 +223,16 @@ dialog::backdrop{background:rgba(10,20,30,.45)}
 .ed{display:flex;flex-direction:column;gap:12px;padding:18px}
 .ed h3:focus{outline:none}.ed h3{margin:0;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.05em;font-size:20px}
 .ed .f{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-/* scheda attività dal PC: Periodo, Ore al giorno e Ore totali sulla stessa riga (griglia a 12 colonne; l'ordine porta l'avanzamento sotto) */
-@media (min-width:701px){#dlg .f{grid-template-columns:repeat(12,minmax(0,1fr))}#dlg .f>*{grid-column:span 6;order:2}#dlg .f>.w{grid-column:1/-1}
-  #dlg .f>:nth-child(-n+6){order:0}#dlg .f>.o-dal{grid-column:span 5!important;order:1}#dlg .f>.o-ore{grid-column:span 3;order:1}#dlg .f>#f-tot-l{grid-column:span 4;order:1}
-  /* Ore al giorno e Ore totali: stessa larghezza, su misura per «7,5» o «25*8» */
-  #dlg .o-ore,#dlg #f-tot-l{white-space:nowrap}#dlg #f-ore,#dlg #f-tot{width:84px;flex:none;text-align:right}#dlg #f-tot-l .withment{justify-content:flex-start}#dlg #f-tot-da{width:auto}
-  /* assenza: Risorsa, Periodo e Ore al giorno su una riga */
-  #dlg #ed.isass .f>.o-pers{grid-column:span 4}#dlg #ed.isass .f>.o-dal{order:3;grid-column:span 5!important}#dlg #ed.isass .f>.o-ore{order:4;grid-column:span 3}}
+/* scheda attività dal PC: colonne allineate al resto della scheda.
+   1ª colonna = metà sinistra (Risorsa, Periodo); a destra: Ore al giorno | Ore totali | «→ Al», dove «→ Al» è largo
+   quanto il campo della percentuale dell'avanzamento (80 px) e lo spazio in mezzo è diviso a metà; spazi = 10 px come la griglia */
+@media (min-width:701px){#dlg .f{grid-template-columns:calc((100% - 10px)/2) minmax(0,1fr) minmax(0,1fr) 80px}
+  #dlg .f>*{grid-column:1/-1;order:2}#dlg .f>:nth-child(-n+6){order:0}
+  #dlg .f>.o-pers{grid-column:1}#dlg .f>label:has(#f-stato){grid-column:2/-1}#dlg .f>label:has(#f-eff){grid-column:1}
+  #dlg .f>.o-dal{grid-column:1!important;order:1}#dlg .f>.o-ore{grid-column:2;order:1}#dlg .f>#f-tot-l{grid-column:3/5;order:1}
+  #dlg .f>.o-ore,#dlg .f>#f-tot-l{white-space:nowrap;letter-spacing:.02em}#dlg #f-tot-l .withment{gap:10px}#dlg .f>.o-dal .dp-btn,#dlg #f-ore,#dlg #f-tot,#dlg #f-tot-da{height:34px;min-height:0;box-sizing:border-box}#dlg #f-tot{flex:1 1 auto;width:auto;text-align:right}#dlg #f-tot-da{width:80px!important;flex:none!important}#dlg #f-ore{text-align:right}
+  /* assenza: Risorsa sopra, poi Periodo | Ore al giorno nelle stesse colonne dell'attività */
+  #dlg #ed.isass .f>.o-pers{grid-column:1}#dlg #ed.isass .f>.o-dal{order:3;grid-column:1!important}#dlg #ed.isass .f>.o-ore{order:4;grid-column:2}}
 /* il campo data (un pulsante) alto come gli altri campi */
 .ed .dp-btn.inp{padding:6px 8px;border-radius:6px;min-height:34px}
 .ed label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted);font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.06em;font-weight:600;min-width:0}
