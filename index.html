@@ -562,6 +562,7 @@ input.dp-nat{display:none!important}
 .dp-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;white-space:nowrap;text-align:left;cursor:pointer;min-width:150px;font:inherit;color:var(--fg)}
 .dp-btn i{font-style:normal;font-size:14px;opacity:.75}.dp-btn .dp-vuoto{color:var(--muted)}.dp-btn:disabled{cursor:default;opacity:.65}.dp-btn:disabled i{display:none}
 .dp-btn.rt-d{min-width:0;padding:2px 6px;font-size:12.5px}
+.dp-btn{max-width:100%}.dp-btn span{min-width:0;overflow:hidden;text-overflow:ellipsis}.dp-btn i{flex:none}.dp-gs{font-style:normal}
 .dpdlg{position:fixed;margin:0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--fg);box-shadow:0 12px 32px rgba(0,0,0,.25);max-width:calc(100vw - 16px)}
 .dpdlg::backdrop{background:transparent}
 .dp-h{display:flex;align-items:center;gap:4px}.dp-h .btn{padding:4px 10px;min-height:32px}.dp-h .dp-oggi{flex:1;font-weight:600}.dp-h .dp-x{margin-left:4px}
@@ -575,7 +576,13 @@ input.dp-nat{display:none!important}
 .dp-d.oggi.sel::after{color:#fff}.dp-d:disabled{opacity:.3;cursor:default}
 .dp-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;font-size:12.5px}.dp-p{flex:1 1 100%}.dp-leg{color:var(--muted);display:flex;align-items:center;gap:4px}
 .dp-leg i{display:inline-block;width:12px;height:12px;border-radius:3px}.dp-leg i.oggi{box-shadow:inset 0 0 0 2px var(--over)}.dp-leg i.off{background:var(--line-soft);margin-left:6px}
-@media (max-width:700px){.dpdlg{left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:100%;border-radius:14px 14px 0 0;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}.dp-m{width:100%}.dp-d{height:44px;font-size:16px}}
+@media (max-width:700px){.dpdlg{left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:100%;border-radius:14px 14px 0 0;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}.dp-m{width:100%}.dp-d{height:44px;font-size:16px}
+  /* dal cellulare: pulsanti in alto grandi per il dito (44 px), «✕ Chiudi» ben visibile */
+  .dp-h{gap:6px}.dp-h .btn{min-height:44px;min-width:44px;font-size:18px;padding:6px 8px}.dp-h .dp-oggi{font-size:16px}
+  .dp-h .dp-x{border:1px solid var(--line);background:var(--line-soft);font-size:16px;font-weight:600;padding:6px 12px}.dp-h .dp-x::after{content:" Chiudi"}
+  .dp-h [data-dpm="-12"],.dp-h [data-dpm="12"]{display:none} /* un anno avanti/indietro: sul telefono si usa ‹ › */
+  .dp-h .dp-oggi{min-width:0;white-space:nowrap}
+  .dp-btn{min-width:0;gap:6px}.dp-gs{display:none}}
 .rt-help-b{display:none;font-size:15px;vertical-align:middle;margin-left:4px}
 .mob-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--panel);border-top:2px solid var(--accent);box-shadow:0 -6px 18px rgba(0,0,0,.15);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
 .mob-bar .mb-t{display:flex;flex-direction:column;font-size:13px;line-height:1.3;min-width:0}.mob-bar .mb-t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}.mob-bar .mb-t span{color:var(--muted)}
@@ -5299,6 +5306,8 @@ function dpEnh(i){if(i.dataset.dp||i.type!=="date")return;i.dataset.dp="1";
     if(zOn&&(v||zv)){const a=v?dnum(v):null,e=zv?dnum(zv):null,y=n=>dobj(n).getUTCFullYear(),g=n=>DP_GS[dobj(n).getUTCDay()]+" "+fmtD(n);
       txt=a!=null&&e!=null?(a===e?dpTesto(v):g(a)+(y(a)!==y(e)?" "+y(a):"")+" → "+g(e)+" "+y(e)):a!=null?g(a)+" "+y(a)+" → …":"… → "+dpTesto(zv)}
     else txt=v?(corto?fmtD(dnum(v))+" "+String(dobj(dnum(v)).getUTCFullYear()).slice(2):dpTesto(v)):"";
+    // il giorno della settimana in un <em>: dal telefono si nasconde per far stare la data nel campo
+    if(txt&&!corto)txt=esc(txt).replace(/(^|→ )(dom|lun|mar|mer|gio|ven|sab) (?=\d)/g,'$1<em class="dp-gs">$2 </em>');
     b.innerHTML=(txt?`<span>${txt}</span>`:`<span class="dp-vuoto">${zOn?"scegli dal… al…":"scegli…"}</span>`)+'<i aria-hidden="true">📅</i>';
     b.disabled=DP_D.get.call(i);DP_H.set.call(b,DP_H.get.call(i));
     if(t0)t0.textContent=zOn?cap0.replace(/^(\s*)(dal|da)\b/i,(m,sp,w)=>sp+(w[0]===w[0].toUpperCase()?"Periodo":"periodo")):cap0;
