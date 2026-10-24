@@ -4,10 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tekne FloWork · demo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap">
 <style>
 /* Layout: tavola di pianificazione — righe risorse × colonne giorni, barre colorate per commessa, striscia di carico sotto ogni riga */
+/* caratteri dentro il programma (cartella fonts/, licenza OFL): niente internet */
+@font-face{font-family:"Barlow";font-weight:400;font-style:normal;font-display:swap;src:url("fonts/barlow-400.woff2") format("woff2")}
+@font-face{font-family:"Barlow";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/barlow-500.woff2") format("woff2")}
+@font-face{font-family:"Barlow";font-weight:600;font-style:normal;font-display:swap;src:url("fonts/barlow-600.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/barlow-condensed-500.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:600;font-style:normal;font-display:swap;src:url("fonts/barlow-condensed-600.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:700;font-style:normal;font-display:swap;src:url("fonts/barlow-condensed-700.woff2") format("woff2")}
+@font-face{font-family:"Roboto Mono";font-weight:400;font-style:normal;font-display:swap;src:url("fonts/roboto-mono-400.woff2") format("woff2")}
+@font-face{font-family:"Roboto Mono";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/roboto-mono-500.woff2") format("woff2")}
+@font-face{font-family:"Roboto Mono";font-weight:600;font-style:normal;font-display:swap;src:url("fonts/roboto-mono-600.woff2") format("woff2")}
 :root{
   --bg:#f2f4f6; --panel:#ffffff; --fg:#18212c; --muted:#5b6876; --line:#d3d9e0; --line-soft:#e6eaee;
   --accent:#1c5a8a; --accent-fg:#ffffff; --weekend:#e7ebef; --today:#c2410c;
@@ -575,6 +583,7 @@ input.dp-nat{display:none!important}
 .dp-btn i{font-style:normal;font-size:14px;opacity:.75}.dp-btn .dp-vuoto{color:var(--muted)}.dp-btn:disabled{cursor:default;opacity:.65}.dp-btn:disabled i{display:none}
 .dp-btn.rt-d{min-width:0;padding:2px 6px;font-size:12.5px}
 @font-face{font-family:"Caveat Tekne";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/caveat-500.woff2") format("woff2")} /* nel programma, senza internet (licenza OFL: fonts/Caveat-OFL.txt) */
+.st-riga{display:grid;grid-template-columns:calc((100% - 10px)/2) 80px;gap:10px;align-items:start}.st-riga .inp{width:100%;height:38px;box-sizing:border-box}#st-o{text-align:right}
 .pi-pan .pi-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px 16px;padding:4px 2px 6px;align-items:start}
 .pi{--h:45;position:relative;padding:22px 12px 16px;min-height:150px;display:flex;flex-direction:column;color:#24303f;
   /* foglietto: angolo in basso a destra tagliato (è il pezzo sollevato) */
@@ -2113,7 +2122,7 @@ function updAssUi(){const a=$("#f-comm").value.startsWith("ass:");$("#ed").class
   if(a){$("#split-box").hidden=true;$("#ed-req").hidden=true;$("#ed-dup").hidden=true;$("#ed-stra").hidden=true;$("#ed-title").textContent=edId?"Assenza":"Nuova assenza"}
   else if(!edId)$("#ed-title").textContent="Nuova attività";}
 $("#f-comm").addEventListener("change",()=>{fillFold(commById($("#f-comm").value));updAssUi();fillDopo($("#f-dopo").value);fillEv($("#f-ev").value);fillVoce($("#f-voce").value)});
-$("#f-pers").addEventListener("change",()=>fillVoce($("#f-voce").value));
+$("#f-pers").addEventListener("change",()=>{fillVoce($("#f-voce").value);updCalc()});
 dlg.addEventListener("close",()=>{edId=null;render()});
 function readForm(){
   const ini=$("#f-ini").value,fin=$("#f-fin").value;
@@ -2138,6 +2147,15 @@ let edEccReset=false;
 function updCalc(){
   const ini=$("#f-ini").value,fin=$("#f-fin").value,ore=Number($("#f-ore").value)||0;
   if(!ini||!fin||dnum(fin)<dnum(ini)){$("#f-calc").textContent="";return}
+  // ferie/permessi della persona nel periodo: al salvataggio il server toglie quelle ore e allunga la fine (stesse ore totali).
+  // Vale per un'attività nuova o se cambiano periodo, persona o ore al giorno: qui si mostra subito il risultato.
+  {const prev=edId?S.blocchi.find(x=>x.id===edId):null,pid=$("#f-pers").value,isA=String($("#f-comm").value).startsWith("ass:");
+    const cambia=!prev||prev.inizio!==ini||prev.fine!==fin||prev.personaId!==pid||Number(prev.oreGiorno)!==ore;
+    if(!isA&&pid&&ore>0&&cambia){const cap=Number((persById(pid)||{}).oreGiorno)||8,lib=n=>isOff(n)?0:Math.max(0,Math.min(ore,cap-oreAss(pid,n)));
+      const giorni=[];let perse=0;for(let n=dnum(ini);n<=dnum(fin);n++){if(isOff(n))continue;const l=lib(n);if(l<ore-0.001){giorni.push(n);perse+=ore-l}}
+      if(perse>0.001){let rest=perse,n=dnum(fin),g=0;while(rest>0.001&&g++<800){n++;if(isOff(n))continue;rest-=Math.min(lib(n),rest)}
+        const wd=workDays(dnum(ini),dnum(fin)),tipi=[...new Set(S.blocchi.filter(b=>isAss(b)&&b.personaId===pid&&giorni.some(d=>d>=bStart(b)&&d<=bEnd(b))).map(b=>assLab(b.assenza).toLowerCase()))].join(" e ");
+        $("#f-calc").innerHTML=`${wd} giorni lavorativi × ${fmtH(ore)} h = <b>${fmtH(wd*ore)} h pianificate</b> · 🌴 ${esc(tipi||"assenze")} il ${giorni.map(d=>fmtD(d)).join(", ")} (−${fmtH(perse)} h): salvando, la fine passa al <b>${dpTesto(dstr(n))}</b> per non perdere ore`;return}}}
   const wd=workDays(dnum(ini),dnum(fin));
   const prev=edId?S.blocchi.find(x=>x.id===edId):null;
   const eccAll=prev&&prev.oreGiornoEcc&&!edEccReset?Object.entries(prev.oreGiornoEcc).filter(([k])=>dnum(k)>=dnum(ini)&&dnum(k)<=dnum(fin)):[];
@@ -3102,16 +3120,16 @@ function openStra(pid,n,bid){
   rdId=null;
   $("#rd").innerHTML=`<h3>Straordinario · ${esc(pn(p))}</h3>
     <p class="muted" style="margin:0">Ore di lavoro in un giorno non lavorativo (sabato, domenica, festivo o chiusura) su un'attività. Di base l'attività <b>finisce prima</b>: le ore totali restano le stesse.</p>
-    <label class="f">Giorno<input class="inp" type="date" id="st-d" value="${dstr(n)}"></label>
+    <div class="st-riga"><label class="f">Giorno<input class="inp" type="date" id="st-d" value="${dstr(n)}"></label><label class="f">Ore<input class="inp" type="number" id="st-o" min="0" max="24" step="0.5"></label></div>
     <div class="calc" id="st-dw"></div>
     <label class="f">Attività<select class="inp" id="st-b"></select></label>
-    <label class="f">Ore di straordinario<input class="inp" type="number" id="st-o" min="0" max="24" step="0.5" style="max-width:140px"></label>
     <label class="chk"><input type="checkbox" id="st-a" checked> <span>L'attività <b>finisce prima</b> (stesse ore totali). Senza spunta sono ore in più.</span></label>
     <div class="calc" id="st-ex"></div>
     <div class="err" id="st-err"></div>
     <div class="acts"><span></span><div><button class="btn ghost" id="st-no">Annulla</button><button class="btn primary" id="st-go">Salva straordinario</button></div></div>`;
   const upd=()=>{const d=dnum($("#st-d").value);const ok=!isNaN(d)&&isOff(d);
-    $("#st-dw").innerHTML=ok?`${esc(festivo(d)||["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"][dow(d)])} ${fmtD(d)}`:'<span style="color:var(--over)">Scegli un giorno non lavorativo (fine settimana o festivo).</span>';
+    // la data dice già il giorno: la riga sotto serve solo per il nome del festivo o per l'errore
+    $("#st-dw").innerHTML=ok?(festivo(d)?`🎌 ${esc(festivo(d))}`:""):'<span style="color:var(--over)">Scegli un giorno non lavorativo (fine settimana o festivo).</span>';$("#st-dw").hidden=!$("#st-dw").innerHTML;
     const l=cand();const cur=$("#st-b").value||bid;
     $("#st-b").innerHTML=l.map(b=>`<option value="${esc(b.id)}">${esc(codC(b.commessaId))} · ${esc(b.attivita||"(senza titolo)")} · ${fmtD(bStart(b))}–${fmtD(bEnd(b))}</option>`).join("")||'<option value="">Nessuna attività di questa risorsa in quel fine settimana</option>';
     const withEx=l.find(b=>ok&&b.oreGiornoEcc&&b.oreGiornoEcc[dstr(d)]>0);
