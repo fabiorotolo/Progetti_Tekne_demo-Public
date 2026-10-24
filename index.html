@@ -1560,11 +1560,11 @@ const piHue=x=>{const h=Number(x&&x.colore);return isFinite(h)?h:45};
 const piNuovaTinta=()=>{const L=(S.postit||[]).filter(x=>!x.cestino);if(!L.length)return HUES[6]??45;const u=piHue(L[0]),i=HUES.indexOf(u);return HUES[(i+1)%HUES.length]};
 function postitPanel(){const L=(S.postit||[]).filter(x=>!x.cestino),C=(S.postit||[]).filter(x=>x.cestino).sort((a,b)=>String(b.cestino).localeCompare(String(a.cestino)));
   const giorniC=x=>Math.max(0,7-Math.floor((Date.now()-Date.parse(x.cestino))/864e5));
-  return`<div class="panel pi-pan"><h2>📌 Post-it<small>${L.length?"solo tuoi · ⠿ per spostarli o cambiarli":"promemoria che vedi solo tu"}</small><button type="button" class="btn ghost hbtn" id="pi-new">+ Nuovo</button></h2>
+  return`<div class="panel pi-pan"><h2>📌 Post-it<small>${L.length?"⠿ per spostarli o cambiarli":""}</small><button type="button" class="btn ghost hbtn" id="pi-new">+ Nuovo</button></h2>
     ${L.length?`<div class="pi-g">${L.map(x=>`<div class="pi" style="--h:${piHue(x)}" data-pi="${esc(x.id)}">
       <button type="button" class="pi-drag" title="Trascina per spostare · tocca per colore, Manda a…, Togli" aria-label="Menu del post-it (trascina per spostare)">⠿</button>${x.daNome?`<span class="pi-da" title="Mandato da ${esc(x.daNome)}">da ${esc(x.daNome.split(" ")[0])}</span>`:""}
       <textarea class="pi-t" data-pit="${esc(x.id)}" rows="4" maxlength="600" placeholder="Scrivi qui…" aria-label="Testo del post-it">${esc(x.testo||"")}</textarea></div>`).join("")}</div>`
-      :`<p class="muted" style="margin:0">Nessun post-it. Con <b>+ Nuovo</b> scrivi un promemoria: lo vedi solo tu, e se vuoi lo mandi a un collega.</p>`}
+      :""}
     ${C.length?`<details class="pi-cest"${S.piCestAperto?" open":""}><summary>🗑 Cestino (${C.length}) <span class="muted">· si svuota da solo dopo 7 giorni</span></summary>
       <div class="pi-cl">${C.map(x=>`<div class="pi-cr" style="--h:${piHue(x)}"><i class="pi-cd"></i><span class="pi-ct">${esc((x.testo||"(vuoto)").replace(/\s+/g," ").slice(0,80))}</span><span class="muted pi-cg">${giorniC(x)===0?"oggi":"ancora "+giorniC(x)+" g"}</span>
         <button type="button" class="btn ghost" data-pir="${esc(x.id)}">↩ Ripristina</button><button type="button" class="btn ghost pi-cx" data-pidx="${esc(x.id)}" title="Elimina per sempre">Elimina</button></div>`).join("")}</div></details>`:""}</div>`}
