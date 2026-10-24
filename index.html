@@ -575,7 +575,7 @@ input.dp-nat{display:none!important}
 .dp-btn i{font-style:normal;font-size:14px;opacity:.75}.dp-btn .dp-vuoto{color:var(--muted)}.dp-btn:disabled{cursor:default;opacity:.65}.dp-btn:disabled i{display:none}
 .dp-btn.rt-d{min-width:0;padding:2px 6px;font-size:12.5px}
 @font-face{font-family:"Caveat Tekne";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/caveat-500.woff2") format("woff2")} /* nel programma, senza internet (licenza OFL: fonts/Caveat-OFL.txt) */
-.pi-pan .pi-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px 16px;padding:4px 2px 6px}
+.pi-pan .pi-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px 16px;padding:4px 2px 6px;align-items:start}
 .pi{--h:45;position:relative;padding:22px 12px 16px;min-height:150px;display:flex;flex-direction:column;color:#24303f;
   /* foglietto: angolo in basso a destra tagliato (è il pezzo sollevato) */
   background:linear-gradient(315deg,transparent 15px,hsl(var(--h) 92% 86%) 15.5px);
@@ -589,8 +589,12 @@ input.dp-nat{display:none!important}
 .pi-drag{position:absolute;top:9px;left:6px;border:0;background:transparent;cursor:grab;touch-action:none;user-select:none;font-size:15px;line-height:1;padding:3px 5px;border-radius:5px;color:rgba(0,0,0,.28)}
 .pi-drag:hover,.pi-aperto .pi-drag{color:rgba(0,0,0,.6);background:rgba(255,255,255,.45)}.pi-mv .pi-drag{cursor:grabbing}
 .pi-da{position:absolute;top:11px;right:12px;font-size:11px;color:rgba(0,0,0,.45)}
-.pi-t{flex:1;border:0;background:transparent;resize:none;font-family:"Caveat Tekne","Segoe Print","Ink Free","Noteworthy","Bradley Hand","Comic Sans MS",cursive;font-size:23px;font-weight:500;line-height:1.15;color:#24303f;min-height:100px;padding:0;outline:none;overflow:hidden}
+.pi-t{flex:1 0 auto;border:0;background:transparent;resize:none;font-family:"Caveat Tekne","Segoe Print","Ink Free","Noteworthy","Bradley Hand","Comic Sans MS",cursive;font-size:23px;font-weight:500;line-height:1.15;color:#24303f;min-height:100px;padding:0;outline:none;overflow:hidden}
 .pi-t::placeholder{color:rgba(0,0,0,.33)}
+/* testo lungo: a riposo al massimo ~10 righe con sfumatura e «▾»; toccandolo (scrivendo) si apre tutto */
+.pi.pi-lungo:not(:focus-within) .pi-t{max-height:270px;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+.pi-piu{display:none;position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font-size:12px;color:rgba(0,0,0,.5);pointer-events:none}
+.pi.pi-lungo:not(:focus-within) .pi-piu{display:block}
 .pi-menu{position:absolute;top:34px;left:6px;z-index:10;width:max-content;max-width:min(260px,80vw);background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.22);padding:10px;display:flex;flex-direction:column;gap:10px}
 .pi-pal{display:grid;grid-template-columns:repeat(6,22px);gap:8px}
 .pi-c{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.18);background:hsl(var(--h) 85% 78%);cursor:pointer;padding:0}.pi-c.on{outline:2px solid var(--fg);outline-offset:2px}
@@ -1563,7 +1567,7 @@ function postitPanel(){const L=(S.postit||[]).filter(x=>!x.cestino),C=(S.postit|
   return`<div class="panel pi-pan"><h2>📌 Post-it<small>${L.length?"⠿ per spostarli o cambiarli":""}</small><button type="button" class="btn ghost hbtn" id="pi-new">+ Nuovo</button></h2>
     ${L.length?`<div class="pi-g">${L.map(x=>`<div class="pi" style="--h:${piHue(x)}" data-pi="${esc(x.id)}">
       <button type="button" class="pi-drag" title="Trascina per spostare · tocca per colore, Manda a…, Togli" aria-label="Menu del post-it (trascina per spostare)">⠿</button>${x.daNome?`<span class="pi-da" title="Mandato da ${esc(x.daNome)}">da ${esc(x.daNome.split(" ")[0])}</span>`:""}
-      <textarea class="pi-t" data-pit="${esc(x.id)}" rows="4" maxlength="600" placeholder="Scrivi qui…" aria-label="Testo del post-it">${esc(x.testo||"")}</textarea></div>`).join("")}</div>`
+      <textarea class="pi-t" data-pit="${esc(x.id)}" rows="4" maxlength="600" placeholder="Scrivi qui…" aria-label="Testo del post-it">${esc(x.testo||"")}</textarea><span class="pi-piu" aria-hidden="true">▾ continua</span></div>`).join("")}</div>`
       :""}
     ${C.length?`<details class="pi-cest"${S.piCestAperto?" open":""}><summary>🗑 Cestino (${C.length}) <span class="muted">· si svuota da solo dopo 7 giorni</span></summary>
       <div class="pi-cl">${C.map(x=>`<div class="pi-cr" style="--h:${piHue(x)}"><i class="pi-cd"></i><span class="pi-ct">${esc((x.testo||"(vuoto)").replace(/\s+/g," ").slice(0,80))}</span><span class="muted pi-cg">${giorniC(x)===0?"oggi":"ancora "+giorniC(x)+" g"}</span>
@@ -1592,7 +1596,9 @@ function bindPostit(el){const pan=el.querySelector(".pi-pan");if(!pan)return;bin
     let k=0;const fuoco=()=>{const t=document.querySelector(`[data-pit="${CSS.escape(j.id)}"]`);if(t){t.focus();return}if(k++<20)setTimeout(fuoco,25)};setTimeout(fuoco,0)}catch(e){handleErr(e)}};
   const T=new Map();
   const salva=(id,testo)=>{clearTimeout(T.get(id));T.delete(id);const x=(S.postit||[]).find(y=>y.id===id);if(x&&x.testo===testo)return;if(x)x.testo=testo;api("PATCH","/api/postit/"+id,{testo},true).catch(handleErr)};
-  const cresci=t=>{t.style.height="auto";t.style.height=Math.max(t.scrollHeight,60)+"px"}; // il foglietto si allunga col testo
+  // il foglietto si allunga col testo; oltre ~10 righe a riposo resta compatto (pi-lungo) e si apre toccandolo
+  const cresci=t=>{t.style.height="auto";const h=Math.max(t.scrollHeight,60);t.style.height=h+"px";t.closest(".pi").classList.toggle("pi-lungo",h>275)};
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>pan.querySelectorAll("[data-pit]").forEach(cresci)); // con il carattere a penna caricato le righe cambiano
   pan.querySelectorAll("[data-pit]").forEach(t=>{const id=t.dataset.pit;cresci(t);
     t.oninput=()=>{cresci(t);clearTimeout(T.get(id));T.set(id,setTimeout(()=>salva(id,t.value),700))};
     t.onblur=()=>salva(id,t.value)});
