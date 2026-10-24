@@ -591,8 +591,9 @@ input.dp-nat{display:none!important}
 .pi-da{position:absolute;top:11px;right:12px;font-size:11px;color:rgba(0,0,0,.45)}
 .pi-t{flex:1 0 auto;border:0;background:transparent;resize:none;font-family:"Caveat Tekne","Segoe Print","Ink Free","Noteworthy","Bradley Hand","Comic Sans MS",cursive;font-size:23px;font-weight:500;line-height:1.15;color:#24303f;min-height:100px;padding:0;outline:none;overflow:hidden}
 .pi-t::placeholder{color:rgba(0,0,0,.33)}
-/* testo lungo: a riposo al massimo ~10 righe con sfumatura e «▾»; toccandolo (scrivendo) si apre tutto */
-.pi.pi-lungo:not(:focus-within) .pi-t{max-height:270px;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+/* a riposo tutti uguali, quadrati come un post-it vero: il testo lungo sfuma in fondo con «▾ continua»; cliccandolo si allunga tutto */
+.pi:not(:focus-within){aspect-ratio:1/1}.pi:not(:focus-within) .pi-t{flex:1 1 0;min-height:0;height:auto!important}
+.pi.pi-lungo:not(:focus-within) .pi-t{-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
 .pi-piu{display:none;position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font-size:12px;color:rgba(0,0,0,.5);pointer-events:none}
 .pi.pi-lungo:not(:focus-within) .pi-piu{display:block}
 .pi-menu{position:absolute;top:34px;left:6px;z-index:10;width:max-content;max-width:min(260px,80vw);background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.22);padding:10px;display:flex;flex-direction:column;gap:10px}
@@ -1596,12 +1597,14 @@ function bindPostit(el){const pan=el.querySelector(".pi-pan");if(!pan)return;bin
     let k=0;const fuoco=()=>{const t=document.querySelector(`[data-pit="${CSS.escape(j.id)}"]`);if(t){t.focus();return}if(k++<20)setTimeout(fuoco,25)};setTimeout(fuoco,0)}catch(e){handleErr(e)}};
   const T=new Map();
   const salva=(id,testo)=>{clearTimeout(T.get(id));T.delete(id);const x=(S.postit||[]).find(y=>y.id===id);if(x&&x.testo===testo)return;if(x)x.testo=testo;api("PATCH","/api/postit/"+id,{testo},true).catch(handleErr)};
-  // il foglietto si allunga col testo; oltre ~10 righe a riposo resta compatto (pi-lungo) e si apre toccandolo
-  const cresci=t=>{t.style.height="auto";const h=Math.max(t.scrollHeight,60);t.style.height=h+"px";t.closest(".pi").classList.toggle("pi-lungo",h>275)};
+  // a riposo il foglietto è quadrato (CSS); se il testo non ci sta: sfumatura e «▾ continua» (pi-lungo). Mentre lo usi si allunga col testo.
+  const cresci=t=>{const pi=t.closest(".pi");if(pi.matches(":focus-within")){t.style.height="auto";t.style.height=Math.max(t.scrollHeight,60)+"px"}else t.style.height="";
+    pi.classList.toggle("pi-lungo",!pi.matches(":focus-within")&&t.scrollHeight>t.clientHeight+2)};
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>pan.querySelectorAll("[data-pit]").forEach(cresci)); // con il carattere a penna caricato le righe cambiano
   pan.querySelectorAll("[data-pit]").forEach(t=>{const id=t.dataset.pit;cresci(t);
     t.oninput=()=>{cresci(t);clearTimeout(T.get(id));T.set(id,setTimeout(()=>salva(id,t.value),700))};
-    t.onblur=()=>salva(id,t.value)});
+    t.onfocus=()=>cresci(t);
+    t.onblur=()=>{salva(id,t.value);setTimeout(()=>cresci(t),0)}});
   // ordine: si trascina dalla maniglia ⠿ (mouse e dito); gli altri si spostano mentre passi sopra, al rilascio si salva
   pan.querySelectorAll(".pi-drag").forEach(h=>h.onpointerdown=e=>{const pi=h.closest("[data-pi]"),g=pi.parentElement;e.preventDefault();h.setPointerCapture(e.pointerId);
     const x0=e.clientX,y0=e.clientY;let mosso=false;
