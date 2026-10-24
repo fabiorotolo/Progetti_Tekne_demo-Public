@@ -541,6 +541,7 @@ svg.dip path.hit{cursor:pointer}
 .mio-t b{font-family:var(--f-mono);font-size:24px;font-variant-numeric:tabular-nums}.mio-t span{font-size:12.5px;color:var(--muted)}
 .mio-t.over b{color:var(--over)}.mio-t.warn{border-color:color-mix(in srgb,var(--today) 50%,var(--line))}
 .mio-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:14px;align-items:start}
+.mio-g.mas{display:flex;flex-wrap:wrap;align-items:flex-start}.mio-g.mas>.panel{flex:1 0 100%;margin:0}.mio-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:14px}.mio-col>.panel{margin:0}
 @media (max-width:640px){.mio-g{grid-template-columns:1fr}}
 .mio-tb{width:100%;border-collapse:collapse;font-size:13.5px}.mio-scroll{max-height:min(460px,60vh);overflow:auto}.mio-tb td,.mio-tb th{padding:6px 6px;border-bottom:1px solid var(--line-soft);vertical-align:top}
 .mio-tb th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}.mio-tb tr.mio-r{cursor:pointer}.mio-tb tr.mio-r:hover td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
@@ -1547,6 +1548,7 @@ function renderMio(){
     ${mieC.length?`<div class="panel"><h2>${capoTutte?"Commesse aperte<small>"+(S.me.admin?"panoramica":can("capo_pm")?"sei il responsabile PM":"panoramica per il tuo reparto")+"</small>":"Le tue commesse<small>sei il PM</small>"}<small>${mieC.length} commess${mieC.length>1?"e":"a"}</small></h2><div class="mio-scroll"><table class="mio-tb"><tbody>${mieC.map(c=>{const rq=reqOf(c.id),ap=rq.filter(r=>r.stato!=="fatto").length,lt=rq.filter(reqLate).length,bq=rq.filter(r=>r.stato==="bloccato").length,k=consegnaN(c),rit=ritardoComm(c);const ev=eventiDi(c.id).filter(e=>dnum(e.data)>=oggi)[0];
       return`<tr><td><span class="code" style="--h:${c.colore}">${esc(cv(c))}</span></td><td><b class="sch-lnk" data-sch="${esc(c.id)}" title="Scheda della commessa">${esc(c.nome)}</b>${capoTutte&&isPmOf(c.id)?' <span class="pill" title="Sei il PM di questa commessa">sei il PM</span>':""}<div class="muted" style="font-size:12px">${[k!=null?"consegna "+fmtD(k)+(rit?` <b style="color:var(--over)">+${rit} g</b>`:""):"",ev?"◆ "+esc(ev.nome)+" "+fmtD(dnum(ev.data)):""].filter(Boolean).join(" · ")}</div></td><td style="white-space:nowrap"><a href="#" data-mtree="${esc(c.id)}">${ap} task aperti</a>${lt?` · <b style="color:var(--over)">${lt} in ritardo</b>`:""}${bq?` · ⛔ ${bq} bloccati`:""}</td></tr>`}).join("")}</tbody></table></div></div>`:""}
     </div>${apMioHtml(p)}</div>`;
+  colonneMio(el.querySelector(".mio-g"));
   bindApMio();bindOltre($("#mio-olt"));
   const sp=$("#mio-p");if(sp)sp.onchange=()=>{S.mioP=sp.value||null;render()};
   const ma=$("#mio-ask");if(ma)ma.onsubmit=e=>{e.preventDefault();const q=$("#mio-ask-q");apriGuida(q.value);q.value=""};
@@ -1600,6 +1602,17 @@ function piMenu(pi){chiudiPiMenu();const id=pi.dataset.pi,x=(S.postit||[]).find(
   setTimeout(()=>document.addEventListener("pointerdown",piFuori,true),0)}
 function piFuori(e){if(!e.target.closest(".pi-menu")&&!e.target.closest(".pi-drag"))chiudiPiMenu()}
 function chiudiPiMenu(){document.querySelectorAll(".pi-menu").forEach(m=>{m.parentElement&&m.parentElement.classList.remove("pi-aperto");m.remove()});document.removeEventListener("pointerdown",piFuori,true)}
+// "Il mio lavoro": colonne indipendenti. Ogni pannello va nella colonna piu' corta, in ordine:
+// un pannello che cresce (es. tanti post-it) spinge giu' solo quelli sotto di lui, non le altre colonne.
+function colonneMio(g,forza){if(!g)return;const W=g.clientWidth,n=W<=640?1:Math.max(1,Math.floor((W+14)/(460+14)));
+  if(!forza&&g._ncol===n)return;g._ncol=n;
+  const pan=[...g.querySelectorAll(":scope>.mio-col>*, :scope>:not(.mio-col)")]; // i pannelli larghi (grid-column) restano sopra, a tutta larghezza
+  pan.forEach((x,i)=>{if(x.dataset.ord==null)x.dataset.ord=i});pan.sort((x,y)=>x.dataset.ord-y.dataset.ord);
+  const foc=document.activeElement;g.innerHTML="";g.classList.add("mas");g.style.gap="14px";
+  const col=[...Array(n)].map(()=>{const c=document.createElement("div");c.className="mio-col";g.appendChild(c);return c});
+  for(const x of pan){if(x.style.gridColumn){g.insertBefore(x,col[0]);continue}let m=col[0];for(const c of col)if(c.offsetHeight<m.offsetHeight-2)m=c;m.appendChild(x)}
+  if(foc&&g.contains(foc)&&document.activeElement!==foc)foc.focus({preventScroll:true})}
+addEventListener("resize",()=>{clearTimeout(colonneMio._t);colonneMio._t=setTimeout(()=>colonneMio(document.querySelector(".mio-g.mas")),150)});
 function bindPostit(el){const pan=el.querySelector(".pi-pan");if(!pan)return;bindCestino(pan);
   const nuovo=$("#pi-new");if(nuovo)nuovo.onclick=async()=>{try{const j=await api("POST","/api/postit",{testo:"",colore:piNuovaTinta()});await doRefresh();render();
     // la pagina si ridisegna un attimo dopo: si aspetta il foglietto nuovo e ci si mette il cursore
