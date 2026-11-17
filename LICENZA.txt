@@ -1,0 +1,38 @@
+LICENZA D'USO — Tekne FloWork
+Software proprietario. Tutti i diritti riservati.
+
+Titolare del diritto d'autore: Fabio Rotolo — ditta individuale "FARO pro di
+Rotolo Fabio", Via Italia 1, 66041 Atessa (CH), P. IVA 02683930693.
+Anno: 2026.
+
+Questo programma — codice sorgente (server.js, ditte.js, public/index.html),
+strumenti di installazione, demo, documentazione e ogni altra sua parte — e'
+opera dell'ingegno del Titolare, realizzata nel suo tempo libero e con mezzi
+propri, e resta di sua esclusiva proprieta'. NON e' software libero ne' open source.
+
+E' CONCESSO:
+- usare il programma, cosi' com'e', all'interno dell'organizzazione indicata
+  dal Titolare, per i soli scopi interni di quella organizzazione.
+
+NON e' concesso, senza autorizzazione scritta e firmata dal Titolare:
+- copiare, pubblicare, distribuire o rendere disponibile il programma o una
+  sua parte;
+- cederlo, venderlo, darlo o comunicarlo a terzi;
+- modificarlo o creare opere derivate;
+- decompilarlo, decodificarlo o analizzarne il funzionamento interno (reverse
+  engineering), oltre a quanto la legge consente in modo inderogabile;
+- usarlo, in tutto o in parte, per addestrare o alimentare modelli o sistemi
+  automatici o di intelligenza artificiale.
+
+Ogni uso diverso da quello interno sopra concesso richiede un'autorizzazione
+scritta e firmata dal Titolare.
+
+Il programma e' fornito "cosi' com'e'", senza garanzie di alcun tipo. Il
+Titolare non risponde di danni derivanti dal suo uso.
+
+Il mancato rispetto di questa licenza viola il diritto d'autore (L. 633/1941 e
+s.m.i.) ed espone a responsabilita' civili e penali.
+
+Contatti e autorizzazioni:
+  e-mail: amministrazione@faropro.it
+  PEC:    faropro@pec.it

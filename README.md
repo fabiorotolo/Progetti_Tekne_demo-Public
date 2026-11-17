@@ -9,3 +9,8 @@ Apri la demo: **https://fabiorotolo.github.io/Progetti_Tekne_demo-Public/**
 - Il pulsante "Ripristina dati di esempio" in basso riparte da capo.
 
 Questo repository contiene solo la pagina generata; il codice del progetto è altrove.
+
+## Licenza
+Software **proprietario**, tutti i diritti riservati (vedi `LICENZA.txt` e `AVVISO-AI.txt`). Non è open source:
+la demo si può solo provare; copiare, distribuire, modificare o usare il codice della pagina (anche per addestrare
+sistemi di IA) non è consentito senza autorizzazione scritta del Titolare.
